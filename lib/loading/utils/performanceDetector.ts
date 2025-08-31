@@ -5,8 +5,8 @@
  * 檢測網絡狀況、設備性能，用於適應性載入策略
  */
 
-import { logger } from '@/lib/logger';
-import { PerformanceMetrics } from '../types';
+import { logger } from '../../logger';
+import type { PerformanceMetrics } from '../types';
 
 // 網絡信息接口
 interface NetworkInformation {

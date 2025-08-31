@@ -6,10 +6,26 @@
 
 import { useCallback } from 'react';
 import { toast } from 'sonner';
-import { getErrorMessage } from '@/lib/types/error-handling';
-import { createClient } from '@/app/utils/supabase/client';
-import { isProduction, isNotProduction } from '@/lib/utils/env';
+import { getErrorMessage } from '../../../../../lib/types/error-handling';
+import { createClient } from '../../../../utils/supabase/client';
 import type { ProductInfo } from '../../types';
+
+// 定義 Supabase RPC 函數回傳類型
+interface HandlePrintLabelUpdatesResult {
+  success: boolean;
+  message?: string;
+  stock_updated?: number;
+  work_updated?: number;
+}
+
+// 定義 ACO 訂單更新 API 回應類型
+interface AcoOrderUpdateResponse {
+  success: boolean;
+  error?: string;
+  orderCompleted?: boolean;
+  totalRemainingInOrder?: number;
+  emailNotification?: { success: boolean };
+}
 
 interface StockUpdateOptions {
   productInfo: ProductInfo;
@@ -82,12 +98,7 @@ export const useStockUpdates = (): UseStockUpdatesReturn => {
         };
       }
 
-      const result = data as {
-        success: boolean;
-        message?: string;
-        stock_updated?: number;
-        work_updated?: number;
-      };
+      const result = data as HandlePrintLabelUpdatesResult;
 
       if (!result.success) {
         return {
@@ -118,7 +129,11 @@ export const useStockUpdates = (): UseStockUpdatesReturn => {
           body: JSON.stringify(options),
         });
 
-        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = (await response.json()) as AcoOrderUpdateResponse;
 
         if (!result.success) {
           console.error('Failed to update ACO order:', result.error);

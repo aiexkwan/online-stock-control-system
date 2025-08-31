@@ -6,7 +6,7 @@
 // PrintHistoryService removed - redundant with existing record_history
 import { EventEmitter } from 'events';
 import { getHardwareAbstractionLayer } from '@/lib/hardware/hardware-abstraction-layer';
-import type { PrintJob } from '@/lib/hardware/types';
+import type { PrintJob, PrintResult as HalPrintResult } from '@/lib/hardware/types';
 import type { DatabaseRecord } from '@/types/database/tables';
 import { uploadPdfToStorage, updatePalletPdfUrl } from '@/app/actions/grnActions';
 import {
@@ -156,13 +156,13 @@ export class UnifiedPrintingService extends EventEmitter {
       };
 
       // 5. Use HAL to print (it handles queuing internally)
-      const result = await this.hal.print(printJob);
+      const halResult = await this.hal.print(printJob);
 
       // 6. History recording removed - using existing record_history mechanism
 
       // 7. Add upload results to response
       const enhancedResult: PrintResult = {
-        ...result,
+        ...halResult,
         uploadedUrls: uploadedUrls.length > 0 ? uploadedUrls : undefined,
         uploadErrors: uploadErrors.length > 0 ? uploadErrors : undefined,
       };
@@ -461,7 +461,7 @@ export class UnifiedPrintingService extends EventEmitter {
       }
 
       const mergedPdfBytes = await mergedPdf.save();
-      const mergedPdfBlob = new Blob([mergedPdfBytes as unknown as ArrayBuffer], {
+      const mergedPdfBlob = new Blob([new Uint8Array(mergedPdfBytes)], {
         type: 'application/pdf',
       });
 

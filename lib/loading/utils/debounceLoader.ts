@@ -24,7 +24,7 @@ export class DebounceLoader {
   public readonly options: Required<DebounceLoaderOptions>;
 
   constructor(
-    private readonly func: (...args: Record<string, unknown>[]) => void,
+    private readonly func: (...args: unknown[]) => void,
     options: DebounceLoaderOptions
   ) {
     this.options = {
@@ -38,7 +38,7 @@ export class DebounceLoader {
   /**
    * 執行防抖載入
    */
-  public invoke(...args: Record<string, unknown>[]): void {
+  public invoke(...args: unknown[]): void {
     const time = Date.now();
     const isInvoking = this.shouldInvoke(time);
 
@@ -70,7 +70,7 @@ export class DebounceLoader {
   /**
    * 立即執行載入（忽略防抖）
    */
-  public flush(...args: Record<string, unknown>[]): void {
+  public flush(...args: unknown[]): void {
     if (this.timeoutId !== null) {
       return this.invokeFunc(Date.now(), ...args);
     }
@@ -96,14 +96,14 @@ export class DebounceLoader {
     );
   }
 
-  private invokeFunc(time: number, ...args: Record<string, unknown>[]): void {
+  private invokeFunc(time: number, ...args: unknown[]): void {
     const lastArgs = args;
     this.cancel();
     this.lastInvokeTime = time;
     this.func(...lastArgs);
   }
 
-  private startTimer(time: number, ...args: Record<string, unknown>[]): void {
+  private startTimer(time: number, ...args: unknown[]): void {
     this.timeoutId = setTimeout(() => {
       this.invokeFunc(Date.now(), ...args);
     }, this.options.delay);
@@ -119,7 +119,7 @@ export class DebounceLoader {
 /**
  * 創建防抖載入函數
  */
-export function createDebounceLoader<T extends (...args: Record<string, unknown>[]) => void>(
+export function createDebounceLoader<T extends (...args: unknown[]) => void>(
   func: T,
   options: DebounceLoaderOptions
 ): {
@@ -131,9 +131,9 @@ export function createDebounceLoader<T extends (...args: Record<string, unknown>
   const debouncer = new DebounceLoader(func, options);
 
   return {
-    invoke: ((...args: Record<string, unknown>[]) => debouncer.invoke(...args)) as T,
+    invoke: ((...args: unknown[]) => debouncer.invoke(...args)) as T,
     cancel: () => debouncer.cancel(),
-    flush: ((...args: Record<string, unknown>[]) => debouncer.flush(...args)) as T,
+    flush: ((...args: unknown[]) => debouncer.flush(...args)) as T,
     isPending: () => debouncer.isPending(),
   };
 }
@@ -150,7 +150,7 @@ export class SmartDebounceLoader {
   private readonly minDelay: number;
 
   constructor(
-    private readonly func: (...args: Record<string, unknown>[]) => void,
+    private readonly func: (...args: unknown[]) => void,
     baseDelay: number = 300,
     minDelay: number = 50,
     maxDelay: number = 1000
@@ -168,7 +168,7 @@ export class SmartDebounceLoader {
   /**
    * 執行智能防抖載入
    */
-  public invoke(...args: Record<string, unknown>[]): void {
+  public invoke(...args: unknown[]): void {
     this.recordCall();
     this.adjustDelay();
     this.debouncer.invoke(...args);
@@ -184,7 +184,7 @@ export class SmartDebounceLoader {
   /**
    * 立即執行載入
    */
-  public flush(...args: Record<string, unknown>[]): void {
+  public flush(...args: unknown[]): void {
     this.debouncer.flush(...args);
   }
 
@@ -258,7 +258,7 @@ export class LoadingStateDebouncer {
    */
   public register(
     id: string,
-    func: (...args: Record<string, unknown>[]) => void,
+    func: (...args: unknown[]) => void,
     options?: Partial<DebounceLoaderOptions>
   ): void {
     const mergedOptions = { ...this.defaultOptions, ...options };
@@ -268,7 +268,7 @@ export class LoadingStateDebouncer {
   /**
    * 執行指定的載入防抖
    */
-  public invoke(id: string, ...args: Record<string, unknown>[]): boolean {
+  public invoke(id: string, ...args: unknown[]): boolean {
     const debouncer = this.debouncers.get(id);
     if (!debouncer) return false;
 
@@ -290,7 +290,7 @@ export class LoadingStateDebouncer {
   /**
    * 立即執行指定的載入
    */
-  public flush(id: string, ...args: Record<string, unknown>[]): boolean {
+  public flush(id: string, ...args: unknown[]): boolean {
     const debouncer = this.debouncers.get(id);
     if (!debouncer) return false;
 

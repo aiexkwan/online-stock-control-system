@@ -133,7 +133,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         },
       },
     });
-  } catch (error) {
+  } catch {
     // 安全日誌記錄，不洩露詳細錯誤資訊
     console.error('[ValidateUserAPI] Internal error occurred');
 

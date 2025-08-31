@@ -16,7 +16,7 @@ interface LoadingProgressChartProps {
   }>;
 }
 
-export function LoadingProgressChart({ orderData }: LoadingProgressChartProps) {
+export function LoadingProgressChart({ orderData, recentLoads }: LoadingProgressChartProps) {
   // Calculate total progress
   const totalProgress =
     orderData.reduce((acc, item) => {

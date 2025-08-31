@@ -60,12 +60,7 @@
       ]
     }
   ],
-  "rewrites": [
-    {
-      "source": "/health",
-      "destination": "/api/health"
-    }
-  ],
+  "rewrites": [],
   "trailingSlash": false,
   "cleanUrls": true
 }

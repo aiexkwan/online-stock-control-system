@@ -30,7 +30,7 @@ interface GridBasicProductFormProps {
   isPrintDisabled: boolean;
   isPrintLoading: boolean;
   printButtonText: string;
-  errors: Record<string, string>;
+  _errors: Record<string, string>;
   disabled?: boolean;
 }
 
@@ -51,7 +51,7 @@ export const GridBasicProductForm: React.FC<GridBasicProductFormProps> = React.m
     isPrintDisabled,
     isPrintLoading,
     printButtonText,
-    errors,
+    _errors,
     disabled = false,
   }) => {
     const isSlateProduct = productInfo?.type === 'Slate';
@@ -84,8 +84,8 @@ export const GridBasicProductForm: React.FC<GridBasicProductFormProps> = React.m
               required={true}
               showLabel={false}
             />
-            {errors.productCode && (
-              <p className='mt-1 text-xs text-red-500'>{errors.productCode}</p>
+            {_errors.productCode && (
+              <p className='mt-1 text-xs text-red-500'>{_errors.productCode}</p>
             )}
           </div>
 
@@ -99,7 +99,7 @@ export const GridBasicProductForm: React.FC<GridBasicProductFormProps> = React.m
               inputMode='numeric'
               pattern='[0-9]*'
               className={`h-10 w-full rounded-md border bg-gray-900 px-3 py-2 text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 ${
-                errors.quantity
+                _errors.quantity
                   ? 'border-red-500 focus:ring-red-500'
                   : 'border-gray-700 focus:ring-blue-500'
               }`}
@@ -112,7 +112,7 @@ export const GridBasicProductForm: React.FC<GridBasicProductFormProps> = React.m
               required
               placeholder='Numbers only'
             />
-            {errors.quantity && <p className='mt-1 text-xs text-red-500'>{errors.quantity}</p>}
+            {_errors.quantity && <p className='mt-1 text-xs text-red-500'>{_errors.quantity}</p>}
           </div>
         </div>
 
@@ -144,7 +144,7 @@ export const GridBasicProductForm: React.FC<GridBasicProductFormProps> = React.m
               className={`h-10 w-full rounded-md border bg-gray-900 px-3 py-2 text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 ${
                 isCountExceeded
                   ? 'border-red-500 focus:ring-red-500'
-                  : errors.count
+                  : _errors.count
                     ? 'border-red-500 focus:ring-red-500'
                     : 'border-gray-700 focus:ring-blue-500'
               } ${isSlateProduct ? 'cursor-not-allowed opacity-50' : ''}`}
@@ -159,9 +159,9 @@ export const GridBasicProductForm: React.FC<GridBasicProductFormProps> = React.m
               required
               placeholder={isSlateProduct ? 'Auto-set to 1' : `Max ${MAX_PALLET_COUNT} pallets`}
             />
-            {(isCountExceeded || errors.count) && (
+            {(isCountExceeded || _errors.count) && (
               <p className='mt-1 text-xs text-red-500'>
-                {isCountExceeded ? `Maximum ${MAX_PALLET_COUNT} pallets allowed` : errors.count}
+                {isCountExceeded ? `Maximum ${MAX_PALLET_COUNT} pallets allowed` : _errors.count}
               </p>
             )}
           </div>
@@ -175,7 +175,7 @@ export const GridBasicProductForm: React.FC<GridBasicProductFormProps> = React.m
             <input
               type='text'
               className={`h-10 w-full rounded-md border bg-gray-900 px-3 py-2 text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 ${
-                errors.operator
+                _errors.operator
                   ? 'border-red-500 focus:ring-red-500'
                   : 'border-gray-700 focus:ring-blue-500'
               }`}
@@ -184,7 +184,7 @@ export const GridBasicProductForm: React.FC<GridBasicProductFormProps> = React.m
               disabled={disabled}
               placeholder='Optional'
             />
-            {errors.operator && <p className='mt-1 text-xs text-red-500'>{errors.operator}</p>}
+            {_errors.operator && <p className='mt-1 text-xs text-red-500'>{_errors.operator}</p>}
           </div>
         </div>
 
@@ -198,7 +198,7 @@ export const GridBasicProductForm: React.FC<GridBasicProductFormProps> = React.m
               !isPrintDisabled
                 ? 'bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/25 hover:scale-[1.02] hover:from-blue-500 hover:via-blue-400 hover:to-cyan-400 hover:shadow-blue-400/40 active:scale-[0.98]'
                 : 'cursor-not-allowed bg-gradient-to-r from-slate-700 to-slate-600 text-slate-300 shadow-lg shadow-slate-900/20'
-            } `}
+            }`}
           >
             <PrinterIcon className={`h-5 w-5 ${isPrintLoading ? 'animate-pulse' : ''}`} />
             <span>{printButtonText}</span>

@@ -3,9 +3,9 @@
  * Real-time monitoring and diagnostics for Supabase connections and queries
  */
 
-import { getSupabaseClient } from '@/lib/database/supabase-client-manager';
-import { getGrnDatabaseService } from '@/lib/database/grn-database-service';
-import type { PerformanceMetrics } from '@/lib/database/supabase-client-manager';
+import { getSupabaseClient } from '../database/supabase-client-manager';
+import { getGrnDatabaseService } from '../database/grn-database-service';
+import type { PerformanceMetrics } from '../database/supabase-client-manager';
 
 // Performance thresholds
 export interface PerformanceThresholds {
@@ -461,7 +461,7 @@ export class SupabasePerformanceMonitor {
       }
     }
 
-    return [...new Set(recommendations)]; // Remove duplicates
+    return Array.from(new Set(recommendations)); // Remove duplicates
   }
 
   /**

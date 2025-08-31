@@ -135,16 +135,16 @@ const Card = React.forwardRef<HTMLDivElement, CardProps>(
           <style dangerouslySetInnerHTML={{ __html: beforeAfterStyles }} />
           <div
             ref={node => {
-              if (cardRef && 'current' in cardRef) {
-                (cardRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+              // 設定內部 ref
+              if (cardRef.current !== node) {
+                cardRef.current = node;
               }
+
+              // 設定 forwardRef
               if (typeof ref === 'function') {
                 ref(node);
-              } else if (ref && 'current' in ref) {
-                // Only assign if it's mutable
-                if (Object.getOwnPropertyDescriptor(ref, 'current')?.set) {
-                  (ref as React.MutableRefObject<HTMLDivElement | null>).current = node;
-                }
+              } else if (ref) {
+                ref.current = node;
               }
             }}
             data-spotlight
@@ -181,7 +181,7 @@ const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
 );
 CardHeader.displayName = 'CardHeader';
 
-const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLHeadingElement>>(
+const CardTitle = React.forwardRef<HTMLHeadingElement, React.HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
     <h3
       ref={ref}

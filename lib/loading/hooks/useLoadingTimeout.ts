@@ -8,7 +8,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { logger } from '@/lib/logger';
+import { logger } from '../../logger';
 import { UseLoadingOptions } from '../types';
 import { useLoading } from './useLoading';
 

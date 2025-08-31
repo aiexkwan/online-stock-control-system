@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { debounce } from '@/app/utils/debounce';
+import { debounce } from '../../../../utils/debounce';
 import type { FormData } from '../../types';
 
 // 本地存儲鍵名

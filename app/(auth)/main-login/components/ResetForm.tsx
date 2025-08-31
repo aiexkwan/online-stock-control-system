@@ -10,7 +10,7 @@ interface ResetFormProps {
   step: 'request' | 'reset';
   token: string | null;
   onSuccess: () => void;
-  onError: (error: string) => void;
+  onError: (_error: string) => void;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
 }
@@ -46,36 +46,36 @@ const ResetForm = memo(function ResetForm({
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 
   const validateRequestForm = useCallback((): boolean => {
-    const errors: { [key: string]: string } = {};
+    const _errors: { [key: string]: string } = {};
 
     if (!requestData.email) {
-      errors.email = 'Email is required';
+      _errors.email = 'Email is required';
     } else if (!EmailValidator.validate(requestData.email)) {
-      errors.email = EmailValidator.getErrorMessage(requestData.email);
+      _errors.email = EmailValidator.getErrorMessage(requestData.email);
     }
 
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
+    setFieldErrors(_errors);
+    return Object.keys(_errors).length === 0;
   }, [requestData.email]);
 
   const validateResetForm = useCallback((): boolean => {
-    const errors: { [key: string]: string } = {};
+    const _errors: { [key: string]: string } = {};
 
     // Password validation
     const passwordErrors = PasswordValidator.validate(resetData.password);
     if (passwordErrors.length > 0) {
-      errors.password = passwordErrors[0];
+      _errors.password = passwordErrors[0];
     }
 
     // Confirm password validation
     if (!resetData.confirmPassword) {
-      errors.confirmPassword = 'Please confirm your password';
+      _errors.confirmPassword = 'Please confirm your password';
     } else if (resetData.password !== resetData.confirmPassword) {
-      errors.confirmPassword = 'Passwords do not match';
+      _errors.confirmPassword = 'Passwords do not match';
     }
 
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
+    setFieldErrors(_errors);
+    return Object.keys(_errors).length === 0;
   }, [resetData.password, resetData.confirmPassword]);
 
   const handleRequestSubmit = useCallback(

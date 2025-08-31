@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useCallback, useRef } from 'react';
+import * as React from 'react';
+import { useState, useCallback } from 'react';
 import {
   X,
   Download,
@@ -86,10 +87,10 @@ export const PDFPreviewDialogReactPDF: React.FC<PDFPreviewDialogReactPDFProps> =
   });
 
   // 因為react-pdf需要動態導入，我們使用iframe作為fallback
-  const [useReactPDF, setUseReactPDF] = useState(false);
+  const [_useReactPDF, _setUseReactPDF] = useState<boolean>(false);
 
   // PDF載入處理
-  const handleDocumentLoad = useCallback(({ numPages }: { numPages: number }) => {
+  const _handleDocumentLoad = useCallback(({ numPages }: { numPages: number }): void => {
     setState(prev => ({
       ...prev,
       loading: false,
@@ -99,7 +100,7 @@ export const PDFPreviewDialogReactPDF: React.FC<PDFPreviewDialogReactPDFProps> =
     }));
   }, []);
 
-  const handleDocumentError = useCallback((error: Error) => {
+  const _handleDocumentError = useCallback((error: Error): void => {
     console.error('[PDFPreviewDialog] PDF load error:', error);
     setState(prev => ({
       ...prev,
@@ -109,30 +110,30 @@ export const PDFPreviewDialogReactPDF: React.FC<PDFPreviewDialogReactPDFProps> =
   }, []);
 
   // 控制功能
-  const handleZoomIn = useCallback(() => {
+  const handleZoomIn = useCallback((): void => {
     setState(prev => ({ ...prev, zoom: Math.min(prev.zoom + 0.25, 3) }));
   }, []);
 
-  const handleZoomOut = useCallback(() => {
+  const handleZoomOut = useCallback((): void => {
     setState(prev => ({ ...prev, zoom: Math.max(prev.zoom - 0.25, 0.25) }));
   }, []);
 
-  const handleRotate = useCallback(() => {
+  const handleRotate = useCallback((): void => {
     setState(prev => ({ ...prev, rotation: (prev.rotation + 90) % 360 }));
   }, []);
 
-  const handleFullscreen = useCallback(() => {
+  const handleFullscreen = useCallback((): void => {
     setState(prev => ({ ...prev, isFullscreen: !prev.isFullscreen }));
   }, []);
 
-  const handlePageChange = useCallback((page: number) => {
+  const handlePageChange = useCallback((page: number): void => {
     setState(prev => ({
       ...prev,
       currentPage: Math.max(1, Math.min(page, prev.numPages || 1)),
     }));
   }, []);
 
-  const handleDownload = useCallback(async () => {
+  const handleDownload = useCallback(async (): Promise<void> => {
     if (!url) return;
 
     try {
@@ -386,8 +387,8 @@ export const PDFPreviewDialogReactPDF: React.FC<PDFPreviewDialogReactPDFProps> =
                 src={`${url}#page=${state.currentPage}&zoom=${Math.round(state.zoom * 100)}&view=FitH&toolbar=0&navpanes=0&scrollbar=1`}
                 className='h-full w-full border-0 bg-white shadow-lg'
                 title={`PDF Preview: ${fileName}`}
-                onLoad={() => setState(prev => ({ ...prev, loading: false, error: null }))}
-                onError={() =>
+                onLoad={(): void => setState(prev => ({ ...prev, loading: false, error: null }))}
+                onError={(): void =>
                   setState(prev => ({
                     ...prev,
                     loading: false,

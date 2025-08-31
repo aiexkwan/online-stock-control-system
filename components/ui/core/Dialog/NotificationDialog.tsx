@@ -6,7 +6,7 @@
 'use client';
 
 import * as React from 'react';
-import { AlertCircle, CheckCircle2, XCircle, AlertTriangle, Info, Bell } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertTriangle, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
@@ -18,6 +18,9 @@ import {
   DialogFooter,
   type DialogProps,
 } from './Dialog';
+
+// 導入嚴格的類型定義
+type DialogSeverity = 'info' | 'success' | 'warning' | 'error';
 import { dialogPresets } from './DialogPresets';
 
 export interface NotificationDialogProps extends Omit<DialogProps, 'children'> {
@@ -29,6 +32,7 @@ export interface NotificationDialogProps extends Omit<DialogProps, 'children'> {
   showIcon?: boolean;
   autoClose?: boolean;
   autoCloseDelay?: number;
+  severity?: DialogSeverity;
 }
 
 /**
@@ -70,23 +74,23 @@ export const NotificationDialog = React.forwardRef<HTMLDivElement, NotificationD
 
         return () => clearTimeout(timer);
       }
-      
+
       // Return undefined for the else path
       return undefined;
     }, [open, autoClose, autoCloseDelay, onOpenChange]);
 
     // 默認圖標
-    const defaultIcons = {
+    const defaultIcons: Record<DialogSeverity, React.ReactNode> = {
       info: <Info className='h-6 w-6' />,
       success: <CheckCircle2 className='h-6 w-6' />,
       warning: <AlertTriangle className='h-6 w-6' />,
       error: <XCircle className='h-6 w-6' />,
     };
 
-    const displayIcon = icon || (showIcon && defaultIcons[severity]);
+    const displayIcon = icon || (showIcon && severity && defaultIcons[severity]);
 
     // 按鈕樣式
-    const buttonStyles = {
+    const buttonStyles: Record<DialogSeverity, string> = {
       info: 'bg-blue-500 hover:bg-blue-600 text-white',
       success: 'bg-green-500 hover:bg-green-600 text-white',
       warning: 'bg-yellow-500 hover:bg-yellow-600 text-white',
@@ -112,7 +116,7 @@ export const NotificationDialog = React.forwardRef<HTMLDivElement, NotificationD
                 onConfirm?.();
                 onOpenChange?.(false);
               }}
-              className={cn('min-w-[100px]', buttonStyles[severity])}
+              className={cn('min-w-[100px]', severity ? buttonStyles[severity] : buttonStyles.info)}
             >
               {confirmText}
             </Button>

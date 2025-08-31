@@ -43,7 +43,7 @@ export const ResourceCleanupExample: React.FC<ExampleComponentProps> = ({
       }
     };
 
-    const metricsInterval = resourceCleanup.createInterval(updateMetrics, 1000, 'metricsUpdate');
+    const _metricsInterval = resourceCleanup.createInterval(updateMetrics, 1000, 'metricsUpdate');
 
     updateMetrics();
   }, [resourceCleanup]);
@@ -93,7 +93,7 @@ export const ResourceCleanupExample: React.FC<ExampleComponentProps> = ({
       const abortController = resourceCleanup.createAbortController('dataPolling');
 
       try {
-        const response = await fetch('/api/data', {
+        const _response = await fetch('/api/data', {
           signal: abortController.signal,
         });
 
@@ -110,7 +110,7 @@ export const ResourceCleanupExample: React.FC<ExampleComponentProps> = ({
       }
     };
 
-    const pollInterval = resourceCleanup.createInterval(pollData, 2000, 'dataPoll');
+    const _pollInterval = resourceCleanup.createInterval(pollData, 2000, 'dataPoll');
   };
 
   const stopDataPolling = () => {

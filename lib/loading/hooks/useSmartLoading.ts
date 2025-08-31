@@ -8,7 +8,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { logger } from '@/lib/logger';
+import { logger } from '../../logger';
 import { PerformanceDetector } from '../utils/performanceDetector';
 import { getPerformanceAwareStrategySuggestion } from '../strategies/LoadingStrategy';
 import { UseLoadingOptions, AdaptiveLoadingConfig, PerformanceMetrics } from '../types';

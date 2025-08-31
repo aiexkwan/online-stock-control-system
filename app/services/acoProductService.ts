@@ -4,7 +4,7 @@
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Database } from '@/lib/database.types';
+import type { Database } from '@/lib/database.types';
 
 export class ACOProductService {
   private static instance: ACOProductService;

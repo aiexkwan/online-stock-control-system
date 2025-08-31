@@ -13,7 +13,7 @@ export const MAX_ATTEMPTS_PRODUCTION = 7;
 export const COOLDOWN_PERIOD_PROD = 5000; // 5 seconds in production
 export const COOLDOWN_PERIOD_DEV = 3000; // 3 seconds in development
 export const DUPLICATE_CHECK_DELAY_BASE = 200;
-export const CACHE_CONTROL_TIMEOUT = 3600; // 1 hour in seconds
+export const _CACHE_CONTROL_TIMEOUT = 3600; // 1 hour in seconds
 export const RETRY_DELAY_BASE = 1000;
 export const RETRY_DELAY_BASE_PROD = 2000;
 export const RETRY_DELAY_BASE_VERCEL = 800;
@@ -24,13 +24,13 @@ export const INITIAL_RETRY_DELAY_VERCEL = 300;
 
 // Limits and counts
 export const MAX_PALLET_COUNT = 5;
-export const MIN_ACO_ORDER_REF_LENGTH = 5;
+export const _MIN_ACO_ORDER_REF_LENGTH = 5;
 export const MAX_BATCH_SIZE = 50; // For series generation
 export const DEFAULT_ACO_PALLET_START_COUNT = 1;
 
 // Array indices
 export const FIRST_INDEX = 0;
-export const CLOCK_NUMBER_EMAIL_INDEX = 0;
+export const _CLOCK_NUMBER_EMAIL_INDEX = 0;
 
 // Status codes and magic values
 export const ONE_HOUR_CACHE = '3600';

@@ -60,8 +60,8 @@ export function PrintQueueMonitor({ className, compact = false }: PrintQueueMoni
             // 模擬 activeJobs 和 completedJobs，因為 monitor 沒有這些方法
             setActiveJobs([]);
             setCompletedJobs([]);
-          } catch (err) {
-            console.warn('[PrintQueueMonitor] Failed to update jobs:', err);
+          } catch (error) {
+            console.warn('[PrintQueueMonitor] Failed to update jobs:', error);
           }
         };
 
@@ -72,8 +72,8 @@ export function PrintQueueMonitor({ className, compact = false }: PrintQueueMoni
         if ('on' in monitor && typeof monitor.on === 'function') {
           monitor.on('statusUpdate', updateJobsHandler);
         }
-      } catch (err) {
-        console.warn('[PrintQueueMonitor] Failed to initialize monitor:', err);
+      } catch (error) {
+        console.warn('[PrintQueueMonitor] Failed to initialize monitor:', error);
         // Retry after a delay
         setTimeout(initializeMonitor, 1000);
       }

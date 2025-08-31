@@ -5,39 +5,74 @@
 
 import { createHash } from 'crypto';
 
+/**
+ * Configuration for a credential entry
+ */
 interface CredentialConfig {
+  /** The credential name used internally */
   name: string;
+  /** The environment variable name */
   envVar: string;
+  /** Whether this credential is required for the application to function */
   required: boolean;
+  /** Whether this credential contains sensitive data */
   sensitive: boolean;
+  /** Optional validator function to check credential format */
   validator?: (value: string) => boolean;
 }
+
+/**
+ * Validation result interface
+ */
+interface ValidationResult {
+  valid: boolean;
+  errors: string[];
+}
+
+/**
+ * Credential status interface
+ */
+interface CredentialStatus {
+  exists: boolean;
+  valid: boolean;
+  sensitive: boolean;
+}
+
+/**
+ * Audit log type
+ */
+type AuditLog = Record<string, Date[]>;
+
+/**
+ * Status report type
+ */
+type StatusReport = Record<string, CredentialStatus>;
 
 class CredentialsManager {
   private credentials: Map<string, string> = new Map();
   private accessLog: Map<string, Date[]> = new Map();
-  private readonly configs: CredentialConfig[] = [
+  private readonly configs: readonly CredentialConfig[] = [
     // Supabase Credentials
     {
       name: 'SUPABASE_URL',
       envVar: 'SUPABASE_URL',
       required: true,
       sensitive: false,
-      validator: value => value.startsWith('https://') && value.includes('.supabase.co'),
+      validator: (value: string): boolean => value.startsWith('https://') && value.includes('.supabase.co')
     },
     {
       name: 'SUPABASE_ANON_KEY',
       envVar: 'SUPABASE_ANON_KEY',
       required: true,
       sensitive: true,
-      validator: value => value.startsWith('eyJ') && value.length > 100,
+      validator: (value: string): boolean => value.startsWith('eyJ') && value.length > 100
     },
     {
       name: 'SUPABASE_SERVICE_KEY',
       envVar: 'SUPABASE_SERVICE_ROLE_KEY',
       required: false,
       sensitive: true,
-      validator: value => value.startsWith('eyJ') && value.length > 100,
+      validator: (value: string): boolean => value.startsWith('eyJ') && value.length > 100
     },
     // Test Credentials
     {
@@ -45,14 +80,14 @@ class CredentialsManager {
       envVar: 'TEST_LOGIN_EMAIL',
       required: false,
       sensitive: false,
-      validator: value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value),
+      validator: (value: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
     },
     {
       name: 'TEST_LOGIN_PASSWORD',
       envVar: 'TEST_LOGIN_PASSWORD',
       required: false,
       sensitive: true,
-      validator: value => value.length >= 6,
+      validator: (value: string): boolean => value.length >= 6
     },
     // API Keys
     {
@@ -60,15 +95,15 @@ class CredentialsManager {
       envVar: 'OPENAI_API_KEY',
       required: false,
       sensitive: true,
-      validator: value => value.startsWith('sk-') && value.length > 40,
+      validator: (value: string): boolean => value.startsWith('sk-') && value.length > 40
     },
     {
       name: 'RESEND_API_KEY',
       envVar: 'RESEND_API_KEY',
       required: false,
       sensitive: true,
-      validator: value => value.startsWith('re_') && value.length > 20,
-    },
+      validator: (value: string): boolean => value.startsWith('re_') && value.length > 20
+    }
   ];
 
   constructor() {
@@ -163,7 +198,10 @@ class CredentialsManager {
     if (!this.accessLog.has(name)) {
       this.accessLog.set(name, []);
     }
-    this.accessLog.get(name)!.push(new Date());
+    const accessDates = this.accessLog.get(name);
+    if (accessDates) {
+      accessDates.push(new Date());
+    }
 
     // In development, log access to console
     if (process.env.NODE_ENV === 'development') {
@@ -174,10 +212,10 @@ class CredentialsManager {
   /**
    * Get access audit log
    */
-  public getAuditLog(): Record<string, Date[]> {
-    const log: Record<string, Date[]> = {};
+  public getAuditLog(): AuditLog {
+    const log: AuditLog = {};
     this.accessLog.forEach((dates, name) => {
-      log[name] = dates;
+      log[name] = [...dates]; // Create a copy to prevent external mutation
     });
     return log;
   }
@@ -185,7 +223,7 @@ class CredentialsManager {
   /**
    * Validate all configured credentials
    */
-  public validate(): { valid: boolean; errors: string[] } {
+  public validate(): ValidationResult {
     const errors: string[] = [];
 
     for (const config of this.configs) {
@@ -202,22 +240,22 @@ class CredentialsManager {
 
     return {
       valid: errors.length === 0,
-      errors,
+      errors
     };
   }
 
   /**
    * Get credential status for monitoring
    */
-  public getStatus(): Record<string, { exists: boolean; valid: boolean; sensitive: boolean }> {
-    const status: Record<string, { exists: boolean; valid: boolean; sensitive: boolean }> = {};
+  public getStatus(): StatusReport {
+    const status: StatusReport = {};
 
     for (const config of this.configs) {
       const value = this.credentials.get(config.name);
       status[config.name] = {
-        exists: !!value,
+        exists: Boolean(value),
         valid: !value || !config.validator || config.validator(value),
-        sensitive: config.sensitive,
+        sensitive: config.sensitive
       };
     }
 
@@ -229,9 +267,38 @@ class CredentialsManager {
    */
   public hash(name: string): string | undefined {
     const value = this.get(name);
-    if (!value) return undefined;
+    if (!value) {
+      return undefined;
+    }
 
-    return createHash('sha256').update(value).digest('hex');
+    try {
+      return createHash('sha256').update(value).digest('hex');
+    } catch (error) {
+      console.error(`Failed to hash credential '${name}':`, error);
+      return undefined;
+    }
+  }
+
+  /**
+   * Get all configured credential names
+   */
+  public getConfiguredNames(): readonly string[] {
+    return this.configs.map(config => config.name);
+  }
+
+  /**
+   * Check if a credential is configured (regardless of whether it has a value)
+   */
+  public isConfigured(name: string): boolean {
+    return this.configs.some(config => config.name === name);
+  }
+
+  /**
+   * Get credential configuration
+   */
+  public getConfig(name: string): Readonly<CredentialConfig> | undefined {
+    const config = this.configs.find(config => config.name === name);
+    return config ? { ...config } : undefined;
   }
 }
 
@@ -239,4 +306,4 @@ class CredentialsManager {
 export const credentialsManager = new CredentialsManager();
 
 // Export types
-export type { CredentialConfig };
+export type { CredentialConfig, ValidationResult, CredentialStatus, AuditLog, StatusReport };

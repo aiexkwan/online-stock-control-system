@@ -42,12 +42,12 @@ export const DATABASE_FIELD_MAPPINGS: Record<string, TableMapping> = {
     computedFields: [
       {
         graphqlField: 'action',
-        computation: row => 'TRANSFERRED', // Default action for transfers
+        computation: _row => 'TRANSFERRED', // Default action for transfers
         dependencies: ['f_loc', 't_loc'],
       },
       {
         graphqlField: 'actionType',
-        computation: row => 'MOVEMENT',
+        computation: _row => 'MOVEMENT',
         dependencies: [],
       },
     ],
@@ -67,7 +67,7 @@ export const DATABASE_FIELD_MAPPINGS: Record<string, TableMapping> = {
     computedFields: [
       {
         graphqlField: 'action',
-        computation: row => 'CREATED',
+        computation: _row => 'CREATED',
         dependencies: [],
       },
     ],
@@ -118,11 +118,12 @@ export class FieldMapper {
     });
 
     // Add computed dependencies
-    for (const dep of computedDependencies) {
+    computedDependencies.forEach(dep => {
       dbColumns.push(dep);
-    }
+    });
 
-    return [...new Set(dbColumns)]; // Remove duplicates
+    // Remove duplicates
+    return dbColumns.filter((column, index) => dbColumns.indexOf(column) === index);
   }
 
   /**

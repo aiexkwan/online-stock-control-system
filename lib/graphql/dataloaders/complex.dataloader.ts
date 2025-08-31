@@ -13,19 +13,11 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import {
   DatabaseEntity,
   TransferEntity,
-  ProductEntity,
-  WorkLevelEntity,
   InventoryEntity,
-  PalletEntity,
-  UserEntity,
-  GRNEntity,
-  HistoryEntity,
-  OrderEntity,
   asTransferEntity,
+  asInventoryEntity,
   asProductEntity,
   asWorkLevelEntity,
-  asInventoryEntity,
-  asPalletEntity,
   asUserEntity,
   asGRNEntity,
   asHistoryEntity,
@@ -33,7 +25,7 @@ import {
   safeGet,
   safeString,
   safeNumber,
-} from '@/lib/types/dataloaders';
+} from '../../types/dataloaders';
 import { createBatchLoader } from './base.dataloader';
 
 // 對於 complex.dataloader.ts 的具體類型定義
@@ -62,7 +54,7 @@ interface InventoryWithRelations extends InventoryEntity {
 }
 
 // 庫存分佈結果類型
-interface StockDistributionGroupItem {
+interface _StockDistributionGroupItem {
   name: string;
   stock: string;
   stockLevel: number;
@@ -71,7 +63,7 @@ interface StockDistributionGroupItem {
   percentage: number;
 }
 
-const INVENTORY_LOCATIONS = [
+const _INVENTORY_LOCATIONS = [
   'injection',
   'pipeline',
   'prebook',
@@ -83,7 +75,7 @@ const INVENTORY_LOCATIONS = [
   'await_grn',
 ] as const;
 
-type InventoryLocation = (typeof INVENTORY_LOCATIONS)[number];
+type InventoryLocation = (typeof _INVENTORY_LOCATIONS)[number];
 
 // 安全的 location 數量取得函数
 function getLocationQuantity(item: InventoryWithRelations, location: InventoryLocation): number {
@@ -105,15 +97,15 @@ type StockDistributionResult = DataLoaderResult;
 // Type helper functions for safe property access
 type SafeAccess<T = unknown> = T | null | undefined;
 
-function safeAccess<T>(obj: SafeAccess, key: string): T | null {
+function _safeAccess<T>(obj: SafeAccess, key: string): T | null {
   return obj && typeof obj === 'object' && key in obj ? (obj as Record<string, T>)[key] : null;
 }
 
-function asRecord(obj: SafeAccess): Record<string, unknown> {
+function _asRecord(obj: SafeAccess): Record<string, unknown> {
   return obj && typeof obj === 'object' ? (obj as Record<string, unknown>) : {};
 }
 
-function getProperty<T = unknown>(obj: SafeAccess, key: string, defaultValue: T): T {
+function _getProperty<T = unknown>(obj: SafeAccess, key: string, defaultValue: T): T {
   if (obj && typeof obj === 'object' && key in obj) {
     const value = (obj as Record<string, unknown>)[key];
     return value !== null && value !== undefined ? (value as T) : defaultValue;
@@ -121,11 +113,11 @@ function getProperty<T = unknown>(obj: SafeAccess, key: string, defaultValue: T)
   return defaultValue;
 }
 
-function asString(value: SafeAccess, defaultValue = ''): string {
+function _asString(value: SafeAccess, defaultValue = ''): string {
   return typeof value === 'string' ? value : defaultValue;
 }
 
-function asNumber(value: SafeAccess, defaultValue = 0): number {
+function _asNumber(value: SafeAccess, defaultValue = 0): number {
   return typeof value === 'number' ? value : defaultValue;
 }
 
@@ -271,7 +263,7 @@ export function createUnifiedOperationsLoader(
           }
 
           // Execute queries in parallel
-          const [pallets, inventory, transfers] = await Promise.all([
+          const [pallets, _inventory, transfers] = await Promise.all([
             palletsQuery.limit(100),
             inventoryQuery.limit(100),
             transfersQuery.limit(100),
@@ -522,7 +514,7 @@ export function createEnhancedWorkLevelLoader(
           const performanceMetrics = calculatePerformanceMetrics(transfers, history);
           const trendAnalysis = calculateTrendAnalysis(transfers);
 
-          const result = {
+          const _result = {
             userId: key.userId,
             user: asWorkLevelEntity(workLevel)?.user,
             date: new Date(date),
@@ -553,7 +545,7 @@ export function createEnhancedWorkLevelLoader(
             refreshInterval: 120000, // 2 minutes
           };
 
-          return { key, result };
+          return { key, result: _result };
         });
       });
 
@@ -641,7 +633,7 @@ export function createGRNAnalyticsLoader(
           if (grnError) throw grnError;
 
           // Get GRN level summary data
-          const grnRefs = [...new Set((grnData || []).map(g => g.grn_ref))];
+          const grnRefs = Array.from(new Set((grnData || []).map(g => g.grn_ref)));
           const { data: grnLevelData } = await supabase
             .from('grn_level')
             .select('*')
@@ -681,8 +673,8 @@ export function createGRNAnalyticsLoader(
             grn_records: enrichedGrnData,
             analytics,
             totalRecords: enrichedGrnData.length,
-            uniqueSuppliers: [...new Set(enrichedGrnData.map(g => g.sup_code))].length,
-            uniqueMaterials: [...new Set(enrichedGrnData.map(g => g.material_code))].length,
+            uniqueSuppliers: Array.from(new Set(enrichedGrnData.map(g => g.sup_code))).length,
+            uniqueMaterials: Array.from(new Set(enrichedGrnData.map(g => g.material_code))).length,
             dateRange: key.dateRange,
             lastUpdated: new Date().toISOString(),
             refreshInterval: 300000, // 5 minutes for GRN data
@@ -727,7 +719,7 @@ function determineMainLocation(inventory: DatabaseEntity): string {
   return mainLocation.name;
 }
 
-function calculateHourlyBreakdown(transfers: DatabaseEntity[]): Record<string, unknown>[] {
+function _calculateHourlyBreakdown(transfers: DatabaseEntity[]): Record<string, unknown>[] {
   const hourlyMap = new Map<number, { count: number; quantity: number }>();
 
   transfers.forEach(transfer => {
@@ -749,7 +741,7 @@ function calculateHourlyBreakdown(transfers: DatabaseEntity[]): Record<string, u
   }));
 }
 
-function calculateLocationBreakdown(transfers: DatabaseEntity[]): Record<string, unknown>[] {
+function _calculateLocationBreakdown(transfers: DatabaseEntity[]): Record<string, unknown>[] {
   const locationMap = new Map<string, { count: number; quantity: number }>();
 
   transfers.forEach(transfer => {
@@ -771,7 +763,7 @@ function calculateLocationBreakdown(transfers: DatabaseEntity[]): Record<string,
 
 function calculateGRNAnalytics(
   grnData: DatabaseEntity[],
-  grnLevelData: DatabaseEntity[]
+  _grnLevelData: DatabaseEntity[]
 ): Record<string, unknown> {
   if (!grnData || grnData.length === 0) {
     return {
@@ -893,7 +885,7 @@ function calculateGRNAnalytics(
     }));
 
   // Quality metrics from QC data
-  const qcRecords = grnData
+  const qcRecords: unknown[] = grnData
     .map(grn => asGRNEntity(grn))
     .filter(grnEntity => grnEntity && safeGet(grnEntity, 'qc_results', null))
     .map(grnEntity => safeGet(grnEntity, 'qc_results', {}));
@@ -908,22 +900,22 @@ function calculateGRNAnalytics(
     avgWeight:
       qcRecords.length > 0
         ? (() => {
-            const total = qcRecords.reduce((sum: number, qc) => {
+            const total = qcRecords.reduce((sum: number, qc: unknown) => {
               const weight = safeNumber(qc, 'weight', 0);
               return sum + weight;
             }, 0);
-            return total / qcRecords.length;
+            return (total as number) / qcRecords.length;
           })()
         : 0,
     avgThickness:
       qcRecords.length > 0
         ? (() => {
-            const total = qcRecords.reduce((sum: number, qc) => {
+            const total = qcRecords.reduce((sum: number, qc: unknown) => {
               const tThick = safeNumber(qc, 't_thick', 0);
               const bThick = safeNumber(qc, 'b_thick', 0);
               return sum + (tThick + bThick) / 2;
             }, 0);
-            return total / qcRecords.length;
+            return (total as number) / qcRecords.length;
           })()
         : 0,
   };
@@ -1412,7 +1404,8 @@ export function createPerformanceMetricsLoader(
             granularity: key.granularity || 'daily',
             metrics,
             summary: {
-              totalUsers: [...new Set((workLevelData.data || []).map(w => w.user_id))].length,
+              totalUsers: Array.from(new Set((workLevelData.data || []).map(w => w.user_id)))
+                .length,
               totalOperations: (historyData.data || []).length,
               totalTransfers: (transferData.data || []).length,
               totalGRNRecords: (grnData.data || []).length,
@@ -1554,18 +1547,18 @@ function calculateSystemPerformanceMetrics(
 ): Record<string, unknown> {
   // Overall system health metrics
   const totalOperations = history.length;
-  const totalTransfers = transfers.length;
-  const totalGRNs = grnRecords.length;
-  const totalUsers = [
-    ...new Set(
+  const _totalTransfers = transfers.length;
+  const _totalGRNs = grnRecords.length;
+  const totalUsers = Array.from(
+    new Set(
       workLevels
         .map(w => {
           const workLevelEntity = asWorkLevelEntity(w);
           return workLevelEntity?.user_id;
         })
         .filter(Boolean)
-    ),
-  ].length;
+    )
+  ).length;
 
   // System throughput (operations per hour)
   const timeSpanHours = calculateTimeSpanHours(history);
@@ -1583,16 +1576,16 @@ function calculateSystemPerformanceMetrics(
   const systemReliability = totalOperations > 0 ? (successfulOps / totalOperations) * 100 : 0;
 
   // Resource utilization
-  const activeUsers = [
-    ...new Set(
+  const activeUsers = Array.from(
+    new Set(
       transfers
         .map(t => {
           const transferEntity = asTransferEntity(t);
           return transferEntity?.operator_id;
         })
         .filter(Boolean)
-    ),
-  ].length;
+    )
+  ).length;
   const resourceUtilization = totalUsers > 0 ? (activeUsers / totalUsers) * 100 : 0;
 
   // Processing efficiency
@@ -1939,7 +1932,7 @@ export function createInventoryOrderedAnalysisLoader(
   supabase: SupabaseClient
 ): DataLoader<InventoryOrderedAnalysisKey, InventoryOrderedAnalysisResult | null> {
   return createBatchLoader<InventoryOrderedAnalysisKey, InventoryOrderedAnalysisResult | null>(
-    async keys => {
+    async (keys: readonly InventoryOrderedAnalysisKey[]) => {
       const results = await Promise.all(
         keys.map(async key => {
           try {
@@ -2160,7 +2153,10 @@ function processInventoryOrderedAnalysis(
 
   // Combine and analyze data (analysis CTE equivalent)
   const analysisData: Record<string, unknown>[] = [];
-  const allProductCodes = new Set([...inventorySummary.keys(), ...orderSummary.keys()]);
+  const allProductCodes = new Set([
+    ...Array.from(inventorySummary.keys()),
+    ...Array.from(orderSummary.keys()),
+  ]);
 
   allProductCodes.forEach(productCode => {
     const inventory = inventorySummary.get(productCode);
@@ -2352,7 +2348,7 @@ export function createHistoryTreeLoader(
   supabase: SupabaseClient
 ): DataLoader<HistoryTreeKey, HistoryTreeResult | null> {
   return createBatchLoader<HistoryTreeKey, HistoryTreeResult | null>(
-    async keys => {
+    async (keys: readonly HistoryTreeKey[]) => {
       // Process each key individually due to complexity of different filter combinations
       const results = await Promise.all(
         keys.map(async key => {
@@ -2576,7 +2572,7 @@ export function createTopProductsLoader(
   supabase: SupabaseClient
 ): DataLoader<TopProductsKey, TopProductsResult | null> {
   return createBatchLoader<TopProductsKey, TopProductsResult | null>(
-    async keys => {
+    async (keys: readonly TopProductsKey[]) => {
       const results = await Promise.all(
         keys.map(async key => {
           try {
@@ -2782,7 +2778,7 @@ export function createStockDistributionLoader(
   supabase: SupabaseClient
 ): DataLoader<StockDistributionKey, StockDistributionResult | null> {
   return createBatchLoader<StockDistributionKey, StockDistributionResult | null>(
-    async keys => {
+    async (keys: readonly StockDistributionKey[]) => {
       const results = await Promise.all(
         keys.map(async key => {
           try {
@@ -2859,9 +2855,9 @@ export function createStockDistributionLoader(
               });
             }
 
-            const data = filteredData;
+            const _data = filteredData;
 
-            if (!data || data.length === 0) {
+            if (!_data || _data.length === 0) {
               console.log('[StockDistributionLoader] No data found');
               return {
                 items: [],
@@ -2892,7 +2888,7 @@ export function createStockDistributionLoader(
             let totalStock = 0;
 
             // Process each stock record
-            data.forEach((item: DatabaseEntity) => {
+            _data.forEach((item: DatabaseEntity) => {
               const stockLevel = safeNumber(item, 'stock_level');
               const productCode = safeString(item, 'stock', '');
               const productInfo = productTypeMap.get(productCode);
@@ -2958,7 +2954,7 @@ export function createStockDistributionLoader(
             }
 
             console.log(
-              `[StockDistributionLoader] Processed ${data.length} stock level records into ${itemsArray.length} distribution items`
+              `[StockDistributionLoader] Processed ${_data.length} stock level records into ${itemsArray.length} distribution items`
             );
 
             return {

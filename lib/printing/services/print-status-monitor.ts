@@ -289,7 +289,7 @@ export class PrintStatusMonitor extends EventEmitter {
       this.updateStatus(job.id, {
         status: 'failed',
         completedAt: new Date().toISOString(),
-        error: error,
+        error: error.message || String(error),
       });
     });
   }
@@ -297,12 +297,12 @@ export class PrintStatusMonitor extends EventEmitter {
   private cleanupOldStatuses(): void {
     const completed = Array.from(this.statusMap.entries())
       .filter(
-        ([_, status]) =>
+        ([, status]) =>
           status.status === 'completed' ||
           status.status === 'failed' ||
           status.status === 'cancelled'
       )
-      .sort(([_, a], [__, b]) => {
+      .sort(([, a], [, b]) => {
         const timeA = a.completedAt || '';
         const timeB = b.completedAt || '';
         return timeB.localeCompare(timeA);

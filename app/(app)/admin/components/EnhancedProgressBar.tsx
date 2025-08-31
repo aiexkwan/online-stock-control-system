@@ -167,12 +167,15 @@ export const EnhancedProgressBar: React.FC<EnhancedProgressBarProps> = React.mem
     });
 
     // Setup debounced progress updates
-    const handleProgressUpdate = useCallback((update: { current?: number; total?: number; status?: ProgressStatus[] }) => {
-      setDebouncedState(prev => ({
-        ...prev,
-        ...update,
-      }));
-    }, []);
+    const handleProgressUpdate = useCallback(
+      (update: { current?: number; total?: number; status?: ProgressStatus[] }) => {
+        setDebouncedState(prev => ({
+          ...prev,
+          ...update,
+        }));
+      },
+      []
+    );
 
     const { updateProgress, flushUpdates, getMetrics } = useProgressDebounce(handleProgressUpdate, {
       progressDelay: debounceDelay,
@@ -193,9 +196,8 @@ export const EnhancedProgressBar: React.FC<EnhancedProgressBarProps> = React.mem
     // Use debounced values for calculations
     const activeState = enableDebounce ? debouncedState : { current, total, status };
 
-    const percentage = activeState.total > 0
-      ? Math.round((activeState.current / activeState.total) * 100)
-      : 0;
+    const percentage =
+      activeState.total > 0 ? Math.round((activeState.current / activeState.total) * 100) : 0;
 
     const statusCounts = useMemo(() => {
       const successCount = activeState.status.filter(s => s === 'Success').length;

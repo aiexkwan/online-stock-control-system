@@ -33,7 +33,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, XCircle, AlertTriangle, Info, Loader2, X } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Info, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -195,7 +195,7 @@ export const StatusOverlay: React.FC<StatusOverlayProps> = ({
         }
       };
     }
-    
+
     // Return undefined for the else path
     return undefined;
   }, [open, autoClose, onClose]);

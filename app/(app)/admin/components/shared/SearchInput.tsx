@@ -67,7 +67,7 @@ const detectSearchType = (value: string): SearchType => {
   }
 
   // QR code series pattern (from VoidPalletCard)
-  if (value.match(/^\d{10,}$/)) {
+  if (value.match(/^\d{10 }$/)) {
     return 'pallet'; // Series can be treated as pallet search
   }
 

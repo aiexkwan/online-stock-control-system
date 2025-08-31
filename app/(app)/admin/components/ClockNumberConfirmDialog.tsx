@@ -128,8 +128,8 @@ export const ClockNumberConfirmDialog: React.FC<ClockNumberConfirmDialogProps> =
         setError('Clock number not found. Please check and try again.');
         toast.error('Invalid clock number');
       }
-    } catch (error) {
-      console.error('[ClockNumberConfirmDialog] Error during confirmation:', error);
+    } catch (confirmError) {
+      console.error('[ClockNumberConfirmDialog] Error during confirmation:', confirmError);
       setError('An error occurred while validating clock number');
       toast.error('Validation error occurred');
     } finally {

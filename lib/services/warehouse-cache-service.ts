@@ -14,9 +14,9 @@ import {
   safeNumber,
   safeString,
   safeArrayLength,
-  type WarehouseSummaryRPCResponse,
-  type DashboardStatsRPCResponse,
-  type OptimizedInventoryRPCResponse,
+  // type WarehouseSummaryRPCResponse, // Unused import
+  // type DashboardStatsRPCResponse, // Unused import
+  // type OptimizedInventoryRPCResponse // Unused import
 } from '../types/warehouse-rpc-types';
 
 export interface WarehouseSummaryData {
@@ -295,15 +295,15 @@ export class WarehouseCacheService {
   /**
    * 獲取優化的庫存數據
    */
-  async getOptimizedInventory(params: InventoryQueryParams = {}) {
+  async getOptimizedInventory(params: InventoryQueryParams = {}): Promise<unknown> {
     const {
       location,
-      productCode,
-      minQty = 0,
+      productCode: _productCode,
+      minQty: _minQty = 0,
       page = 1,
       limit = 50,
-      includeStats = false,
-      timeRange = '30 days',
+      includeStats: _includeStats = false,
+      timeRange: _timeRange = '30 days',
     } = params;
 
     const cacheKey = `inventory:optimized:${JSON.stringify(params)}`;
@@ -350,24 +350,19 @@ export class WarehouseCacheService {
       const dynamicTTL = location ? this.DEFAULT_TTL : this.WAREHOUSE_TTL;
       await this.cache.set(cacheKey, data, dynamicTTL);
 
+      // 優化日誌記錄，避免重複的類型檢查
+      const inventoryData = data as unknown;
+      const isValidResponse = isOptimizedInventoryResponse(inventoryData);
+      const recordCount = isValidResponse ? safeArrayLength(inventoryData.inventory) : 0;
+      const hasStats =
+        isValidResponse && inventoryData.stats !== null && inventoryData.stats !== undefined;
+
       cacheLogger.info(
         {
           operation: 'getOptimizedInventory',
           source: 'database',
-          recordCount: (() => {
-            const inventoryData = data as unknown;
-            if (!isOptimizedInventoryResponse(inventoryData)) {
-              return 0;
-            }
-            return safeArrayLength(inventoryData.inventory);
-          })(),
-          hasStats: (() => {
-            const inventoryData = data as unknown;
-            if (!isOptimizedInventoryResponse(inventoryData)) {
-              return false;
-            }
-            return inventoryData.stats !== null && inventoryData.stats !== undefined;
-          })(),
+          recordCount,
+          hasStats,
           responseTime: Date.now() - startTime,
         },
         'Optimized inventory from database'
@@ -390,6 +385,7 @@ export class WarehouseCacheService {
 
   /**
    * 失效相關緩存
+   * @param type - 緩存類型，可選：'summary' | 'dashboard' | 'inventory' | 'all'
    */
   async invalidateWarehouseCache(
     type?: 'summary' | 'dashboard' | 'inventory' | 'all'
@@ -442,7 +438,8 @@ export class WarehouseCacheService {
   }
 
   /**
-   * 預熱關鍵緩存
+   * 預熱關鍵緩存 - 用於系統啟動時的性能優化
+   * @returns Promise<void>
    */
   async preWarmCache(): Promise<void> {
     const startTime = Date.now();
@@ -479,8 +476,16 @@ export class WarehouseCacheService {
 
   /**
    * 獲取緩存統計和性能指標
+   * @returns 緩存統計數據，包含性能指標和健康狀態
    */
-  async getCacheMetrics() {
+  async getCacheMetrics(): Promise<{
+    cache: any;
+    performance: any;
+    health: {
+      isConnected: boolean;
+      lastChecked: string;
+    };
+  } | null> {
     try {
       const cacheStats = await this.cache.getStats();
       const metrics = this.cache.getMetrics();
@@ -510,7 +515,8 @@ export class WarehouseCacheService {
 let warehouseCacheServiceInstance: WarehouseCacheService | null = null;
 
 /**
- * 獲取倉庫緩存服務實例
+ * 獲取倉庫緩存服務實例 - 使用單例模式
+ * @returns WarehouseCacheService 實例
  */
 export function getWarehouseCacheService(): WarehouseCacheService {
   if (!warehouseCacheServiceInstance) {

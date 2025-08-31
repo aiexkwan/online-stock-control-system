@@ -12,13 +12,6 @@ import {
 import { toast } from 'sonner';
 import { safeString } from '@/types/database/helpers';
 
-interface OrderSummary {
-  percentage: number;
-  completedItems: number;
-  itemCount: number;
-  loadedQty: number;
-  totalQty: number;
-}
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { UnifiedSearch } from '@/components/ui/unified-search';
@@ -35,7 +28,7 @@ import {
 // import { MobileButton, MobileInput, MobileCard } from '@/components/ui/mobile'; // TODO: Remove if not used
 import { mobileConfig, cn } from '@/lib/mobile-config';
 import { loadPalletToOrder, undoLoadPallet } from '@/app/actions/orderLoadingActions';
-// import { safeNumber } from '@/lib/utils/safe-number'; // TODO: Remove if not used
+// import { _safeNumber } from '@/lib/utils/safe-number'; // TODO: Remove if not used
 import { useSoundFeedback, useSoundSettings } from '@/app/hooks/useSoundFeedback';
 import MobileOrderLoading from './components/MobileOrderLoading';
 import { VirtualizedOrderList, virtualScrollStyles } from './components/VirtualizedOrderList';
@@ -74,7 +67,7 @@ interface RecordHistoryItem {
   action: string;
   plt_num: string | null;
   remark: string;
-  time: string;
+  _time: string;
 }
 
 interface RecentLoad {
@@ -190,6 +183,7 @@ export default function OrderLoadingPage() {
       return;
     }
 
+    const supabase = createClient();
     if (!supabase) {
       console.error('Supabase client not initialized');
       return;
@@ -216,8 +210,8 @@ export default function OrderLoadingPage() {
         sound.playSuccess();
         await fetchAvailableOrders();
       }
-    } catch (error) {
-      console.error('Error checking ID:', error);
+    } catch (checkError) {
+      console.error('Error checking ID:', checkError);
       setIsIdValid(false);
       toast.error('❌ System error. Please try again.');
     } finally {
@@ -246,6 +240,7 @@ export default function OrderLoadingPage() {
         console.log('[OrderCache] Fetching fresh order summaries');
 
       // 直接從數據庫獲取訂單
+      const supabase = createClient();
       if (!supabase) {
         console.error('Supabase client not initialized');
         return;
@@ -361,8 +356,8 @@ export default function OrderLoadingPage() {
 
       // Cache the order data
       orderDataCache.set(cacheKey, orderDataArray);
-    } catch (error) {
-      console.error('Error fetching order data:', error);
+    } catch (fetchError) {
+      console.error('Error fetching order data:', fetchError);
       toast.error('Error occurred while fetching order data');
     } finally {
       setIsLoadingOrders(false);
@@ -455,7 +450,7 @@ export default function OrderLoadingPage() {
               quantity: qtyMatch ? parseInt(qtyMatch[1]) : 0,
               action_type: 'load',
               action_by: byMatch ? byMatch[1] : 'Unknown',
-              action_time: item.time,
+              action_time: item._time,
             };
           }
         );
@@ -885,7 +880,7 @@ export default function OrderLoadingPage() {
                                 Recent Loads:
                               </div>
                               <div className='max-h-40 space-y-2 overflow-y-auto'>
-                                {recentLoads.map((load, _index) => (
+                                {recentLoads.map((load, index) => (
                                   <div
                                     key={load.uuid}
                                     className='flex items-center justify-between rounded-lg bg-slate-700/30 p-2 text-xs'

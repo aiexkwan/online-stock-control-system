@@ -6,16 +6,15 @@
 
 import type { PDFDocument as PDFDocumentType } from 'pdf-lib';
 import type { jsPDF as jsPDFType } from 'jspdf';
-import type { pdf as ReactPDFType } from '@react-pdf/renderer';
-import React from 'react';
+// import type { pdf as ReactPDFType } from '@react-pdf/renderer'; // Unused import
+import * as React from 'react';
 import { PrintLabelPdf, PrintLabelPdfProps } from '@/components/print-label-pdf/PrintLabelPdf';
 import {
   prepareQcLabelData,
   prepareGrnLabelData,
-  type QcInputData,
-  type GrnInputData,
-} from '@/lib/pdfUtils';
-import type { QcLabelInputData, GrnLabelInputData } from '@/lib/mappers/pdf-data-mappers';
+  type QcLabelInputData,
+  type GrnLabelInputData,
+} from '@/lib/mappers/pdf-data-mappers';
 import {
   uploadPdfToStorage as uploadPdfToStorageGrn,
   updatePalletPdfUrl as updatePalletPdfUrlGrn,
@@ -27,7 +26,7 @@ import {
 import { getUnifiedPrintingService } from '@/lib/printing/services/unified-printing-service';
 import {
   PrintType,
-  PrintOptions,
+  // PrintOptions, // Unused import
   PrintResult,
   PrintPriority,
   PaperSize,
@@ -90,10 +89,18 @@ export interface PdfPrintOptions {
 }
 
 // 打印結果介面
-export interface PdfPrintResult extends PrintResult {
+export interface PdfPrintResult {
+  success: boolean;
+  jobId: string;
   pdfGenerated: boolean;
   generationTime?: number;
   printTime?: number;
+  pdfUrl?: string;
+  error?: string;
+  message?: string;
+  printedAt?: string;
+  uploadedUrls?: string[];
+  uploadErrors?: string[];
 }
 
 // 緩存已載入的 PDF 庫
@@ -385,7 +392,7 @@ export class UnifiedPdfService {
    */
   public async generateSingle(
     type: PdfType,
-    data: QcInputData | GrnInputData | QcLabelInputData | GrnLabelInputData | Record<string, unknown>,
+    data: QcLabelInputData | GrnLabelInputData | Record<string, unknown>,
     options?: Partial<PdfConfig>
   ): Promise<PdfGenerationResult> {
     try {
@@ -403,16 +410,16 @@ export class UnifiedPdfService {
           if (!this.isQcInputData(data)) {
             throw new Error('Invalid QC label data');
           }
-          pdfProps = await prepareQcLabelData(data);
-          palletNumber = data.palletNum;
+          pdfProps = await prepareQcLabelData(data as QcLabelInputData);
+          palletNumber = (data as QcLabelInputData).palletNum;
           break;
 
         case PdfType.GRN_LABEL:
           if (!this.isGrnInputData(data)) {
             throw new Error('Invalid GRN label data');
           }
-          pdfProps = await prepareGrnLabelData(data);
-          palletNumber = data.palletNum;
+          pdfProps = await prepareGrnLabelData(data as GrnLabelInputData);
+          palletNumber = (data as GrnLabelInputData).palletNum;
           break;
 
         default:
@@ -458,7 +465,7 @@ export class UnifiedPdfService {
    */
   public async generateBatch(
     type: PdfType,
-    dataArray: Array<QcInputData | GrnInputData | QcLabelInputData | GrnLabelInputData | Record<string, unknown>>,
+    dataArray: Array<QcLabelInputData | GrnLabelInputData | Record<string, unknown>>,
     options?: Partial<PdfConfig>,
     onProgress?: (
       current: number,
@@ -604,7 +611,7 @@ export class UnifiedPdfService {
   /**
    * 類型守衛：檢查是否為 QC 輸入數據
    */
-  private isQcInputData(data: unknown): data is QcInputData | QcLabelInputData {
+  private isQcInputData(data: unknown): data is QcLabelInputData {
     return (
       data !== null &&
       typeof data === 'object' &&
@@ -624,7 +631,7 @@ export class UnifiedPdfService {
   /**
    * 類型守衛：檢查是否為 GRN 輸入數據
    */
-  private isGrnInputData(data: unknown): data is GrnInputData | GrnLabelInputData {
+  private isGrnInputData(data: unknown): data is GrnLabelInputData {
     return (
       data !== null &&
       typeof data === 'object' &&
@@ -653,7 +660,7 @@ export class UnifiedPdfService {
    * 整合 PDF 生成和打印服務，提供一站式解決方案
    */
   public async generateAndPrint<
-    T extends QcInputData | GrnInputData | QcLabelInputData | GrnLabelInputData | Record<string, unknown>,
+    T extends QcLabelInputData | GrnLabelInputData | Record<string, unknown>,
   >(
     type: PdfType,
     data: T,
@@ -745,7 +752,7 @@ export class UnifiedPdfService {
    * 批量生成並打印 PDFs
    */
   public async generateAndPrintBatch<
-    T extends QcInputData | GrnInputData | QcLabelInputData | GrnLabelInputData | Record<string, unknown>,
+    T extends QcLabelInputData | GrnLabelInputData | Record<string, unknown>,
   >(
     type: PdfType,
     dataArray: T[],

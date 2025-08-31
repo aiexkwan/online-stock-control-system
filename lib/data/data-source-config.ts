@@ -182,21 +182,21 @@ export class DataSourceConfigManager {
   /**
    * 評估規則是否匹配
    */
-  private async evaluateRule(rule: DataSourceRule, context: DataSourceContext): Promise<boolean> {
+  private async evaluateRule(rule: DataSourceRule, _context: DataSourceContext): Promise<boolean> {
     const { condition } = rule;
 
     switch (condition.type) {
       case 'user':
-        return context.userId === condition.value;
+        return _context.userId === condition.value;
 
       case 'card':
         if (condition.operator === 'contains' && Array.isArray(condition.value)) {
           return (
-            condition.value.includes(context.cardCategory) ||
-            condition.value.includes(context.cardId)
+            condition.value.includes(_context.cardCategory) ||
+            condition.value.includes(_context.cardId)
           );
         }
-        return context.cardId === condition.value || context.cardCategory === condition.value;
+        return _context.cardId === condition.value || _context.cardCategory === condition.value;
 
       case 'performance':
         if (!this.metrics || !condition.operator) return false;
@@ -225,7 +225,7 @@ export class DataSourceConfigManager {
 
       case 'experiment':
         // 實驗規則評估
-        return this.evaluateExperiment(condition.value as string, context);
+        return this.evaluateExperiment(condition.value as string, _context);
 
       default:
         return false;
@@ -322,7 +322,7 @@ export class DataSourceConfigManager {
   /**
    * 評估實驗規則
    */
-  private evaluateExperiment(experimentId: string, context: DataSourceContext): boolean {
+  private evaluateExperiment(_experimentId: string, _context: DataSourceContext): boolean {
     // 實驗邏輯實現
     return false;
   }

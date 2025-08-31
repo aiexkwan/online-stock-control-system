@@ -7,7 +7,7 @@ import { ReportConfig } from '../core/ReportConfig';
 
 export const voidPalletReportConfig: ReportConfig = {
   id: 'void-pallet-report',
-  name: 'Void Pallet Report',
+  _name: 'Void Pallet Report',
   description: 'Report of void stock inventory',
   category: 'operational',
   formats: ['pdf', 'excel'],
@@ -60,7 +60,7 @@ export const voidPalletReportConfig: ReportConfig = {
       placeholder: 'Select operator',
       dataSource: {
         type: 'table',
-        name: 'data_id',
+        _name: 'data_id',
         params: { active: true },
       },
     },

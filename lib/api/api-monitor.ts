@@ -5,7 +5,67 @@
  * 用於 A/B 測試驗證
  */
 
-import { logger } from '@/lib/logger';
+// Type-safe logger interface to avoid dependency issues
+interface Logger {
+  debug(message: string): void;
+  debug(obj: Record<string, unknown>, message: string): void;
+  info(message: string): void;
+  warn(message: string): void;
+  warn(obj: Record<string, unknown>, message: string): void;
+  error(message: string): void;
+  error(obj: Record<string, unknown>, message: string): void;
+}
+
+// Create a simple logger implementation
+const createSimpleLogger = (): Logger => ({
+  debug: (msgOrObj: string | Record<string, unknown>, msg?: string) => {
+    if (typeof msgOrObj === 'string') {
+      console.debug(`[DEBUG] ${msgOrObj}`);
+    } else {
+      console.debug(`[DEBUG] ${msg}`, msgOrObj);
+    }
+  },
+  info: (msg: string) => console.info(`[INFO] ${msg}`),
+  warn: (msgOrObj: string | Record<string, unknown>, msg?: string) => {
+    if (typeof msgOrObj === 'string') {
+      console.warn(`[WARN] ${msgOrObj}`);
+    } else {
+      console.warn(`[WARN] ${msg}`, msgOrObj);
+    }
+  },
+  error: (msgOrObj: string | Record<string, unknown>, msg?: string) => {
+    if (typeof msgOrObj === 'string') {
+      console.error(`[ERROR] ${msgOrObj}`);
+    } else {
+      console.error(`[ERROR] ${msg}`, msgOrObj);
+    }
+  },
+});
+
+const logger = createSimpleLogger();
+
+// Type guards for enhanced type safety
+function isValidApiType(apiType: unknown): apiType is 'graphql' | 'rest' {
+  return typeof apiType === 'string' && ['graphql', 'rest'].includes(apiType);
+}
+
+function isValidResponseTime(responseTime: unknown): responseTime is number {
+  return typeof responseTime === 'number' && Number.isFinite(responseTime) && responseTime >= 0;
+}
+
+function isValidMetric(metric: unknown): metric is APIMetrics {
+  if (!metric || typeof metric !== 'object') return false;
+
+  const m = metric as Record<string, unknown>;
+  return (
+    isValidApiType(m.apiType) &&
+    typeof m.endpoint === 'string' &&
+    m.endpoint.length > 0 &&
+    isValidResponseTime(m.responseTime) &&
+    typeof m.success === 'boolean' &&
+    m.timestamp instanceof Date
+  );
+}
 
 export interface APIMetrics {
   apiType: 'graphql' | 'rest';
@@ -33,9 +93,9 @@ export interface APIComparison {
   graphql: APIStats;
   rest: APIStats;
   improvement: {
-    responseTime: number; // 百分比
-    errorRate: number; // 百分比
-    successRate: number; // 百分比
+    responseTime: number; // 百分比改善，正值表示REST比GraphQL快
+    errorRate: number; // 百分比改善，正值表示REST錯誤率更低
+    successRate: number; // 百分比改善，正值表示REST成功率更高
   };
 }
 
@@ -55,6 +115,12 @@ export class APIMonitor {
    * 記錄 API 指標
    */
   recordMetric(metric: APIMetrics): void {
+    // Use type guard for comprehensive validation
+    if (!isValidMetric(metric)) {
+      logger.error({ providedMetric: metric }, 'Invalid metric data provided');
+      return;
+    }
+
     this.metrics.push(metric);
 
     // 限制內存使用
@@ -156,7 +222,10 @@ export class APIMonitor {
       totalRequests: filteredMetrics.length,
       successfulRequests,
       failedRequests,
-      avgResponseTime: responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length,
+      avgResponseTime:
+        responseTimes.length > 0
+          ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
+          : 0,
       errorRate: failedRequests / filteredMetrics.length,
       p95ResponseTime: this.getPercentile(responseTimes, 95),
       p99ResponseTime: this.getPercentile(responseTimes, 99),
@@ -260,9 +329,20 @@ export class APIMonitor {
    */
   private getPercentile(sortedArray: number[], percentile: number): number {
     if (sortedArray.length === 0) return 0;
+    if (percentile < 0 || percentile > 100) {
+      throw new Error('Percentile must be between 0 and 100');
+    }
 
     const index = Math.ceil((percentile / 100) * sortedArray.length) - 1;
-    return sortedArray[Math.max(0, Math.min(index, sortedArray.length - 1))];
+    const safeIndex = Math.max(0, Math.min(index, sortedArray.length - 1));
+    const value = sortedArray[safeIndex];
+
+    // Type guard to ensure we return a valid number
+    if (typeof value !== 'number' || !Number.isFinite(value)) {
+      return 0;
+    }
+
+    return value;
   }
 
   /**

@@ -10,12 +10,12 @@ interface AcoOrderFormProps {
   acoRemain: string | null;
   acoSearchLoading: boolean;
   onAutoAcoConfirm: (orderRef: string) => Promise<void>;
-  acoNewRef: boolean;
-  acoOrderDetails: AcoOrderDetail[];
-  acoOrderDetailErrors: string[];
-  onAcoOrderDetailChange: (idx: number, field: 'code' | 'qty', value: string) => void;
-  onAcoOrderDetailUpdate: () => void;
-  onValidateAcoOrderDetailCode: (code: string, idx: number) => void;
+  _acoNewRef: boolean;
+  _acoOrderDetails: AcoOrderDetail[];
+  _acoOrderDetailErrors: string[];
+  _onAcoOrderDetailChange: (idx: number, field: 'code' | 'qty', value: string) => void;
+  _onAcoOrderDetailUpdate: () => void;
+  _onValidateAcoOrderDetailCode: (code: string, idx: number) => void;
   isAcoOrderExcess?: boolean;
   disabled?: boolean;
 }
@@ -28,12 +28,12 @@ export const AcoOrderForm: React.FC<AcoOrderFormProps> = React.memo(
     acoRemain,
     acoSearchLoading,
     onAutoAcoConfirm,
-    acoNewRef,
-    acoOrderDetails,
-    acoOrderDetailErrors,
-    onAcoOrderDetailChange,
-    onAcoOrderDetailUpdate,
-    onValidateAcoOrderDetailCode,
+    _acoNewRef,
+    _acoOrderDetails,
+    _acoOrderDetailErrors,
+    _onAcoOrderDetailChange,
+    _onAcoOrderDetailUpdate,
+    _onValidateAcoOrderDetailCode,
     isAcoOrderExcess = false,
     disabled = false,
   }) => {

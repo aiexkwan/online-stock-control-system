@@ -13,11 +13,11 @@ import {
   PALLET_HISTORY_BY_NUMBER,
   CACHE_CONFIGURATIONS,
   DEFAULT_QUERY_VARIABLES,
-} from '@/lib/graphql/queries/stock-history.graphql';
+} from '../../../../lib/graphql/queries/stock-history.graphql';
 import type {
   PalletHistoryVariables,
   SinglePalletHistoryVariables,
-} from '@/lib/graphql/queries/stock-history.graphql';
+} from '../../../../lib/graphql/queries/stock-history.graphql';
 // Removed cache management imports (simplified)
 import { formatDate as formatDateUtil } from '../utils/formatters';
 
@@ -144,7 +144,7 @@ export interface SinglePalletHistoryResult {
 
 // Hook configuration options (simplified)
 export interface UseStockHistoryGraphQLOptions {
-  onError?: (error: Error) => void;
+  onError?: (_error: Error) => void;
 }
 
 // Main hook return interface (simplified)
@@ -197,17 +197,17 @@ export const useStockHistoryGraphQL = (
   // Lazy queries for on-demand loading (simplified)
   const [getProductHistory, productHistoryQuery] = useLazyQuery(PALLET_HISTORY_BY_PRODUCT, {
     ...CACHE_CONFIGURATIONS.palletHistoryByProduct,
-    onError: error => {
-      console.error('Product history query error:', error);
-      onError?.(error);
+    onError: _error => {
+      console.error('Product history query _error:', _error);
+      onError?.(_error);
     },
   });
 
   const [getPalletHistory, palletHistoryQuery] = useLazyQuery(PALLET_HISTORY_BY_NUMBER, {
     ...CACHE_CONFIGURATIONS.palletHistoryByNumber,
-    onError: error => {
-      console.error('Pallet history query error:', error);
-      onError?.(error);
+    onError: _error => {
+      console.error('Pallet history query _error:', _error);
+      onError?.(_error);
     },
   });
 

@@ -15,13 +15,13 @@ export class ExcelGenerator implements ReportGenerator {
   supportLegacyMode = true;
   private implementation?: ReportGenerator;
 
-  async generate(data: ProcessedReportData, config: ReportConfig): Promise<Blob> {
+  async generate(data: ProcessedReportData, _config: ReportConfig): Promise<Blob> {
     // 延遲加載 ExcelJS 實現
     if (!this.implementation) {
       const { ExcelGeneratorNew } = await import('./ExcelGeneratorNew');
       this.implementation = new ExcelGeneratorNew();
     }
 
-    return this.implementation.generate(data, config);
+    return this.implementation.generate(data, _config);
   }
 }

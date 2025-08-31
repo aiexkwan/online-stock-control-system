@@ -8,7 +8,7 @@ interface StockCountResultProps {
   data: CountData;
   countedQuantity?: string;
   onQuantityChange?: (value: string) => void;
-  onQuantitySubmit?: () => void;
+  onQuantitySubmit?: () => Promise<void>;
   onReset?: () => void;
   isLoading?: boolean;
   compact?: boolean; // For card layout optimization

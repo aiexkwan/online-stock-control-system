@@ -168,10 +168,10 @@ export function createDynamicComponent<T extends {}>(
 }
 
 // React.lazy 的增強版本
-export function enhancedLazy<T extends ComponentType<Record<string, unknown>>>(
-  importFn: () => Promise<{ default: T }>,
+export function enhancedLazy<T extends Record<string, unknown>>(
+  importFn: () => Promise<{ default: ComponentType<T> }>,
   options?: WithDynamicImportErrorHandlerOptions
-): T {
+): ComponentType<T> {
   const WrappedComponent = withDynamicImportErrorHandler(importFn, options);
-  return WrappedComponent as T;
+  return WrappedComponent;
 }

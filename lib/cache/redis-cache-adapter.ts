@@ -348,7 +348,20 @@ export class RedisCacheAdapter extends BaseCacheAdapter {
       return results.map((result: string | null) => {
         if (result) {
           this.metrics.hits++;
-          return JSON.parse(result);
+          try {
+            return JSON.parse(result) as T;
+          } catch (parseError) {
+            this.metrics.errors++;
+            cacheLogger.warn(
+              {
+                operation: 'mget',
+                parseError: parseError instanceof Error ? parseError.message : 'Parse error',
+                result: result.substring(0, 100),
+              },
+              'Failed to parse cached value'
+            );
+            return null;
+          }
         } else {
           this.metrics.misses++;
           return null;
@@ -448,17 +461,18 @@ export class RedisCacheAdapter extends BaseCacheAdapter {
       `;
 
       const result = await this.redis.eval(script, 1, fullKey, lockValue);
+      const numResult = typeof result === 'number' ? result : 0;
 
       cacheLogger.debug(
         {
           operation: 'releaseLock',
           lockKey: fullKey,
-          released: result === 1,
+          released: numResult === 1,
         },
         'Lock release attempted'
       );
 
-      return result === 1;
+      return numResult === 1;
     } catch (error) {
       this.handleError('releaseLock', error);
       return false;

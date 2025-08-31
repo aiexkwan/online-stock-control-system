@@ -1,11 +1,6 @@
-import { format } from 'date-fns';
 import { SupabaseClient } from '@supabase/supabase-js'; // For type hinting Supabase client
-import {
-  renderReactPDFToBlob,
-  loadPDF,
-  createPDFDocument,
-} from '@/lib/services/unified-pdf-service';
-import { PrintLabelPdf, PrintLabelPdfProps } from '@/components/print-label-pdf/PrintLabelPdf';
+import { renderReactPDFToBlob, loadPDF, createPDFDocument } from './services/unified-pdf-service';
+import { PrintLabelPdf, PrintLabelPdfProps } from '../components/print-label-pdf/PrintLabelPdf';
 
 // Define an interface for the expected structure of getPublicUrl response
 interface StoragePublicUrlResponse {
@@ -39,7 +34,7 @@ import {
   prepareGrnLabelData as newPrepareGrnLabelData,
   type QcLabelInputData,
   type GrnLabelInputData,
-} from '@/lib/mappers/pdf-data-mappers';
+} from './mappers/pdf-data-mappers';
 
 // 向後兼容性：保持原有的類型別名
 export type QcInputData = QcLabelInputData;
@@ -262,7 +257,12 @@ export async function mergeAndPrintPdfs(
     }
 
     const mergedPdfBytes = await mergedPdf.save();
-    const pdfBlob = new Blob([mergedPdfBytes as unknown as ArrayBuffer], {
+    // 轉換 Uint8Array 到 ArrayBuffer 以確保類型相容性
+    const arrayBuffer = new ArrayBuffer(mergedPdfBytes.length);
+    const uint8View = new Uint8Array(arrayBuffer);
+    uint8View.set(mergedPdfBytes);
+
+    const pdfBlob = new Blob([arrayBuffer], {
       type: 'application/pdf',
     });
 

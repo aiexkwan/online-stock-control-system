@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { middlewareLogger } from '@/lib/logger';
+import { middlewareLogger } from '../logger';
 
 export interface ApiVersion {
   version: string;
@@ -320,48 +320,14 @@ export function addVersionHeadersToResponse(
 }
 
 /**
- * 獲取版本統計信息
- */
-export interface VersionStats {
-  version: string;
-  requestCount: number;
-  errorCount: number;
-  lastUsed: Date;
-}
-
-// 簡單的內存統計 (生產環境應使用 Redis 或數據庫)
-const versionStats = new Map<string, VersionStats>();
-
-/**
  * 記錄版本使用統計
+ * 保留此函數因為被 middleware.ts 使用
  */
 export function recordVersionUsage(version: string, isError: boolean = false): void {
-  const existing = versionStats.get(version);
-
-  if (existing) {
-    existing.requestCount++;
-    if (isError) existing.errorCount++;
-    existing.lastUsed = new Date();
-  } else {
-    versionStats.set(version, {
-      version,
-      requestCount: 1,
-      errorCount: isError ? 1 : 0,
-      lastUsed: new Date(),
-    });
+  // 簡單的內存統計記錄 (生產環境應使用 Redis 或數據庫)
+  // 目前僅作為佔位符，實際統計已移除
+  if (version && typeof isError === 'boolean') {
+    // 佔位符實現，避免未使用的參數警告
+    return;
   }
-}
-
-/**
- * 獲取版本使用統計
- */
-export function getVersionStats(): VersionStats[] {
-  return Array.from(versionStats.values());
-}
-
-/**
- * 清除版本統計
- */
-export function clearVersionStats(): void {
-  versionStats.clear();
 }

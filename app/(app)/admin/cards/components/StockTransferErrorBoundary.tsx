@@ -43,13 +43,13 @@ interface State {
 }
 
 // Error analysis utility
-const analyzeError = (error: Error): StockTransferError => {
-  const message = error.message.toLowerCase();
+const analyzeError = (_error: Error): StockTransferError => {
+  const message = _error.message.toLowerCase();
 
   // Network errors
   if (message.includes('fetch') || message.includes('network') || message.includes('timeout')) {
     return {
-      ...error,
+      ..._error,
       category: 'network',
       severity: 'medium',
       code: 'NETWORK_ERROR',
@@ -65,7 +65,7 @@ const analyzeError = (error: Error): StockTransferError => {
     message.includes('permission')
   ) {
     return {
-      ...error,
+      ..._error,
       category: 'auth',
       severity: 'high',
       code: 'AUTH_ERROR',
@@ -77,7 +77,7 @@ const analyzeError = (error: Error): StockTransferError => {
   // Validation errors
   if (message.includes('invalid') || message.includes('not found') || message.includes('pallet')) {
     return {
-      ...error,
+      ..._error,
       category: 'validation',
       severity: 'medium',
       code: 'VALIDATION_ERROR',
@@ -93,7 +93,7 @@ const analyzeError = (error: Error): StockTransferError => {
     message.includes('illegal')
   ) {
     return {
-      ...error,
+      ..._error,
       category: 'business',
       severity: 'low',
       code: 'BUSINESS_ERROR',
@@ -105,7 +105,7 @@ const analyzeError = (error: Error): StockTransferError => {
   // System errors
   if (message.includes('memory') || message.includes('system') || message.includes('crash')) {
     return {
-      ...error,
+      ..._error,
       category: 'system',
       severity: 'critical',
       code: 'SYSTEM_ERROR',
@@ -116,7 +116,7 @@ const analyzeError = (error: Error): StockTransferError => {
 
   // Default unknown error
   return {
-    ...error,
+    ..._error,
     category: 'unknown',
     severity: 'high',
     code: 'UNKNOWN_ERROR',
@@ -187,23 +187,23 @@ const getCategoryIcon = (category: ErrorCategory) => {
 
 // Main error UI component
 const StockTransferErrorUI: React.FC<{
-  error: StockTransferError;
+  _error: StockTransferError;
   onRetry: () => void;
   onReset: () => void;
   onGoHome: () => void;
   isRecovering: boolean;
   retryCount: number;
-}> = ({ error, onRetry, onReset, onGoHome, isRecovering, retryCount }) => {
-  const theme = getErrorTheme(error.category || 'unknown', error.severity || 'medium');
-  const IconComponent = getCategoryIcon(error.category || 'unknown');
+}> = ({ _error, onRetry, onReset, onGoHome, isRecovering, retryCount }) => {
+  const theme = getErrorTheme(_error.category || 'unknown', _error.severity || 'medium');
+  const IconComponent = getCategoryIcon(_error.category || 'unknown');
 
   // Get user-friendly title based on category and severity
   const getErrorTitle = () => {
-    if (error.severity === 'critical') return 'Critical System Error';
-    if (error.category === 'network') return 'Connection Problem';
-    if (error.category === 'auth') return 'Authentication Required';
-    if (error.category === 'validation') return 'Input Validation Error';
-    if (error.category === 'business') return 'Transfer Validation';
+    if (_error.severity === 'critical') return 'Critical System Error';
+    if (_error.category === 'network') return 'Connection Problem';
+    if (_error.category === 'auth') return 'Authentication Required';
+    if (_error.category === 'validation') return 'Input Validation Error';
+    if (_error.category === 'business') return 'Transfer Validation';
     return 'Stock Transfer Error';
   };
 
@@ -284,7 +284,7 @@ const StockTransferErrorUI: React.FC<{
             <Alert className={`${theme.border} ${theme.bg}`}>
               <AlertTriangle className={`h-4 w-4 ${theme.icon}`} />
               <AlertDescription className={`${theme.text} font-medium`}>
-                {error.userMessage || error.message}
+                {_error.userMessage || _error.message}
               </AlertDescription>
             </Alert>
 
@@ -293,24 +293,28 @@ const StockTransferErrorUI: React.FC<{
               <div className='grid grid-cols-2 gap-2 text-sm'>
                 <div className='space-y-1'>
                   <span className='text-slate-500'>Error Code:</span>
-                  <span className={`block font-mono ${theme.text}`}>{error.code || 'UNKNOWN'}</span>
+                  <span className={`block font-mono ${theme.text}`}>
+                    {_error.code || 'UNKNOWN'}
+                  </span>
                 </div>
                 <div className='space-y-1'>
                   <span className='text-slate-500'>Severity:</span>
                   <span className={`block font-medium ${theme.text} capitalize`}>
-                    {error.severity || 'Unknown'}
+                    {_error.severity || 'Unknown'}
                   </span>
                 </div>
                 <div className='space-y-1'>
                   <span className='text-slate-500'>Category:</span>
-                  <span className='block capitalize text-white'>{error.category || 'Unknown'}</span>
+                  <span className='block capitalize text-white'>
+                    {_error.category || 'Unknown'}
+                  </span>
                 </div>
                 <div className='space-y-1'>
                   <span className='text-slate-500'>Recoverable:</span>
                   <span
-                    className={`block ${error.recoverable ? 'text-green-400' : 'text-red-400'}`}
+                    className={`block ${_error.recoverable ? 'text-green-400' : 'text-red-400'}`}
                   >
-                    {error.recoverable ? 'Yes' : 'No'}
+                    {_error.recoverable ? 'Yes' : 'No'}
                   </span>
                 </div>
               </div>
@@ -330,7 +334,7 @@ const StockTransferErrorUI: React.FC<{
                   Technical Details (Development)
                 </summary>
                 <pre className='mt-2 max-h-32 overflow-auto rounded bg-slate-900/50 p-2 text-xs text-slate-400'>
-                  {error.stack}
+                  {_error.stack}
                 </pre>
               </details>
             )}
@@ -340,7 +344,7 @@ const StockTransferErrorUI: React.FC<{
           <div className='border-t border-slate-700/50 p-4'>
             <div className='space-y-2'>
               {/* Primary actions */}
-              {error.recoverable && (
+              {_error.recoverable && (
                 <div className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
                   <Button
                     onClick={onRetry}
@@ -365,7 +369,7 @@ const StockTransferErrorUI: React.FC<{
 
               {/* Secondary actions */}
               <div className='pt-2'>
-                {error.severity === 'critical' || !error.recoverable ? (
+                {_error.severity === 'critical' || !_error.recoverable ? (
                   <Button
                     onClick={onGoHome}
                     variant='outline'
@@ -408,8 +412,8 @@ export default class StockTransferErrorBoundary extends React.Component<Props, S
     };
   }
 
-  static getDerivedStateFromError(error: Error): Partial<State> {
-    const analyzedError = analyzeError(error);
+  static getDerivedStateFromError(_error: Error): Partial<State> {
+    const analyzedError = analyzeError(_error);
     return {
       hasError: true,
       error: analyzedError,
@@ -417,15 +421,15 @@ export default class StockTransferErrorBoundary extends React.Component<Props, S
     };
   }
 
-  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('StockTransfer Error Boundary:', error, errorInfo);
+  override componentDidCatch(_error: Error, errorInfo: React.ErrorInfo) {
+    console.error('StockTransfer Error Boundary:', _error, errorInfo);
 
     // Log error to monitoring service in production
     if (process.env.NODE_ENV === 'production') {
       // TODO: Send to error monitoring service
       console.error('Production error logged:', {
-        error: error.message,
-        stack: error.stack,
+        error: _error.message,
+        stack: _error.stack,
         errorInfo: errorInfo.componentStack,
       });
     }
@@ -478,7 +482,7 @@ export default class StockTransferErrorBoundary extends React.Component<Props, S
     if (this.state.hasError && this.state.error) {
       return (
         <StockTransferErrorUI
-          error={this.state.error}
+          _error={this.state.error}
           onRetry={this.handleRetry}
           onReset={this.handleReset}
           onGoHome={this.handleGoHome}

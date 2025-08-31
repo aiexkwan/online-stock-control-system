@@ -5,15 +5,16 @@
 
 import { startServerAndCreateNextHandler } from '@as-integrations/next';
 import { NextRequest, NextResponse } from 'next/server';
-import { getApolloServer, createGraphQLContext } from '@/lib/graphql/server';
+import { getApolloServer, createGraphQLContext } from '../../../lib/graphql/server';
+
+// Type for the handler function
+type GraphQLHandler = ReturnType<typeof startServerAndCreateNextHandler>;
 
 // Use globalThis to persist handler across hot reloads in development
 // Add cleanup tracking to prevent memory leaks
 declare global {
-  var graphqlHandler: ReturnType<typeof startServerAndCreateNextHandler> | undefined;
-  var graphqlHandlerPromise:
-    | Promise<ReturnType<typeof startServerAndCreateNextHandler>>
-    | undefined;
+  var graphqlHandler: GraphQLHandler | undefined;
+  var graphqlHandlerPromise: Promise<GraphQLHandler> | undefined;
   var graphqlHandlerCleanup: (() => void) | undefined;
   var graphqlHandlerLastAccess: number | undefined;
 }
@@ -93,7 +94,7 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-};
+} as const;
 
 // Export handlers for different HTTP methods
 export async function GET(request: NextRequest) {

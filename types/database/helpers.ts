@@ -5,6 +5,9 @@
 
 import type { Database } from './supabase';
 
+// Re-export for type compatibility
+export type { Database };
+
 /**
  * Supabase 響應包裝器
  */

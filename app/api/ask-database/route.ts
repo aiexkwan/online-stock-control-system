@@ -4,9 +4,8 @@ import { LRUCache } from 'lru-cache';
 import OpenAI from 'openai';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { z } from 'zod';
-import { DatabaseRecord } from '@/types/database/tables';
 import { getErrorMessage } from '@/lib/types/error-handling';
-import { safeGet, safeNumber, toRecordArray } from '@/types/database/helpers';
+import { safeGet, safeNumber, toRecordArray, isRecord } from '@/types/database/helpers';
 import { createClient } from '@/app/utils/supabase/server';
 import type {
   ClassifiedError,
@@ -38,7 +37,6 @@ import {
   SafeDatabaseValueSchema,
   safeParseDatabaseValue,
   safeParseBasicValue,
-  DatabaseQueryResponse,
   validateDatabaseQueryResponse,
 } from '@/lib/validation/zod-schemas';
 
@@ -92,6 +90,40 @@ interface LocalQueryResult {
   resolvedQuestion?: string;
   references?: Record<string, unknown>[];
   performanceAnalysis?: string;
+}
+
+/**
+ * 安全轉換Supabase數據為Record數組
+ */
+function safeConvertSupabaseData(data: unknown): Record<string, unknown>[] {
+  if (Array.isArray(data)) {
+    return data
+      .map(item => {
+        if (isRecord(item)) {
+          return item;
+        }
+        // 嘗試轉換其他類型
+        if (item && typeof item === 'object') {
+          return item as Record<string, unknown>;
+        }
+        return null;
+      })
+      .filter((item): item is Record<string, unknown> => item !== null);
+  }
+  return [];
+}
+
+/**
+ * 安全獲取用戶名稱
+ */
+function safeGetUserName(userData: unknown): string | null {
+  if (userData && typeof userData === 'object' && 'name' in userData) {
+    const name = (userData as Record<string, unknown>).name;
+    if (typeof name === 'string' && name.length > 0) {
+      return name;
+    }
+  }
+  return null;
 }
 
 /**
@@ -319,7 +351,7 @@ async function handleStreamingMode(
           )
         );
         // Simple SQL optimization: clean up formatting
-        sql = sql.replace(/\\s+/g, ' ').trim();
+        sql = sql.replace(/\s+/g, ' ').trim();
       }
 
       // Send progress
@@ -406,7 +438,7 @@ async function handleStreamingMode(
           question,
           sql,
           result: {
-            data: Array.isArray(data) ? data : [],
+            data: safeConvertSupabaseData(data),
             rowCount: Array.isArray(data) ? data.length : 0,
             executionTime,
           },
@@ -503,16 +535,25 @@ async function handleStandardMode(
       );
     }
 
-    // Get user name
+    // Get user name with type safety
     let userName = userNameCache.get(user.email);
     if (!userName) {
-      const { data: userData } = await supabase
-        .from('users')
-        .select('name')
-        .eq('email', user.email)
-        .single();
-      userName = (userData?.name as string) || user.email;
-      userNameCache.set(user.email, userName);
+      try {
+        // 明確類型註解以避免深度類型推斷
+        const userResponse = await supabase
+          .from('data_id')
+          .select('name')
+          .eq('email', user.email)
+          .single();
+
+        const extractedName = safeGetUserName(userResponse.data);
+        userName = extractedName || user.email;
+        userNameCache.set(user.email, userName);
+      } catch (error) {
+        // 如果查詢失敗，使用email作為備用
+        userName = user.email;
+        userNameCache.set(user.email, userName);
+      }
     }
 
     // Create context manager
@@ -575,7 +616,7 @@ async function handleStandardMode(
     // Optimize SQL if enabled
     if (features.enableOptimization) {
       // Simple SQL optimization: clean up formatting
-      sql = sql.replace(/\\s+/g, ' ').trim();
+      sql = sql.replace(/\s+/g, ' ').trim();
     }
 
     // Execute SQL
@@ -586,7 +627,8 @@ async function handleStandardMode(
     if (error) {
       // Error recovery
       const classified = classifyError(error, sql);
-      const recovery = await attemptErrorRecovery(classified.errorType, sql, error as Error);
+      const errorToRecover = error instanceof Error ? error : new Error(String(error));
+      const recovery = await attemptErrorRecovery(classified.errorType, sql, errorToRecover);
 
       if (recovery.success && recovery.newSql) {
         // Retry with recovered SQL
@@ -600,13 +642,9 @@ async function handleStandardMode(
         if (!recoveredError && recoveredData) {
           sql = recovery.newSql;
           // Validate recovered data
-          const validatedRecoveredData = Array.isArray(recoveredData)
-            ? recoveredData.filter(item => {
-                if (!item || typeof item !== 'object') return false;
-                const record = item as Record<string, unknown>;
-                return Object.values(record).every(val => safeParseDatabaseValue(val) !== null);
-              })
-            : [];
+          const validatedRecoveredData = safeConvertSupabaseData(recoveredData).filter(record => {
+            return Object.values(record).every(val => safeParseDatabaseValue(val) !== null);
+          });
 
           const dataToUse = validatedRecoveredData;
 
@@ -652,19 +690,17 @@ async function handleStandardMode(
             question,
             sql,
             result: {
-              data: Array.isArray(dataToUse)
-                ? dataToUse.map((item: unknown) => {
-                    const safeRecord: Record<string, SafeDatabaseValue> = {};
-                    for (const [key, value] of Object.entries(item as Record<string, unknown>)) {
-                      const safeValue = safeParseBasicValue(value);
-                      if (safeValue !== null) {
-                        safeRecord[key] = safeValue;
-                      }
-                    }
-                    return safeRecord;
-                  })
-                : [],
-              rowCount: Array.isArray(dataToUse) ? dataToUse.length : 0,
+              data: dataToUse.map(item => {
+                const safeRecord: Record<string, SafeDatabaseValue> = {};
+                for (const [key, value] of Object.entries(item)) {
+                  const safeValue = safeParseBasicValue(value);
+                  if (safeValue !== null) {
+                    safeRecord[key] = safeValue;
+                  }
+                }
+                return safeRecord;
+              }),
+              rowCount: dataToUse.length,
               executionTime,
             },
             answer,
@@ -760,13 +796,9 @@ async function handleStandardMode(
     }
 
     // Validate and build result with Zod
-    const validatedMainData = Array.isArray(data)
-      ? data.filter(item => {
-          if (!item || typeof item !== 'object') return false;
-          const record = item as Record<string, unknown>;
-          return Object.values(record).every(val => safeParseDatabaseValue(val) !== null);
-        })
-      : [];
+    const validatedMainData = safeConvertSupabaseData(data).filter(record => {
+      return Object.values(record).every(val => safeParseDatabaseValue(val) !== null);
+    });
 
     const resultData: LocalQueryResult = {
       question,
@@ -774,7 +806,7 @@ async function handleStandardMode(
       result: {
         data: validatedMainData.map(item => {
           const safeRecord: Record<string, SafeDatabaseValue> = {};
-          for (const [key, value] of Object.entries(item as Record<string, unknown>)) {
+          for (const [key, value] of Object.entries(item)) {
             const safeValue = safeParseBasicValue(value);
             if (safeValue !== null) {
               safeRecord[key] = safeValue;
@@ -795,10 +827,12 @@ async function handleStandardMode(
         references.length > 0
           ? references.map(ref => {
               const safeRef: Record<string, SafeDatabaseValue> = {};
-              for (const [key, value] of Object.entries(ref as Record<string, unknown>)) {
-                const safeValue = safeParseBasicValue(value);
-                if (safeValue !== null) {
-                  safeRef[key] = safeValue;
+              if (isRecord(ref)) {
+                for (const [key, value] of Object.entries(ref)) {
+                  const safeValue = safeParseBasicValue(value);
+                  if (safeValue !== null) {
+                    safeRef[key] = safeValue;
+                  }
                 }
               }
               return safeRef;

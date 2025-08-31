@@ -59,7 +59,7 @@ export class EnhancedOrderExtractionService {
     fileBuffer: ArrayBuffer,
     fileName: string
   ): Promise<EnhancedExtractionResult> {
-    const startTime = Date.now();
+    const _startTime = Date.now();
 
     try {
       systemLogger.info(
@@ -120,7 +120,7 @@ export class EnhancedOrderExtractionService {
           metadata: {
             productsExtracted: 0,
             pagesProcessed: extractedData.numPages,
-            processingTime: Date.now() - startTime,
+            processingTime: Date.now() - _startTime,
             fallbackUsed: false,
           },
           error: 'Failed to extract any products from PDF using all available methods',
@@ -128,7 +128,7 @@ export class EnhancedOrderExtractionService {
       }
 
       // 轉換結果格式
-      const enhancedResult = this.convertToEnhancedResult(result, extractedData, startTime);
+      const enhancedResult = this.convertToEnhancedResult(result, extractedData, _startTime);
 
       systemLogger.info(
         {
@@ -172,7 +172,7 @@ export class EnhancedOrderExtractionService {
   private convertToEnhancedResult(
     result: OrderExtractionResult,
     extractedData: ExtractedPDFData,
-    startTime: number
+    _startTime: number
   ): EnhancedExtractionResult {
     if (!result.orders || result.orders.length === 0) {
       return {
@@ -181,7 +181,7 @@ export class EnhancedOrderExtractionService {
         metadata: {
           productsExtracted: 0,
           pagesProcessed: extractedData.numPages,
-          processingTime: Date.now() - startTime,
+          processingTime: Date.now() - _startTime,
           fallbackUsed: false,
         },
         error: 'No products extracted',
@@ -221,7 +221,7 @@ export class EnhancedOrderExtractionService {
         productsExtracted: products.length,
         pagesProcessed: extractedData.numPages,
         tokensUsed: result.metadata?.tokensUsed,
-        processingTime: Date.now() - startTime,
+        processingTime: Date.now() - _startTime,
         fallbackUsed: false,
       },
     };
@@ -261,21 +261,21 @@ export class EnhancedOrderExtractionService {
    * 批量處理多個 PDF
    */
   public async extractOrdersFromMultiplePDFs(
-    files: Array<{ buffer: ArrayBuffer; name: string }>
+    files: Array<{ buffer: ArrayBuffer; _name: string }>
   ): Promise<EnhancedExtractionResult[]> {
     const results: EnhancedExtractionResult[] = [];
 
     for (const file of files) {
       systemLogger.info(
         {
-          fileName: file.name,
+          fileName: file._name,
           fileIndex: files.indexOf(file) + 1,
           totalFiles: files.length,
         },
         '[EnhancedOrderExtraction] Processing file in batch'
       );
 
-      const result = await this.extractOrderFromPDF(file.buffer, file.name);
+      const result = await this.extractOrderFromPDF(file.buffer, file._name);
       results.push(result);
 
       // 添加延遲以避免速率限制

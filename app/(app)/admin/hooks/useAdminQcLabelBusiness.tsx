@@ -1,16 +1,17 @@
 'use client';
 
-import React, { useState, useCallback, useRef } from 'react';
+import * as React from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
-import { getErrorMessage } from '@/lib/types/error-handling';
+import { getErrorMessage } from '../../../../lib/types/error-handling';
 // 導入表單驗證 hook
 // 使用統一的 PDF 生成 Hook
-import { useUnifiedPdfGeneration } from '@/hooks/useUnifiedPdfGeneration';
+import { useUnifiedPdfGeneration } from '../../../../hooks/useUnifiedPdfGeneration';
 // Removed unused type import: BatchPdfOptions
-import { PdfType } from '@/lib/services/unified-pdf-service';
-import type { QcLabelInputData } from '@/lib/mappers/pdf-data-mappers';
-import { createClient } from '@/app/utils/supabase/client';
-import { logger } from '@/lib/logger';
+import { PdfType } from '../../../../lib/services/unified-pdf-service';
+import type { QcLabelInputData } from '../../../../lib/mappers/pdf-data-mappers';
+import { createClient } from '../../../utils/supabase/client';
+import { logger } from '../../../../lib/logger';
 import type { ProductInfo, AdminFormData, SlateDetail } from '../types/adminQcTypes';
 // Removed unused import: MIN_ACO_ORDER_REF_LENGTH
 import { useAdminFormValidation } from './useAdminFormValidation';
@@ -19,7 +20,7 @@ import { useAdminFormValidation } from './useAdminFormValidation';
 interface RpcResponse {
   success: boolean;
   message: string;
-  pallet_data?: Array<{
+  palletdata?: Array<{
     pallet_number: string;
     series: string;
     pdf_url?: string;
@@ -112,7 +113,7 @@ export const useAdminQcLabelBusiness = ({
           .from('record_aco')
           .select('required_qty, finished_qty')
           .eq('code', productInfo.code)
-          .eq('order_ref', parseInt(selectedOrderRef));
+          .eq('order_ref', parseInt(selectedOrderRef, 10));
 
         if (error) {
           console.error('Error fetching ACO order:', error);
@@ -139,7 +140,7 @@ export const useAdminQcLabelBusiness = ({
         setFormData(prev => ({ ...prev, acoSearchLoading: false }));
       }
     },
-    [productInfo?.code, supabase, setFormData]
+    [productInfo?.code, setFormData, supabase]
   );
 
   // Simple slate management for admin
@@ -312,12 +313,12 @@ export const useAdminQcLabelBusiness = ({
         }
 
         console.log('[Admin QC Label] RPC completed successfully:', {
-          pallet_data: rpcData.pallet_data?.length || 0,
+          palletdata: rpcData.palletdata?.length || 0,
           message: rpcData.message,
         });
 
         // Extract pallet numbers and series from RPC result
-        if (!rpcData.pallet_data || rpcData.pallet_data.length === 0) {
+        if (!rpcData.palletdata || rpcData.palletdata.length === 0) {
           console.error('[Admin QC Label] No pallet data in RPC response:', rpcData);
 
           // Check if there are failed pallets to provide more specific error message
@@ -343,13 +344,13 @@ export const useAdminQcLabelBusiness = ({
         }
 
         // Handle array of pallet data objects
-        sortedPalletNumbers = rpcData.pallet_data.map(p => p.pallet_number);
-        sortedSeries = rpcData.pallet_data.map(p => p.series);
+        sortedPalletNumbers = rpcData.palletdata.map(p => p.pallet_number);
+        sortedSeries = rpcData.palletdata.map(p => p.series);
 
         // Log any failed pallets
         if (rpcData.failed_pallets && rpcData.failed_pallets.length > 0) {
           console.warn('[Admin QC Label] Some pallets failed:', rpcData.failed_pallets);
-          const successCount = rpcData.pallet_data.length;
+          const successCount = rpcData.palletdata.length;
           onShowWarning?.(`${successCount} of ${count} pallets processed successfully`);
         }
 
@@ -417,7 +418,9 @@ export const useAdminQcLabelBusiness = ({
           if (pdfResult.blobs.length > 0) {
             try {
               // 動態導入打印服務
-              const { unifiedPrintService } = await import('@/lib/services/unified-print-service');
+              const { unifiedPrintService } = await import(
+                '../../../../lib/services/unified-print-service'
+              );
 
               await unifiedPrintService.printBatch(pdfResult.blobs, {
                 productCode: productInfo.code,
@@ -487,8 +490,8 @@ export const useAdminQcLabelBusiness = ({
       onShowWarning,
       checkCooldownPeriod,
       setCooldownTimer,
-      validateForm,
       generateBatch,
+      validateForm,
       supabase,
     ]
   );

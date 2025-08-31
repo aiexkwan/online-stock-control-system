@@ -9,29 +9,18 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Clock, RefreshCw, User, Package, CheckCircle, AlertCircle, Upload } from 'lucide-react';
 import { useQuery } from '@apollo/client';
 import { cn } from '@/lib/utils';
-import { GET_RECORD_HISTORY } from '@/lib/graphql/queries/record-history.graphql';
+import {
+  GET_RECORD_HISTORY,
+  type MergedRecordHistory,
+} from '@/lib/graphql/queries/record-history.graphql';
 import { Button } from '@/components/ui/button';
 import { ReportCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
 import { cardTextStyles } from '@/lib/card-system/theme';
 import type { VerticalTimelineCardProps } from '@/app/(app)/admin/types/ui-navigation';
 import { Timeline } from '../ui/timeline';
 
-// Merged timeline item interface from GraphQL
-interface MergedTimelineItem {
-  id: string;
-  operatorId: number;
-  operatorName: string;
-  action: string;
-  count: number;
-  palletNumbers: string[];
-  timeStart: string;
-  timeEnd: string;
-  remark?: string;
-  duration?: number;
-  efficiency?: number;
-  locations?: string[];
-  isSequential?: boolean;
-}
+// Use the imported type instead of redefining it
+type MergedTimelineItem = MergedRecordHistory;
 
 // Debounce hook for filter inputs
 function useDebounce<T>(value: T, delay: number): T {
@@ -106,7 +95,7 @@ const getActionIconAndColor = (action: string) => {
 export const VerticalTimelineCard: React.FC<VerticalTimelineCardProps> = ({
   height = '600px',
   className,
-  _isEditMode = false,
+  isEditMode = false,
   limit = 10,
 }) => {
   // State management
@@ -175,7 +164,11 @@ export const VerticalTimelineCard: React.FC<VerticalTimelineCardProps> = ({
 
       // Format pallet info - show all pallets or range
       let palletInfo = '';
-      if (record.palletNumbers && record.palletNumbers.length > 0) {
+      if (
+        record.palletNumbers &&
+        Array.isArray(record.palletNumbers) &&
+        record.palletNumbers.length > 0
+      ) {
         if (record.palletNumbers.length === 1) {
           palletInfo = ` (${record.palletNumbers[0]})`;
         } else if (record.palletNumbers.length <= 3) {

@@ -18,16 +18,16 @@ import { ReportCache } from './ReportCache';
 import { DatabaseRecord } from '@/types/database/tables';
 
 export class ReportEngine {
-  private config: ReportConfig;
+  private _config: ReportConfig;
   private dataSources: Map<string, ReportDataSource>;
   private generators: Map<ReportFormat, ReportGenerator>;
 
   constructor(
-    config: ReportConfig,
+    _config: ReportConfig,
     dataSources: Map<string, ReportDataSource>,
     customGenerators?: Map<ReportFormat, ReportGenerator>
   ) {
-    this.config = config;
+    this._config = _config;
     this.dataSources = dataSources;
 
     // 初始化生成器，支援自定義生成器以保持現有報表格式
@@ -38,7 +38,7 @@ export class ReportEngine {
     const generators = new Map<ReportFormat, ReportGenerator>();
 
     // 檢查是否需要使用舊版樣式
-    const useLegacyStyles = this.config.styleOverrides?.pdf?.useLegacyStyles;
+    const useLegacyStyles = this._config.styleOverrides?.pdf?.useLegacyStyles;
 
     generators.set('pdf', new PdfGenerator(useLegacyStyles));
     generators.set('excel', new ExcelGenerator());
@@ -51,7 +51,7 @@ export class ReportEngine {
    * 驗證過濾器值
    */
   private validateFilters(filters: FilterValues): void {
-    for (const filterConfig of this.config.filters) {
+    for (const filterConfig of this._config.filters) {
       const value = filters[filterConfig.id];
 
       // 檢查必填
@@ -85,7 +85,7 @@ export class ReportEngine {
     const cache = ReportCache.getInstance();
 
     // 檢查緩存
-    const cachedData = cache.get(this.config.id, filters);
+    const cachedData = cache.get(this._config.id, filters);
     if (cachedData) {
       // 將緩存的 DatabaseRecord[] 轉換為所需的結構
       return { cachedResult: cachedData };
@@ -94,7 +94,7 @@ export class ReportEngine {
     const data: Record<string, unknown> = {};
 
     // 並行獲取所有數據源
-    const fetchPromises = this.config.sections.map(async section => {
+    const fetchPromises = this._config.sections.map(async section => {
       const dataSource = this.dataSources.get(section.dataSource);
       if (!dataSource) {
         throw new Error(
@@ -131,7 +131,7 @@ export class ReportEngine {
         cacheData.push(...sectionData);
       }
     }
-    cache.set(this.config.id, filters, cacheData as DatabaseRecord[]);
+    cache.set(this._config.id, filters, cacheData as DatabaseRecord[]);
 
     return data;
   }
@@ -170,7 +170,7 @@ export class ReportEngine {
     const summary: Record<string, unknown> = {};
 
     // 根據配置生成摘要
-    for (const section of this.config.sections) {
+    for (const section of this._config.sections) {
       if (section.type === 'summary' && section.config?.summaryFields) {
         const sectionData = data[section.id];
 
@@ -210,7 +210,7 @@ export class ReportEngine {
    */
   async generateReport(format: ReportFormat, filters: FilterValues): Promise<Blob> {
     // 驗證格式支援
-    if (!this.config.formats.includes(format)) {
+    if (!this._config.formats.includes(format)) {
       throw new Error(`Format "${format}" is not supported for this report`);
     }
 
@@ -231,7 +231,7 @@ export class ReportEngine {
       }
 
       // 生成報表
-      return await generator.generate(processedData, this.config);
+      return await generator.generate(processedData, this._config);
     } catch (error) {
       console.error('Report generation failed:', error);
       throw new Error(
@@ -244,14 +244,14 @@ export class ReportEngine {
    * 獲取報表配置（用於 UI 渲染）
    */
   getConfig(): ReportConfig {
-    return this.config;
+    return this._config;
   }
 
   /**
    * 獲取過濾器的動態選項
    */
   async getFilterOptions(filterId: string): Promise<unknown[]> {
-    const filterConfig = this.config.filters.find(f => f.id === filterId);
+    const filterConfig = this._config.filters.find(f => f.id === filterId);
     if (!filterConfig?.dataSource) {
       return [];
     }

@@ -3,11 +3,6 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 
-interface ValidationError {
-  field: string;
-  message: string;
-}
-
 interface ValidationFormContextType {
   errors: Record<string, string>;
   touched: Record<string, boolean>;
@@ -72,8 +67,8 @@ export const useValidationForm = () => {
  *   }}
  *   onSubmit={handleSubmit}
  * >
- *   <ValidationInput name="email" />
- *   <ValidationInput name="password" type="password" />
+ *   <ValidationInput _name ="email" />
+ *   <ValidationInput _name ="password" type="password" />
  *   <button type="submit">Submit</button>
  * </ValidationForm>
  * ```
@@ -178,9 +173,9 @@ export function ValidationForm({
 
     try {
       await onSubmit(data);
-    } catch (error) {
+    } catch (err) {
       if (showToastOnError) {
-        toast.error(error instanceof Error ? error.message : 'Form submission failed');
+        toast.error(err instanceof Error ? err.message : 'Form submission failed');
       }
     }
   };
@@ -216,8 +211,7 @@ export function ValidationForm({
       for (const rule of rules) {
         const result = rule.validate(value, formData);
         if (result instanceof Promise) {
-          (process.env.NODE_ENV as string) !== 'production' &&
-            (process.env.NODE_ENV as string) !== 'production' &&
+          process.env.NODE_ENV !== 'production' &&
             console.warn('Async validation rule used in sync context');
           continue;
         }

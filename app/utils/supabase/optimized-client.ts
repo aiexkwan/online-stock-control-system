@@ -7,6 +7,7 @@ import { createBrowserClient } from '@supabase/ssr';
 import { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database/supabase';
 import { getSupabaseClient } from '@/lib/database/supabase-client-manager';
+import type { DatabaseQueryResult } from '@/lib/types/database-operations';
 
 // Global singleton instance
 let singletonClient: SupabaseClient<Database> | null = null;
@@ -112,15 +113,15 @@ export function clearCacheByPattern(pattern: string | RegExp) {
 /**
  * Execute query with caching and retry logic
  */
-export async function executeOptimizedQuery<T = any>(
-  queryFn: (client: SupabaseClient<Database>) => Promise<{ data: T; error: any }>,
+export async function executeOptimizedQuery<T = unknown>(
+  queryFn: (client: SupabaseClient<Database>) => Promise<DatabaseQueryResult<T>>,
   cacheKey?: string,
   options?: {
     skipCache?: boolean;
     ttl?: number;
     retries?: number;
   }
-): Promise<{ data: T | null; error: any }> {
+): Promise<DatabaseQueryResult<T>> {
   if (!clientManager) {
     clientManager = getSupabaseClient();
   }
@@ -131,13 +132,13 @@ export async function executeOptimizedQuery<T = any>(
 /**
  * Execute batch queries
  */
-export async function executeBatchQueries<T = any>(
+export async function executeBatchQueries<T = unknown>(
   queries: Array<{
-    queryFn: (client: SupabaseClient<Database>) => Promise<{ data: any; error: any }>;
+    queryFn: (client: SupabaseClient<Database>) => Promise<DatabaseQueryResult<T>>;
     cacheKey?: string;
-    options?: any;
+    options?: Record<string, unknown>;
   }>
-): Promise<Array<{ data: T | null; error: any }>> {
+): Promise<Array<DatabaseQueryResult<T>>> {
   if (!clientManager) {
     clientManager = getSupabaseClient();
   }

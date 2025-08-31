@@ -68,8 +68,8 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const { getAriaProps } = useAria();
     const Comp = asChild ? Slot : 'button';
 
-    // 生成 ARIA 屬性
-    const ariaProps = getAriaProps({
+    // 生成 ARIA 屬性 - 明確類型定義
+    const ariaProps: React.AriaAttributes & Record<string, any> = getAriaProps({
       label: ariaLabel,
       describedBy: ariaDescribedBy,
       expanded: ariaExpanded,
@@ -87,6 +87,30 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       ariaProps['aria-label'] = ariaLabel || loadingText;
     }
 
+    // 改進的載入指示器組件
+    const LoadingSpinner = () => (
+      <svg
+        className='mr-2 h-4 w-4 animate-spin'
+        xmlns='http://www.w3.org/2000/svg'
+        fill='none'
+        viewBox='0 0 24 24'
+      >
+        <circle
+          className='opacity-25'
+          cx='12'
+          cy='12'
+          r='10'
+          stroke='currentColor'
+          strokeWidth='4'
+        />
+        <path
+          className='opacity-75'
+          fill='currentColor'
+          d='m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'
+        />
+      </svg>
+    );
+
     return (
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
@@ -97,7 +121,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       >
         {loading ? (
           <>
-            <div className='mr-2 h-1 w-4 rounded-full bg-current opacity-75' />
+            <LoadingSpinner />
             <span className='sr-only'>{loadingText}</span>
             {loadingText}
           </>

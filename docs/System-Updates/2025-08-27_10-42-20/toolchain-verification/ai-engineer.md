@@ -74,12 +74,11 @@ interface ParsedOrderResponse {
 
 ### 實作的 API 端點
 
-| API 路由                 | 功能描述           | AI 模型                   | 狀態        |
-| ------------------------ | ------------------ | ------------------------- | ----------- |
-| `/api/ask-database`      | 自然語言轉SQL查詢  | GPT-4o                    | ✅ 生產就緒 |
-| `/api/pdf-extract`       | PDF文件智能分析    | GPT-4o Assistant          | ✅ 生產就緒 |
-| `/api/test-openai`       | OpenAI連接測試診斷 | GPT-3.5-turbo/GPT-4o-mini | ✅ 生產就緒 |
-| `/api/anomaly-detection` | 業務異常檢測       | 規則引擎 + AI             | ✅ 生產就緒 |
+| API 路由                 | 功能描述          | AI 模型          | 狀態        |
+| ------------------------ | ----------------- | ---------------- | ----------- |
+| `/api/ask-database`      | 自然語言轉SQL查詢 | GPT-4o           | ✅ 生產就緒 |
+| `/api/pdf-extract`       | PDF文件智能分析   | GPT-4o Assistant | ✅ 生產就緒 |
+| `/api/anomaly-detection` | 業務異常檢測      | 規則引擎 + AI    | ✅ 生產就緒 |
 
 ### API 功能特性
 

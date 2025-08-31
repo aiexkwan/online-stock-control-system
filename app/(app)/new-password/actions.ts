@@ -35,7 +35,7 @@ export async function resetPasswordAction(
 
     // 1. Hash the new password
     const salt = await bcrypt.genSalt(10);
-    const _hashedPassword = await bcrypt.hash(newPassword, salt);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
     (process.env.NODE_ENV as string) !== 'production' &&
       (process.env.NODE_ENV as string) !== 'production' &&
       console.log(`[Server Action] New password hashed for userId: ${userId}`);
@@ -81,7 +81,7 @@ export async function resetPasswordAction(
     // For self-reset, the userId is the one being acted upon.
     try {
       await supabaseAdmin.from('record_history').insert({
-        time: new Date().toISOString(),
+        _time: new Date().toISOString(),
         id: Number(userId), // Convert to number as id is number type
         action: 'Password Reset', // A more specific action type
         remark: 'User self-service password reset successful.',

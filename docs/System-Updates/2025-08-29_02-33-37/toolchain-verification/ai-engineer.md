@@ -134,7 +134,6 @@ checkIntelligentCache(question, userEmail);
 ### API 端點測試 ✅
 
 - `/api/ask-database` (POST/GET)
-- `/api/test-openai` (測試端點)
 - 異常檢測端點集成
 
 ### 組件整合 ✅

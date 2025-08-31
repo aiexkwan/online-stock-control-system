@@ -42,11 +42,11 @@ export class CsvGenerator implements ReportGenerator {
     };
   }
 
-  async generate(data: ProcessedReportData, config: ReportConfig): Promise<Blob> {
+  async generate(data: ProcessedReportData, _config: ReportConfig): Promise<Blob> {
     const csvLines: string[] = [];
 
     // 添加報表標題
-    csvLines.push(`"${config.name}"`);
+    csvLines.push(`"${_config._name}"`);
     csvLines.push(`"Generated: ${new Date(data.metadata.generatedAt).toLocaleString()}"`);
     csvLines.push(''); // 空行
 
@@ -58,7 +58,7 @@ export class CsvGenerator implements ReportGenerator {
     if (activeFilters.length > 0) {
       csvLines.push('"Applied Filters:"');
       activeFilters.forEach(([key, value]) => {
-        const filterConfig = config.filters.find(f => f.id === key);
+        const filterConfig = _config.filters.find(f => f.id === key);
         const label = filterConfig?.label || key;
         csvLines.push(`"${label}","${value}"`);
       });
@@ -66,7 +66,7 @@ export class CsvGenerator implements ReportGenerator {
     }
 
     // 處理每個表格區段
-    for (const section of config.sections) {
+    for (const section of _config.sections) {
       // 檢查是否在 CSV 中隱藏此區段
       if (section.hideInFormats?.includes('csv')) {
         continue;

@@ -60,11 +60,11 @@ const rootResolvers: IResolvers = {
     // Health check
     health: async (_parent, _args, context: GraphQLContext) => {
       try {
-        // Check database connection
+        // Check database connection using API table
         const { data, error } = await context.supabase
-          .from('system_config')
+          .from('API')
           .select('value')
-          .eq('key', 'version')
+          .eq('name', 'version')
           .single();
 
         if (error) throw error;
@@ -111,7 +111,7 @@ const rootResolvers: IResolvers = {
           // Add more cases as needed
           default:
             // Clear all if no specific data source
-            Object.values(context.loaders).forEach(loader => {
+            Object.values(context.loaders).forEach((loader: any) => {
               if (loader && typeof loader.clearAll === 'function') {
                 loader.clearAll();
               }
@@ -128,7 +128,7 @@ const rootResolvers: IResolvers = {
     // Clear all caches
     clearCache: async (_parent, _args, context: GraphQLContext) => {
       try {
-        Object.values(context.loaders).forEach(loader => {
+        Object.values(context.loaders).forEach((loader: any) => {
           if (loader && typeof loader.clearAll === 'function') {
             loader.clearAll();
           }

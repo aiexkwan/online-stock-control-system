@@ -1,9 +1,9 @@
 import { GraphQLError } from 'graphql';
-import { createClient } from '@/app/utils/supabase/server';
-import { getCacheAdapter } from '@/lib/cache/cache-factory';
-import { CacheAdapter } from '@/lib/cache/base-cache-adapter';
-import { safeGet, safeNumber, safeString } from '@/types/database/helpers';
-import { toGraphQLErrorMessage } from '@/lib/types/api';
+import { createClient } from '../../app/utils/supabase/server';
+import { getCacheAdapter } from '../cache/cache-factory';
+import { CacheAdapter } from '../cache/base-cache-adapter';
+import { safeNumber, safeString } from '../../types/database/helpers';
+import { toGraphQLErrorMessage } from '../types/api';
 
 // Input Types
 export interface InventoryAnalysisInput {
@@ -216,7 +216,11 @@ export class InventoryAnalysisService {
       const rpcResult = await this.callInventoryAnalysisRPC(input, requestId);
 
       // 轉換數據格式
-      const analysisResult = await this.transformRPCResponse(rpcResult, requestId, startTime);
+      const analysisResult = await this.transformRPCResponse(
+        rpcResult as RPCResponse,
+        requestId,
+        startTime
+      );
 
       // 存儲到快取
       await this.saveToCache(cacheKey, analysisResult);

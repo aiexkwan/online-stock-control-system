@@ -11,7 +11,7 @@ import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Check, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { ProgressIndicatorProps, PerformanceMetrics } from '../types';
+import type { ProgressIndicatorProps, PerformanceMetrics } from '../types';
 import { useSmartLoading } from '../hooks/useSmartLoading';
 
 interface ProgressIndicatorExtendedProps extends ProgressIndicatorProps {
@@ -29,6 +29,10 @@ interface ProgressIndicatorExtendedProps extends ProgressIndicatorProps {
   circularSize?: number;
   /** 進度條背景透明度 */
   backgroundOpacity?: number;
+  /** 完成回調（內部使用） */
+  _onComplete?: () => void;
+  /** 錯誤回調（內部使用） */
+  _onError?: (error: string) => void;
 }
 
 export function ProgressIndicator({
@@ -51,8 +55,8 @@ export function ProgressIndicator({
   height = 'normal',
   circularSize = 100,
   backgroundOpacity = 0.2,
-  onComplete,
-  onError,
+  _onComplete,
+  _onError,
 }: ProgressIndicatorExtendedProps) {
   // 使用智能載入 Hook
   const smartLoading = useSmartLoading({
@@ -125,7 +129,6 @@ export function ProgressIndicator({
   // 渲染線性進度條
   const renderLinearProgress = () => {
     const backgroundStyle = {
-      backgroundColor: `${themeConfig.background.replace('bg-', '')}`,
       opacity: backgroundOpacity,
     };
 
@@ -337,7 +340,8 @@ export function ProgressIndicator({
     }
   };
 
-  if (!isLoading && progress !== 100) return null;
+  // 當不在載入狀態且進度未完成時，不顯示組件
+  if (!isLoading && progress < 100) return null;
 
   return <div className={cn('w-full', className)}>{renderProgress()}</div>;
 }

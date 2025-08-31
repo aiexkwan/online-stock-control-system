@@ -2,22 +2,68 @@
 
 import { useRef, useState, useCallback } from 'react';
 
+/**
+ * 性能指標介面
+ * @interface PerformanceMetrics
+ */
 interface PerformanceMetrics {
-  renderCount: number;
-  lastRenderTime: number;
-  averageRenderTime: number;
-  totalRenderTime: number;
-  slowRenders: number;
-  componentName: string;
+  readonly renderCount: number;
+  readonly lastRenderTime: number;
+  readonly averageRenderTime: number;
+  readonly totalRenderTime: number;
+  readonly slowRenders: number;
+  readonly componentName: string;
 }
 
+/**
+ * 性能監控配置介面
+ * @interface PerformanceConfig
+ */
 interface PerformanceConfig {
-  componentName: string;
-  slowRenderThreshold?: number; // ms
-  enableLogging?: boolean;
-  trackUserInteractions?: boolean;
+  readonly componentName: string;
+  readonly slowRenderThreshold?: number; // ms
+  readonly enableLogging?: boolean;
+  readonly trackUserInteractions?: boolean;
 }
 
+/**
+ * 性能摘要介面
+ * @interface PerformanceSummary
+ */
+interface PerformanceSummary extends PerformanceMetrics {
+  readonly slowRenderPercentage: number;
+  readonly isPerformant: boolean;
+  readonly recommendations: readonly string[];
+}
+
+/**
+ * 全域性能摘要介面
+ * @interface GlobalPerformanceSummary
+ */
+interface GlobalPerformanceSummary {
+  readonly totalComponents: number;
+  readonly totalRenders: number;
+  readonly averageRenderTime: number;
+  readonly slowComponents: number;
+  readonly slowComponentPercentage: number;
+  readonly componentBreakdown: readonly {
+    readonly name: string;
+    readonly renderCount: number;
+    readonly averageRenderTime: number;
+    readonly slowRenders: number;
+  }[];
+}
+
+/**
+ * 交互追蹤返回函數類型
+ */
+type InteractionEndCallback = () => void;
+
+/**
+ * 性能監控 Hook
+ * @param config - 監控配置
+ * @returns 性能監控工具集
+ */
 export const usePerformanceMonitor = (config: PerformanceConfig) => {
   const {
     componentName,
@@ -38,7 +84,9 @@ export const usePerformanceMonitor = (config: PerformanceConfig) => {
     componentName,
   });
 
-  // Manual render tracking (called explicitly when needed)
+  /**
+   * 手動渲染追蹤（需要時明確調用）
+   */
   const trackRender = useCallback(
     (renderTime: number) => {
       renderTimes.current.push(renderTime);
@@ -61,71 +109,75 @@ export const usePerformanceMonitor = (config: PerformanceConfig) => {
       }));
 
       if (enableLogging && renderTime > slowRenderThreshold) {
-        (process.env.NODE_ENV as string) !== 'production' &&
-          (process.env.NODE_ENV as string) !== 'production' &&
+        if (process.env.NODE_ENV !== 'production') {
           console.warn(
             `[Performance] Slow render detected in ${componentName}: ${renderTime.toFixed(2)}ms`
           );
+        }
       }
     },
     [componentName, enableLogging, slowRenderThreshold]
   );
 
-  // Track user interactions
+  /**
+   * 追蹤用戶互動
+   */
   const trackInteraction = useCallback(
-    (interactionType: string) => {
-      if (!trackUserInteractions) return;
+    (interactionType: string): InteractionEndCallback | undefined => {
+      if (!trackUserInteractions) return undefined;
 
       const startTime = performance.now();
       interactionTimes.current.set(interactionType, startTime);
 
-      return () => {
+      return (): void => {
         const endTime = performance.now();
         const duration = endTime - startTime;
 
         if (enableLogging) {
-          (process.env.NODE_ENV as string) !== 'production' &&
-            (process.env.NODE_ENV as string) !== 'production' &&
+          if (process.env.NODE_ENV !== 'production') {
             console.log(
               `[Performance] ${componentName} - ${interactionType}: ${duration.toFixed(2)}ms`
             );
+          }
         }
       };
     },
     [componentName, enableLogging, trackUserInteractions]
   );
 
-  // Get performance summary
-  const getPerformanceSummary = useCallback(() => {
-    const summary = {
-      ...metrics,
-      slowRenderPercentage:
-        metrics.renderCount > 0 ? (metrics.slowRenders / metrics.renderCount) * 100 : 0,
-      isPerformant: metrics.averageRenderTime < slowRenderThreshold,
-      recommendations: [] as string[],
-    };
+  /**
+   * 獲取性能摘要
+   */
+  const getPerformanceSummary = useCallback((): PerformanceSummary => {
+    const recommendations: string[] = [];
+    const slowRenderPercentage =
+      metrics.renderCount > 0 ? (metrics.slowRenders / metrics.renderCount) * 100 : 0;
+    const isPerformant = metrics.averageRenderTime < slowRenderThreshold;
 
     // Generate recommendations
-    if (summary.slowRenderPercentage > 20) {
-      summary.recommendations.push(
-        'Consider using React.memo or useMemo for expensive calculations'
-      );
+    if (slowRenderPercentage > 20) {
+      recommendations.push('Consider using React.memo or useMemo for expensive calculations');
     }
-    if (summary.averageRenderTime > slowRenderThreshold * 2) {
-      summary.recommendations.push(
-        'Component renders are consistently slow, consider code splitting'
-      );
+    if (metrics.averageRenderTime > slowRenderThreshold * 2) {
+      recommendations.push('Component renders are consistently slow, consider code splitting');
     }
-    if (summary.renderCount > 100 && summary.slowRenders > 10) {
-      summary.recommendations.push(
-        'High number of slow renders detected, review component dependencies'
-      );
+    if (metrics.renderCount > 100 && metrics.slowRenders > 10) {
+      recommendations.push('High number of slow renders detected, review component dependencies');
     }
+
+    const summary: PerformanceSummary = {
+      ...metrics,
+      slowRenderPercentage,
+      isPerformant,
+      recommendations,
+    };
 
     return summary;
   }, [metrics, slowRenderThreshold]);
 
-  // Reset metrics
+  /**
+   * 重置性能指標
+   */
   const resetMetrics = useCallback(() => {
     renderTimes.current = [];
     interactionTimes.current.clear();
@@ -148,20 +200,32 @@ export const usePerformanceMonitor = (config: PerformanceConfig) => {
   };
 };
 
-// Performance monitoring context for global metrics
+/**
+ * 全域性能監控上下文
+ * @returns 全域性能監控工具集
+ */
 export const useGlobalPerformanceMonitor = () => {
   const [globalMetrics, setGlobalMetrics] = useState<Map<string, PerformanceMetrics>>(new Map());
 
+  /**
+   * 註冊組件性能指標
+   */
   const registerComponent = useCallback((componentName: string, metrics: PerformanceMetrics) => {
     setGlobalMetrics(prev => new Map(prev.set(componentName, metrics)));
   }, []);
 
-  const getGlobalSummary = useCallback(() => {
+  /**
+   * 獲取全域性能摘要
+   */
+  const getGlobalSummary = useCallback((): GlobalPerformanceSummary => {
     const components = Array.from(globalMetrics.entries());
     const totalComponents = components.length;
     const totalRenders = components.reduce((sum, [, metrics]) => sum + metrics.renderCount, 0);
     const averageRenderTime =
-      components.reduce((sum, [, metrics]) => sum + metrics.averageRenderTime, 0) / totalComponents;
+      totalComponents > 0
+        ? components.reduce((sum, [, metrics]) => sum + metrics.averageRenderTime, 0) /
+          totalComponents
+        : 0;
     const slowComponents = components.filter(
       ([, metrics]) => metrics.averageRenderTime > 16
     ).length;

@@ -1,6 +1,12 @@
 /**
- * Reports Dashboard Dialog
- * Displays all reports in a dialog interface
+ * Reports Dashboard Dialog Component
+ *
+ * Provides a centralized interface for accessing and managing various system reports.
+ * Supports filtering, categorization, and unified report access through a modal dialog.
+ *
+ * @fileoverview Comprehensive report dashboard with search, filtering, and categorization
+ * @author System
+ * @version 1.0.0
  */
 
 'use client';
@@ -40,15 +46,32 @@ import { UnifiedLoadingReportDialog } from '@/app/(app)/order-loading/components
 // Transaction Report now integrated directly into system page card
 import { UnifiedExportAllDataDialog } from '@/app/components/reports/UnifiedExportAllDataDialog';
 
+/**
+ * Props interface for ReportsDashboardDialog component
+ */
 interface ReportsDashboardDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
+  /** Whether the dialog is currently open */
+  readonly isOpen: boolean;
+  /** Callback function to handle dialog close event */
+  readonly onClose: () => void;
 }
 
+/**
+ * State interface for managing individual report dialog visibility
+ */
 interface ReportDialogState {
   [key: string]: boolean;
 }
 
+/**
+ * ReportsDashboardDialog Component
+ *
+ * Main component for displaying and managing system reports in a centralized dashboard.
+ * Provides search, filtering, and categorization functionality for easy report access.
+ *
+ * @param props - Component props
+ * @returns React functional component
+ */
 export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDialogProps) {
   const [reports, setReports] = useState<RegisteredReport[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -56,32 +79,44 @@ export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDial
   const [dialogStates, setDialogStates] = useState<ReportDialogState>({});
   const [selectedReport, setSelectedReport] = useState<string | null>(null);
 
-  // Load report list
+  /**
+   * Load report list when dialog opens
+   * Initializes report data and dialog states
+   */
   useEffect(() => {
     if (isOpen) {
-      const loadedReports = ReportRegistry.getAllReports();
-      setReports(loadedReports);
+      try {
+        const loadedReports = ReportRegistry.getAllReports();
+        setReports(loadedReports);
 
-      // Initialize dialog states
-      const initialStates: ReportDialogState = {};
-      loadedReports.forEach(report => {
-        initialStates[report.config.id] = false;
-      });
-      setDialogStates(initialStates);
+        // Initialize dialog states
+        const initialStates: ReportDialogState = {};
+        loadedReports.forEach(report => {
+          initialStates[report._config.id] = false;
+        });
+        setDialogStates(initialStates);
+      } catch (error) {
+        console.error('Failed to load reports:', error);
+      }
     }
   }, [isOpen]);
 
-  // Filter reports
+  /**
+   * Filter reports based on search term and category
+   */
   const filteredReports = reports.filter(report => {
     const matchesSearch =
-      report.config.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.config.description.toLowerCase().includes(searchTerm.toLowerCase());
+      report._config._name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      report._config.description.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory =
-      selectedCategory === 'all' || report.config.category === selectedCategory;
+      selectedCategory === 'all' || report._config.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
-  // Select report
+  /**
+   * Handle report selection and open corresponding dialog
+   * @param reportId - The ID of the report to select
+   */
   const selectReport = (reportId: string) => {
     setSelectedReport(reportId);
     setDialogStates(prev => ({
@@ -90,7 +125,10 @@ export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDial
     }));
   };
 
-  // Close report dialog
+  /**
+   * Handle closing of individual report dialogs
+   * @param reportId - The ID of the report dialog to close
+   */
   const closeReportDialog = (reportId: string) => {
     setDialogStates(prev => ({
       ...prev,
@@ -99,7 +137,11 @@ export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDial
     setSelectedReport(null);
   };
 
-  // Get category icon
+  /**
+   * Get appropriate icon for report category
+   * @param category - The report category
+   * @returns React icon component
+   */
   const getCategoryIcon = (category: string) => {
     switch (category) {
       case 'operational':
@@ -117,7 +159,11 @@ export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDial
     }
   };
 
-  // Get category color
+  /**
+   * Get category-specific color scheme for UI elements
+   * @param category - The report category
+   * @returns CSS class string for category colors
+   */
   const getCategoryColor = (category: string) => {
     switch (category) {
       case 'operational':
@@ -192,7 +238,7 @@ export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDial
               <div className='space-y-6'>
                 {['operational', 'inventory', 'management'].map(category => {
                   const categoryReports = filteredReports.filter(
-                    r => r.config.category === category
+                    r => r._config.category === category
                   );
 
                   if (categoryReports.length === 0 && selectedCategory !== 'all') return null;
@@ -214,24 +260,24 @@ export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDial
                       <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
                         {categoryReports.map(report => (
                           <Button
-                            key={report.config.id}
+                            key={report._config.id}
                             variant='outline'
                             className={cn(
                               'h-auto justify-start p-4 text-left transition-all hover:shadow-md',
                               'border-slate-600 bg-slate-800 hover:bg-slate-700',
-                              getCategoryColor(report.config.category)
+                              getCategoryColor(report._config.category)
                             )}
-                            onClick={() => selectReport(report.config.id)}
+                            onClick={() => selectReport(report._config.id)}
                           >
                             <div className='flex w-full items-start gap-3'>
                               <FileText className='mt-0.5 h-5 w-5 flex-shrink-0' />
                               <div className='flex-1 space-y-1'>
-                                <div className='font-medium text-white'>{report.config.name}</div>
+                                <div className='font-medium text-white'>{report._config._name}</div>
                                 <div className='line-clamp-2 text-xs text-slate-400'>
-                                  {report.config.description}
+                                  {report._config.description}
                                 </div>
                                 <div className='mt-2 flex gap-1'>
-                                  {report.config.formats.map(format => (
+                                  {report._config.formats.map(format => (
                                     <Badge
                                       key={format}
                                       variant='secondary'

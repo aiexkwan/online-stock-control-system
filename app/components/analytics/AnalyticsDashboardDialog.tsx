@@ -6,7 +6,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ChevronDownIcon , BarChart3, TrendingUp, Users, Package2, CalendarIcon } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, Package2, CalendarIcon } from 'lucide-react';
 import {
   Dialog,
   DialogContent,

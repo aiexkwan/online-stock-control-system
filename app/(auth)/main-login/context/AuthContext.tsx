@@ -174,7 +174,7 @@ export function AuthProvider({
 
         // Add specific permission logic here based on requirements
         switch (permission) {
-          case 'ask_database':
+          case 'askdatabase':
             // Use existing permission logic
             if (!extendedAuthState.userRole) return false;
             if (extendedAuthState.position === 'User') {

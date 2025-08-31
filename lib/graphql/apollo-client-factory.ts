@@ -6,7 +6,8 @@
 import { ApolloClient, InMemoryCache, createHttpLink, from } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { onError } from '@apollo/client/link/error';
-import { createClient } from '@/app/utils/supabase/client';
+// Dynamic imports to handle SSR properly
+// We'll import the client functions dynamically when needed
 
 // GraphQL endpoint
 const GRAPHQL_ENDPOINT = process.env.NEXT_PUBLIC_GRAPHQL_URL || '/api/graphql';
@@ -73,22 +74,27 @@ export function createApolloClient(accessToken?: string) {
 
       // If no token provided and we're on client-side, get from Supabase
       if (!token && typeof window !== 'undefined') {
-        const supabase = createClient();
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-
-        if (session?.access_token) {
-          token = session.access_token;
-        } else {
-          // Try to refresh session
+        try {
+          const { createClient } = await import('../../app/utils/supabase/client');
+          const supabase = createClient();
           const {
-            data: { session: refreshedSession },
-          } = await supabase.auth.refreshSession();
-          if (refreshedSession?.access_token) {
-            token = refreshedSession.access_token;
-            console.log('[Apollo Client] Session refreshed');
+            data: { session },
+          } = await supabase.auth.getSession();
+
+          if (session?.access_token) {
+            token = session.access_token;
+          } else {
+            // Try to refresh session
+            const {
+              data: { session: refreshedSession },
+            } = await supabase.auth.refreshSession();
+            if (refreshedSession?.access_token) {
+              token = refreshedSession.access_token;
+              console.log('[Apollo Client] Session refreshed');
+            }
           }
+        } catch (importError) {
+          console.warn('[Apollo Client] Failed to import Supabase client:', importError);
         }
       }
 
@@ -114,50 +120,61 @@ export function createApolloClient(accessToken?: string) {
   });
 
   // Error Link
-  const errorLink = onError(({ graphQLErrors, networkError, operation: _operation, forward: _forward }) => {
-    if (graphQLErrors) {
-      graphQLErrors.forEach(({ message, locations, path, extensions }) => {
-        console.error(
-          `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`,
-          extensions
-        );
+  const errorLink = onError(
+    ({ graphQLErrors, networkError, operation: _operation, forward: _forward }) => {
+      if (graphQLErrors) {
+        graphQLErrors.forEach(({ message, locations, path, extensions }) => {
+          console.error(
+            `[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`,
+            extensions
+          );
 
-        // Check for authentication errors
-        if (
-          message.includes('Authentication') ||
-          message.includes('Unauthorized') ||
-          message.includes('JWT')
-        ) {
-          console.error('[GraphQL error]: Authentication error detected');
+          // Check for authentication errors
+          if (
+            message.includes('Authentication') ||
+            message.includes('Unauthorized') ||
+            message.includes('JWT')
+          ) {
+            console.error('[GraphQL error]: Authentication error detected');
 
-          // On client-side, try to refresh and retry
-          if (typeof window !== 'undefined') {
-            const supabase = createClient();
-            supabase.auth.refreshSession().then(({ data, error }) => {
-              if (!error && data.session) {
-                console.log('[GraphQL error]: Session refreshed, please retry');
-                // Note: In a real app, you might want to implement a retry queue
-              }
-            });
+            // On client-side, try to refresh and retry
+            if (typeof window !== 'undefined') {
+              import('../../app/utils/supabase/client')
+                .then(async ({ createClient }) => {
+                  try {
+                    const supabase = createClient();
+                    const { data, error } = await supabase.auth.refreshSession();
+                    if (!error && data.session) {
+                      console.log('[GraphQL error]: Session refreshed, please retry');
+                      // Note: In a real app, you might want to implement a retry queue
+                    }
+                  } catch (refreshError) {
+                    console.error('[GraphQL error]: Failed to refresh session:', refreshError);
+                  }
+                })
+                .catch(importError => {
+                  console.warn('[GraphQL error]: Failed to import Supabase client:', importError);
+                });
+            }
           }
+        });
+      }
+
+      if (networkError) {
+        console.error(`[Network error]:`, networkError);
+
+        // Log additional details
+        if ('statusCode' in networkError) {
+          const statusCode = (networkError as { statusCode?: number }).statusCode;
+          console.error(`[Network error] Status: ${statusCode}`);
         }
-      });
-    }
-
-    if (networkError) {
-      console.error(`[Network error]:`, networkError);
-
-      // Log additional details
-      if ('statusCode' in networkError) {
-        const statusCode = (networkError as { statusCode?: number }).statusCode;
-        console.error(`[Network error] Status: ${statusCode}`);
-      }
-      if ('result' in networkError) {
-        const result = (networkError as { result?: unknown }).result;
-        console.error(`[Network error] Result:`, result);
+        if ('result' in networkError) {
+          const result = (networkError as { result?: unknown }).result;
+          console.error(`[Network error] Result:`, result);
+        }
       }
     }
-  });
+  );
 
   // Create Apollo Client
   return new ApolloClient({

@@ -92,7 +92,7 @@ function isSensitiveField(fieldName: string): boolean {
  * 清理字串中的 PII 資訊
  */
 function sanitizeStringForPII(str: string): string {
-  if (typeof str !== 'string') return str;
+  if (typeof str !== 'string') return String(str);
 
   let sanitized = str;
 

@@ -7,7 +7,7 @@ import { ReportConfig } from '../core/ReportConfig';
 
 export const stockTakeReportConfig: ReportConfig = {
   id: 'stock-take-report',
-  name: 'Stock Take Report',
+  _name: 'Stock Take Report',
   description: 'Stock Take Report',
   category: 'operational',
   formats: ['csv', 'pdf', 'excel'], // 新增 PDF 和 Excel 支援

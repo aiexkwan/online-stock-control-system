@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { getErrorMessage } from '@/lib/types/error-handling';
-import { validateSupplierCode } from '@/app/actions/grnActions';
-import { SupplierInfo, convertDatabaseSupplierInfo } from '@/lib/types/supplier-types';
+import { getErrorMessage } from '../../types/error-handling';
+import { validateSupplierCode } from '../../../app/actions/grnActions';
+import { SupplierInfo } from '../../types/supplier-types';
 
 interface MaterialSupplierInputProps {
   value: string;

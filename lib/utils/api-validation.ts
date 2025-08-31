@@ -1,6 +1,6 @@
 /**
  * API 路由驗證工具
- * 
+ *
  * 統一的 API 請求和回應驗證系統
  */
 
@@ -42,10 +42,12 @@ export const paginationSchema = z.object({
 });
 
 // 通用查詢參數 Schema
-export const queryParamsSchema = z.object({
-  search: z.string().optional(),
-  filter: z.record(z.unknown()).optional(),
-}).merge(paginationSchema);
+export const queryParamsSchema = z
+  .object({
+    search: z.string().optional(),
+    filter: z.record(z.unknown()).optional(),
+  })
+  .merge(paginationSchema);
 
 // 用戶認證參數 Schema
 export const userAuthParamsSchema = z.object({
@@ -84,11 +86,15 @@ export const orderParamsSchema = z.object({
   orderRef: z.string().min(1, '訂單參考號為必填項'),
   customerRef: z.string().optional(),
   deliveryAddress: z.string().min(1, '送貨地址為必填項'),
-  items: z.array(z.object({
-    productCode: z.string().min(1),
-    quantity: z.number().positive(),
-    description: z.string().optional(),
-  })).min(1, '訂單必須包含至少一個項目'),
+  items: z
+    .array(
+      z.object({
+        productCode: z.string().min(1),
+        quantity: z.number().positive(),
+        description: z.string().optional(),
+      })
+    )
+    .min(1, '訂單必須包含至少一個項目'),
 });
 
 // 供應商參數 Schema
@@ -123,7 +129,7 @@ export function validateRequestBody<T>(
   } catch (error) {
     if (error instanceof z.ZodError) {
       const errors: Record<string, string> = {};
-      error.errors.forEach((err) => {
+      error.errors.forEach(err => {
         const path = err.path.join('.');
         errors[path || 'root'] = err.message;
       });
@@ -138,8 +144,9 @@ export function validateQueryParams<T>(
   searchParams: URLSearchParams
 ): { success: true; data: T } | { success: false; errors: Record<string, string> } {
   const params: Record<string, unknown> = {};
-  
-  for (const [key, value] of searchParams.entries()) {
+
+  // 使用 forEach 替代 for...of 來避免迭代器問題
+  searchParams.forEach((value: string, key: string) => {
     // 嘗試解析數值
     if (/^\d+$/.test(value)) {
       params[key] = parseInt(value, 10);
@@ -150,101 +157,128 @@ export function validateQueryParams<T>(
     } else {
       params[key] = value;
     }
-  }
-  
+  });
+
   return validateRequestBody(schema, params);
 }
 
 // API 路由包裝器
-export function withValidation<TBody, TQuery = {}>(options: {
+export function withValidation<TBody = unknown, TQuery = unknown>(options: {
   bodySchema?: z.ZodSchema<TBody>;
   querySchema?: z.ZodSchema<TQuery>;
   requireAuth?: boolean;
 }) {
-  return function <THandler extends (
-    request: NextRequest,
-    context: {
-      params: { [key: string]: string | string[] };
-      body?: TBody;
-      query?: TQuery;
-      userId?: string;
-    }
-  ) => Promise<Response>>(
-    handler: THandler
-  ): THandler {
-    return (async (request: NextRequest, context: any) => {
+  return function <
+    THandler extends (
+      request: NextRequest,
+      context: {
+        params: { [key: string]: string | string[] };
+        body?: TBody;
+        query?: TQuery;
+        userId?: string;
+      }
+    ) => Promise<Response>,
+  >(handler: THandler): THandler {
+    return (async (
+      request: NextRequest,
+      context: {
+        params: { [key: string]: string | string[] };
+      }
+    ) => {
       try {
-        const updatedContext = { ...context };
-        
+        const updatedContext: {
+          params: { [key: string]: string | string[] };
+          body?: TBody;
+          query?: TQuery;
+          userId?: string;
+        } = { ...context };
+
         // 驗證請求體
-        if (options.bodySchema && (request.method === 'POST' || request.method === 'PUT' || request.method === 'PATCH')) {
+        if (
+          options.bodySchema &&
+          (request.method === 'POST' || request.method === 'PUT' || request.method === 'PATCH')
+        ) {
           try {
             const body = await request.json();
             const bodyValidation = validateRequestBody(options.bodySchema, body);
-            
+
             if (!bodyValidation.success) {
-              return Response.json({
-                success: false,
-                error: 'Invalid request body',
-                details: 'errors' in bodyValidation ? bodyValidation.errors : undefined,
-                timestamp: new Date().toISOString(),
-              }, { status: 400 });
+              return Response.json(
+                {
+                  success: false,
+                  error: 'Invalid request body',
+                  details: 'errors' in bodyValidation ? bodyValidation.errors : undefined,
+                  timestamp: new Date().toISOString(),
+                },
+                { status: 400 }
+              );
             }
-            
+
             updatedContext.body = bodyValidation.data;
           } catch (error) {
-            return Response.json({
-              success: false,
-              error: 'Invalid JSON in request body',
-              timestamp: new Date().toISOString(),
-            }, { status: 400 });
+            return Response.json(
+              {
+                success: false,
+                error: 'Invalid JSON in request body',
+                timestamp: new Date().toISOString(),
+              },
+              { status: 400 }
+            );
           }
         }
-        
+
         // 驗證查詢參數
         if (options.querySchema) {
           const { searchParams } = new URL(request.url);
           const queryValidation = validateQueryParams(options.querySchema, searchParams);
-          
+
           if (!queryValidation.success) {
-            return Response.json({
-              success: false,
-              error: 'Invalid query parameters',
-              details: 'errors' in queryValidation ? queryValidation.errors : undefined,
-              timestamp: new Date().toISOString(),
-            }, { status: 400 });
+            return Response.json(
+              {
+                success: false,
+                error: 'Invalid query parameters',
+                details: 'errors' in queryValidation ? queryValidation.errors : undefined,
+                timestamp: new Date().toISOString(),
+              },
+              { status: 400 }
+            );
           }
-          
+
           updatedContext.query = queryValidation.data;
         }
-        
+
         // 用戶認證檢查
         if (options.requireAuth) {
           const authHeader = request.headers.get('authorization');
           if (!authHeader?.startsWith('Bearer ')) {
-            return Response.json({
-              success: false,
-              error: 'Unauthorized',
-              message: 'Missing or invalid authorization header',
-              timestamp: new Date().toISOString(),
-            }, { status: 401 });
+            return Response.json(
+              {
+                success: false,
+                error: 'Unauthorized',
+                message: 'Missing or invalid authorization header',
+                timestamp: new Date().toISOString(),
+              },
+              { status: 401 }
+            );
           }
-          
+
           // TODO: 實現 JWT 驗證邏輯
           // const token = authHeader.substring(7);
           // const userId = await validateToken(token);
           // updatedContext.userId = userId;
         }
-        
+
         return await handler(request, updatedContext);
-        
       } catch (error) {
         console.error('API validation error:', error);
-        return Response.json({
-          success: false,
-          error: 'Internal server error',
-          timestamp: new Date().toISOString(),
-        }, { status: 500 });
+        return Response.json(
+          {
+            success: false,
+            error: 'Internal server error',
+            timestamp: new Date().toISOString(),
+          },
+          { status: 500 }
+        );
       }
     }) as THandler;
   };
@@ -262,7 +296,7 @@ export function createSuccessResponse<T>(
     message,
     timestamp: new Date().toISOString(),
   });
-  
+
   return Response.json(response, { status });
 }
 
@@ -280,14 +314,14 @@ export function createErrorResponse(
     details,
     timestamp: new Date().toISOString(),
   });
-  
+
   return Response.json(response, { status });
 }
 
 // 驗證中間件
 export function validateAuth(request: NextRequest): { userId?: string; error?: Response } {
   const authHeader = request.headers.get('authorization');
-  
+
   if (!authHeader?.startsWith('Bearer ')) {
     return {
       error: createErrorResponse(
@@ -295,14 +329,14 @@ export function validateAuth(request: NextRequest): { userId?: string; error?: R
         'Missing or invalid authorization header',
         undefined,
         401
-      )
+      ),
     };
   }
-  
+
   // TODO: 實現實際的 JWT 驗證
   // const token = authHeader.substring(7);
   // const userId = validateJWT(token);
-  
+
   return { userId: 'mock-user-id' }; // 暫時回傳模擬值
 }
 
@@ -312,6 +346,10 @@ export const commonValidators = {
   email: z.string().email('無效的電子郵件格式'),
   positiveNumber: z.number().positive('必須為正數'),
   nonEmptyString: z.string().min(1, '不能為空字串'),
-  productCode: z.string().min(1).max(20).regex(/^[A-Z0-9_-]+$/i, '無效的產品代碼格式'),
+  productCode: z
+    .string()
+    .min(1)
+    .max(20)
+    .regex(/^[A-Z0-9_-]+$/i, '無效的產品代碼格式'),
   dateString: z.string().refine(date => !isNaN(Date.parse(date)), '無效的日期格式'),
-};
+} as const;

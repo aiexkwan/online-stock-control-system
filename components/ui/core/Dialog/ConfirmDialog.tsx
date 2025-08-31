@@ -6,7 +6,7 @@
 'use client';
 
 import * as React from 'react';
-import { AlertCircle, AlertTriangle, Info, HelpCircle } from 'lucide-react';
+import { AlertCircle, AlertTriangle, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
@@ -35,6 +35,7 @@ export interface ConfirmDialogProps extends Omit<DialogProps, 'children'> {
   isLoading?: boolean;
   loadingText?: string;
   details?: React.ReactNode;
+  severity?: 'info' | 'success' | 'warning' | 'error';
 }
 
 /**
@@ -97,8 +98,8 @@ export const ConfirmDialog = React.forwardRef<HTMLDivElement, ConfirmDialogProps
         setIsConfirming(true);
         await onConfirm?.();
         onOpenChange?.(false);
-      } catch (error) {
-        console.error('Confirm action failed:', error);
+      } catch (_error) {
+        console.error('Confirm action failed:', _error);
       } finally {
         setIsConfirming(false);
       }

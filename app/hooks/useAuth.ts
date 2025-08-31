@@ -89,7 +89,7 @@ export function useAuth(): AuthState {
 
   // Simplified user authentication and role setting function
   const setAuthenticatedUser = useCallback(async (user: User) => {
-    secureLogger.info({ userEmail: user.email }, '[useAuth] Setting authenticated user');
+    secureLogger.info({ _userEmail: user.email }, '[useAuth] Setting authenticated user');
 
     // Set authenticated state immediately
     setIsAuthenticated(true);
@@ -191,7 +191,7 @@ export function useAuth(): AuthState {
 
       return () => subscription.unsubscribe();
     }
-    
+
     // Ensure useEffect always returns undefined for cleanup or a cleanup function
     return undefined;
   }, [hasError, supabase, setAuthenticatedUser, clearAuthState]);
@@ -212,9 +212,9 @@ export function useCurrentUserId(): string | null {
 
   if (!user) return null;
 
-  // 直接從 raw_user_meta_data 取得 user_id（這是 Supabase 的標準存儲位置）
-  const userWithRawMeta = user as User & { raw_user_meta_data?: Record<string, unknown> };
-  const userId = userWithRawMeta?.raw_user_meta_data?.user_id;
+  // 直接從 raw_user_metadata 取得 user_id（這是 Supabase 的標準存儲位置）
+  const userWithRawMeta = user as User & { raw_user_metadata?: Record<string, unknown> };
+  const userId = userWithRawMeta?.raw_user_metadata?.user_id;
 
   return userId ? String(userId) : null;
 }

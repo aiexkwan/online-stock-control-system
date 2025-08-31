@@ -3,7 +3,9 @@
  */
 
 import { ReportDataSource } from '../core/ReportConfig';
-import { createClient } from '@/app/utils/supabase/client';
+import { createClient } from '../../../utils/supabase/client';
+import type { DatabaseRecord } from '../../../../types/database/tables';
+import type { FilterValues } from '../core/ReportConfig';
 
 interface GrnTransformedData {
   material_code: string;
@@ -17,7 +19,7 @@ interface GrnTransformedData {
 const grnDataSource: ReportDataSource = {
   id: 'grn-data',
 
-  async fetch(filters: Record<string, unknown>) {
+  async fetch(filters: FilterValues): Promise<DatabaseRecord[]> {
     const supabase = createClient();
     const grnRef = filters?.grnRef;
 
@@ -35,10 +37,10 @@ const grnDataSource: ReportDataSource = {
       throw new Error(`Failed to fetch GRN data: ${error.message}`);
     }
 
-    return data || [];
+    return (data || []) as DatabaseRecord[];
   },
 
-  transform(data: Record<string, unknown>[]): GrnTransformedData[] {
+  transform(data: DatabaseRecord[]): GrnTransformedData[] {
     interface GrnGroupedData {
       material_code: string;
       description: string;
@@ -47,44 +49,41 @@ const grnDataSource: ReportDataSource = {
       lot_no: string;
     }
 
-    // 策略4: unknown + type narrowing - 安全的分組聚合
-    const grouped = data.reduce(
-      (acc: Record<string, GrnGroupedData>, item: Record<string, unknown>) => {
-        // 安全的字符串轉換
-        const key =
-          typeof item.material_code === 'string'
-            ? item.material_code
-            : String(item.material_code || '');
-        if (!acc[key]) {
-          acc[key] = {
-            material_code:
-              typeof item.material_code === 'string'
-                ? item.material_code
-                : String(item.material_code || ''),
-            description:
-              typeof item.material_description === 'string'
-                ? item.material_description
-                : String(item.material_description || ''),
-            quantity: 0,
-            unit:
-              typeof item.package_type === 'string'
-                ? item.package_type
-                : String(item.package_type || ''),
-            lot_no: typeof item.lot_no === 'string' ? item.lot_no : String(item.lot_no || ''),
-          };
-        }
-        // 安全的數字轉換
-        const weight =
-          typeof item.weight === 'number'
-            ? item.weight
-            : typeof item.weight === 'string'
-              ? parseFloat(item.weight)
-              : 0;
-        acc[key].quantity += weight || 0;
-        return acc;
-      },
-      {}
-    );
+    // 策略4: DatabaseRecord + type narrowing - 安全的分組聚合
+    const grouped = data.reduce((acc: Record<string, GrnGroupedData>, item: DatabaseRecord) => {
+      // 安全的字符串轉換
+      const key =
+        typeof item.material_code === 'string'
+          ? item.material_code
+          : String(item.material_code || '');
+      if (!acc[key]) {
+        acc[key] = {
+          material_code:
+            typeof item.material_code === 'string'
+              ? item.material_code
+              : String(item.material_code || ''),
+          description:
+            typeof item.material_description === 'string'
+              ? item.material_description
+              : String(item.material_description || ''),
+          quantity: 0,
+          unit:
+            typeof item.package_type === 'string'
+              ? item.package_type
+              : String(item.package_type || ''),
+          lot_no: typeof item.lot_no === 'string' ? item.lot_no : String(item.lot_no || ''),
+        };
+      }
+      // 安全的數字轉換
+      const weight =
+        typeof item.weight === 'number'
+          ? item.weight
+          : typeof item.weight === 'string'
+            ? parseFloat(item.weight)
+            : 0;
+      acc[key].quantity += weight || 0;
+      return acc;
+    }, {});
 
     return Object.values(grouped) as GrnTransformedData[];
   },

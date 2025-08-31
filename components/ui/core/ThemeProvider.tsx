@@ -21,6 +21,15 @@ import {
 // Theme Context
 const ThemeContext = React.createContext<ThemeContextValue | undefined>(undefined);
 
+// 類型守衛函數
+const isValidThemeName = (value: string): value is ThemeName => {
+  return Object.prototype.hasOwnProperty.call(themes, value);
+};
+
+const isValidTabTheme = (value: string): value is keyof typeof adminTabThemes => {
+  return Object.prototype.hasOwnProperty.call(adminTabThemes, value);
+};
+
 export interface ThemeProviderProps {
   children: React.ReactNode;
   defaultTheme?: ThemeName;
@@ -40,7 +49,7 @@ export function ThemeProvider({
   children,
   defaultTheme = 'main',
   storageKey = 'newpennine-theme',
-  enableSystem = false,
+  enableSystem: _enableSystem = false,
 }: ThemeProviderProps) {
   const pathname = usePathname();
   const [themeName, setThemeName] = React.useState<ThemeName>(defaultTheme);
@@ -57,8 +66,8 @@ export function ThemeProvider({
     const pathSegments = pathname.split('/');
     const tabName = pathSegments[2]; // /admin/{tab}
 
-    if (tabName && tabName in adminTabThemes) {
-      return tabName as keyof typeof adminTabThemes;
+    if (tabName && isValidTabTheme(tabName)) {
+      return tabName;
     }
 
     return undefined;
@@ -72,8 +81,8 @@ export function ThemeProvider({
 
     // 從 localStorage 讀取主題
     const stored = localStorage.getItem(storageKey);
-    if (stored && (stored === 'main' || stored === 'admin')) {
-      setThemeName(stored as ThemeName);
+    if (stored && isValidThemeName(stored)) {
+      setThemeName(stored);
     } else {
       // 根據路徑自動選擇主題
       const autoTheme = getCurrentTheme(pathname);
@@ -89,7 +98,7 @@ export function ThemeProvider({
     applyTheme(theme);
 
     // 如果是 Admin 且有 tab 主題，注入額外的 CSS 變量
-    if (isAdmin && tabTheme && adminTabThemes[tabTheme]) {
+    if (isAdmin && tabTheme && isValidTabTheme(tabTheme)) {
       const root = document.documentElement;
       const tabColors = adminTabThemes[tabTheme];
 
@@ -101,6 +110,10 @@ export function ThemeProvider({
   // 設置主題
   const setTheme = React.useCallback(
     (newTheme: ThemeName) => {
+      if (!isValidThemeName(newTheme)) {
+        console.warn(`Invalid theme name: ${newTheme}. Using default theme.`);
+        return;
+      }
       setThemeName(newTheme);
       localStorage.setItem(storageKey, newTheme);
     },
@@ -113,7 +126,7 @@ export function ThemeProvider({
       theme: themes[themeName],
       setTheme,
       isAdmin,
-      tabTheme,
+      tabTheme: tabTheme || undefined,
     }),
     [themeName, setTheme, isAdmin, tabTheme]
   );
@@ -147,7 +160,7 @@ export function useThemeConfig(): ThemeConfig {
 export function useTabTheme() {
   const { tabTheme } = useTheme();
 
-  if (!tabTheme || !(tabTheme in adminTabThemes)) {
+  if (!tabTheme || !isValidTabTheme(tabTheme)) {
     return null;
   }
 
@@ -159,11 +172,12 @@ export function useThemeToggle() {
   const { theme, setTheme } = useTheme();
 
   const toggle = React.useCallback(() => {
-    setTheme(theme.name === 'main' ? 'admin' : 'main');
+    const newTheme: ThemeName = theme.name === 'main' ? 'admin' : 'main';
+    setTheme(newTheme);
   }, [theme.name, setTheme]);
 
   return {
-    theme: theme.name,
+    theme: theme.name as ThemeName,
     toggle,
     setTheme,
   };

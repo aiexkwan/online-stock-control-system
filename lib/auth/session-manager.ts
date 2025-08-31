@@ -5,6 +5,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { randomBytes } from 'crypto';
+import type { User } from '@supabase/supabase-js';
 
 interface SessionConfig {
   maxAge: number; // milliseconds
@@ -12,6 +14,13 @@ interface SessionConfig {
   rotateOnLogin: boolean;
   secureCookie: boolean;
   sameSite: 'strict' | 'lax' | 'none';
+}
+
+interface SessionValidationResult {
+  valid: boolean;
+  expired?: boolean;
+  needsRefresh?: boolean;
+  user?: User;
 }
 
 const DEFAULT_CONFIG: SessionConfig = {
@@ -35,10 +44,9 @@ export class SessionManager {
   /**
    * Rotate session ID (prevent session fixation)
    */
-  async rotateSession(request: NextRequest): Promise<string> {
+  async rotateSession(_request: NextRequest): Promise<string> {
     // Generate new session ID
-    const crypto = require('crypto');
-    const newSessionId = crypto.randomBytes(32).toString('hex');
+    const newSessionId = randomBytes(32).toString('hex');
 
     // In production, this would:
     // 1. Copy existing session data
@@ -52,12 +60,7 @@ export class SessionManager {
   /**
    * Validate session with parallel checks for improved performance
    */
-  async validateSession(request: NextRequest): Promise<{
-    valid: boolean;
-    expired?: boolean;
-    needsRefresh?: boolean;
-    user?: unknown;
-  }> {
+  async validateSession(request: NextRequest): Promise<SessionValidationResult> {
     try {
       // Get Supabase session with parallel validation approaches
       const supabase = createServerClient(
@@ -80,8 +83,8 @@ export class SessionManager {
         supabase.auth.getUser(),
       ]);
 
-      let session = null;
-      let user = null;
+      let session: any = null;
+      let user: User | null = null;
 
       // 處理會話檢查結果
       if (validationResults[0].status === 'fulfilled' && !validationResults[0].value.error) {
@@ -100,7 +103,7 @@ export class SessionManager {
 
       // 優先使用 session，但如果沒有 session 但有 user，也可接受
       const validSession = session || user;
-      const sessionUser = session?.user || user;
+      const sessionUser: User | null = session?.user || user;
 
       if (!validSession || !sessionUser) {
         return { valid: false, expired: true };
@@ -226,7 +229,7 @@ export class SessionManager {
     timestamp: number;
   } {
     const forwarded = request.headers.get('x-forwarded-for');
-    const ip = forwarded ? forwarded.split(',')[0] : undefined;
+    const ip = forwarded ? forwarded.split(',')[0].trim() : undefined;
     const userAgent = request.headers.get('user-agent') || undefined;
 
     return {
@@ -257,14 +260,9 @@ export class SessionManager {
     // Add session info to response headers
     const response = await handler();
 
-    if (
-      validation.user &&
-      validation.user !== null &&
-      typeof validation.user === 'object' &&
-      'id' in validation.user
-    ) {
+    if (validation.user?.id) {
       response.headers.set('X-Session-Valid', 'true');
-      response.headers.set('X-Session-User', String((validation.user as { id: string }).id));
+      response.headers.set('X-Session-User', validation.user.id);
     }
 
     return response;

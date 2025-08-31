@@ -14,9 +14,12 @@ import {
 } from '@/lib/schemas/printing';
 import type { Database } from '@/types/database/supabase';
 
-// TODO: 使用更具體的表類型定義，現在使用 any 作為臨時解決方案
-// 未來應該根據具體的列印類型使用對應的表類型
+// 資料庫記錄類型 - 用於列印模板的通用資料結構
 type DatabaseRecord = Record<string, unknown>;
+
+// 針對特定表格的類型別名
+type QcLabelRecord = Database['public']['Tables']['record_palletinfo']['Row'];
+type GrnLabelRecord = Database['public']['Tables']['record_grn']['Row'];
 
 export class PrintTemplateService {
   private templates: Map<PrintType, TemplateConfig> = new Map();
@@ -101,7 +104,7 @@ export class PrintTemplateService {
   } {
     try {
       const formattedData = data.map(record => {
-        // Convert DatabaseRecord to QcLabelData format
+        // Convert _DatabaseRecord to QcLabelData format
         const qcData = {
           plt_num: record.plt_num || '',
           product_code: record.product_code || '',
@@ -138,7 +141,7 @@ export class PrintTemplateService {
   } {
     try {
       const formattedData = data.map(record => {
-        // Convert DatabaseRecord to GrnLabelData format
+        // Convert _DatabaseRecord to GrnLabelData format
         const grnData = {
           grn_ref: Number(record.grn_ref || 0),
           plt_num: record.plt_num || '',

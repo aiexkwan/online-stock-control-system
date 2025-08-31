@@ -384,7 +384,7 @@ export async function buildTransactionReportBuffer(data: TransactionReportData):
       transfer.quantity,
       transfer.from_location,
       transfer.to_location,
-      transfer.operator_name,
+      transfer.operatorname,
     ]);
     row.eachCell(cell => {
       cell.border = {

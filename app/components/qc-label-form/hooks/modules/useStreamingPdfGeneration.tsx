@@ -1,3 +1,4 @@
+/** @jsxImportSource react */
 /**
  * useStreamingPdfGeneration Hook
  * 實現串流 PDF 生成以提高性能和用戶體驗
@@ -14,14 +15,8 @@ import { getOrdinalSuffix, getAcoPalletCount } from '@/app/utils/qcLabelHelpers'
 import { createClient } from '@/app/utils/supabase/client';
 // import { enhancedPdfParallelProcessor, type ParallelPdfTask, type ProgressUpdate } from '@/lib/performance/enhanced-pdf-parallel-processor';
 
-import {
-  PdfGenerationResult,
-  PdfProgressCallback,
-  StreamingPdfConfig,
-  ComponentEventHandler,
-} from '@/lib/types/component-props';
-
 // 臨時型別定義
+type ComponentEventHandler = (data: any) => void;
 type ParallelPdfTask = {
   id: string;
   data: Record<string, unknown>;
@@ -129,6 +124,7 @@ const enhancedPdfParallelProcessor = {
     }
   },
 };
+
 import type { ProductInfo } from '../../types';
 
 interface StreamingPdfGenerationOptions {
@@ -157,12 +153,22 @@ interface StreamingStatus {
   errors: string[];
 }
 
+interface StreamingPdfGenerationMetrics {
+  totalTasks: number;
+  completedTasks: number;
+  failedTasks: number;
+  successRate: number;
+  averageProcessingTime: number;
+  throughputPerSecond: number;
+}
+
 interface UseStreamingPdfGenerationReturn {
   generatePdfsStream: (options: StreamingPdfGenerationOptions) => Promise<{
     success: boolean;
     pdfBlobs: Blob[];
     uploadedUrls: string[];
     errors: string[];
+    metrics?: StreamingPdfGenerationMetrics;
   }>;
   streamingStatus: StreamingStatus;
   cancelStreaming: () => void;
@@ -365,27 +371,33 @@ export const useStreamingPdfGeneration = (): UseStreamingPdfGenerationReturn => 
         }
 
         // 設置進度監聽器
-        const progressHandler = (progressUpdate: ProgressUpdate) => {
+        const progressHandler = (progressUpdate: any) => {
+          const updateData = progressUpdate as ProgressUpdate & {
+            completed?: number;
+            errors?: string[];
+            phase?: string;
+          };
+
           setStreamingStatus(prev => ({
             ...prev,
-            completed: (progressUpdate as any).completed || prev.completed,
-            errors: (progressUpdate as any).errors || prev.errors,
+            completed: updateData.completed || prev.completed,
+            errors: updateData.errors || prev.errors,
           }));
 
           // 調用外部進度回調
           if (onProgress) {
-            const status =
-              (progressUpdate as any).phase === 'completed'
+            const status: 'Processing' | 'Success' | 'Failed' =
+              updateData.phase === 'completed'
                 ? 'Success'
-                : ((progressUpdate as any).errors?.length || 0) > 0
+                : (updateData.errors?.length || 0) > 0
                   ? 'Failed'
                   : 'Processing';
-            onProgress((progressUpdate as any).completed || 0, status);
+            onProgress(updateData.completed || 0, status);
           }
         };
 
         // 註冊進度監聽器
-        enhancedPdfParallelProcessor.on('progress', progressHandler as any);
+        enhancedPdfParallelProcessor.on('progress', progressHandler);
 
         try {
           // 使用增強的並行處理器處理所有任務
@@ -433,7 +445,7 @@ export const useStreamingPdfGeneration = (): UseStreamingPdfGenerationReturn => 
           };
         } finally {
           // 移除進度監聽器
-          enhancedPdfParallelProcessor.off('progress', progressHandler as any);
+          enhancedPdfParallelProcessor.off('progress', progressHandler);
         }
       } catch (error: unknown) {
         console.error('Streaming PDF generation error:', error);

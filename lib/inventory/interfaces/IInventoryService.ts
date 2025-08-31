@@ -20,6 +20,7 @@ import {
   HistoryRecord,
   StockLevel,
   ActivityLogEntry,
+  InventoryChangeEvent,
 } from '../types/inventory.types';
 
 export interface IInventoryService {
@@ -57,7 +58,5 @@ export interface IInventoryService {
   }): Promise<ActivityLogEntry[]>;
 
   // Real-time Updates (if applicable)
-  subscribeToInventoryChanges?(
-    callback: (event: import('../types/inventory.types').InventoryChangeEvent) => void
-  ): () => void;
+  subscribeToInventoryChanges?(callback: (event: InventoryChangeEvent) => void): () => void;
 }

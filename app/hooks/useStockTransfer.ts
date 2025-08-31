@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
-// import { DatabaseRecord } from '@/types/database/tables'; // Removed - not used
-import { createClient } from '@/app/utils/supabase/client';
-import { LocationMapper, DatabaseLocationColumn } from '@/lib/inventory/utils/locationMapper';
-import type { PalletInfo } from '@/lib/inventory/types';
+import { createClient } from '../utils/supabase/client';
+import { LocationMapper, DatabaseLocationColumn } from '../../lib/inventory/utils/locationMapper';
+import type { PalletInfo } from '../../lib/inventory/types';
+import type { Database } from '../../lib/database.types';
 
 interface OptimisticTransfer {
   id: string;
@@ -109,7 +109,7 @@ export function useStockTransfer(options: UseStockTransferOptions = {}) {
             plt_num: palletInfo.plt_num,
             loc: toLocation,
             remark: `Moved from ${fromLocation} to ${toLocation}`,
-            time: new Date().toISOString(),
+            _time: new Date().toISOString(),
           },
         ]);
 
@@ -140,22 +140,28 @@ export function useStockTransfer(options: UseStockTransferOptions = {}) {
           throw new Error('Invalid location mapping');
         }
 
-        const inventoryUpdate: {
-          product_code: string;
-          plt_num: string;
-          latest_update: string;
-        } & Partial<Record<DatabaseLocationColumn, number>> = {
-          product_code: palletInfo.product_code,
+        // Create the base inventory update record
+        const baseInventoryUpdate: Database['public']['Tables']['record_inventory']['Insert'] = {
           plt_num: palletInfo.plt_num,
+          product_code: palletInfo.product_code,
           latest_update: new Date().toISOString(),
+          await: 0,
+          backcarpark: 0,
+          bulk: 0,
+          damage: 0,
+          fold: 0,
+          injection: 0,
+          pipeline: 0,
+          prebook: 0,
         };
 
-        // Decrease from location
-        inventoryUpdate[fromDbColumn as DatabaseLocationColumn] = -palletInfo.product_qty;
-        // Increase to location
-        inventoryUpdate[toDbColumn as DatabaseLocationColumn] = palletInfo.product_qty;
+        // Add dynamic location quantities
+        const inventoryUpdate = {
+          ...baseInventoryUpdate,
+          [fromDbColumn]: -palletInfo.product_qty,
+          [toDbColumn]: palletInfo.product_qty,
+        } as Database['public']['Tables']['record_inventory']['Insert'];
 
-        // 使用 DatabaseRecord 接口的索引簽名來安全地插入動態屬性
         const { error: inventoryError } = await supabase
           .from('record_inventory')
           .insert([inventoryUpdate]);
@@ -196,7 +202,7 @@ export function useStockTransfer(options: UseStockTransferOptions = {}) {
         setIsTransferring(false);
       }
     },
-    [supabase, hasPendingTransfer, options]
+    [hasPendingTransfer, options, supabase]
   );
 
   return {

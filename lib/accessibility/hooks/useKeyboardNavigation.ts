@@ -42,9 +42,9 @@ export function useKeyboardNavigation(
    */
   const navigateToNext = useCallback((): void => {
     const container = containerRef?.current || document.body;
-    const result = globalFocusManager.cycleFocus('next', container);
+    const _result = globalFocusManager.cycleFocus('next', container);
 
-    if (!result) {
+    if (!_result) {
       // 如果沒有下一個元素，循環到第一個
       globalFocusManager.focusFirst(container);
     }
@@ -55,9 +55,9 @@ export function useKeyboardNavigation(
    */
   const navigateToPrevious = useCallback((): void => {
     const container = containerRef?.current || document.body;
-    const result = globalFocusManager.cycleFocus('previous', container);
+    const _result = globalFocusManager.cycleFocus('previous', container);
 
-    if (!result) {
+    if (!_result) {
       // 如果沒有前一個元素，循環到最後一個
       globalFocusManager.focusLast(container);
     }

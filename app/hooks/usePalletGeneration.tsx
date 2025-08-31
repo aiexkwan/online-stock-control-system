@@ -38,16 +38,16 @@ interface UsePalletGenerationReturn {
  * const palletGeneration = usePalletGeneration();
  *
  * // Generate pallet numbers
- * const result = await palletGeneration.generatePalletNumbersAndSeries(5, 'my-session');
- * if (result.success) {
+ * const _result = await palletGeneration.generatePalletNumbersAndSeries(5, 'my-session');
+ * if (_result.success) {
  *   // Pallet numbers and series will be logged securely in development
  * }
  *
  * // Confirm usage after successful printing
- * await palletGeneration.confirmUsage(result.palletNumbers);
+ * await palletGeneration.confirmUsage(_result.palletNumbers);
  *
  * // Or release if printing failed
- * await palletGeneration.releaseReservation(result.palletNumbers);
+ * await palletGeneration.releaseReservation(_result.palletNumbers);
  * ```
  */
 export const usePalletGeneration = (): UsePalletGenerationReturn => {
@@ -57,7 +57,7 @@ export const usePalletGeneration = (): UsePalletGenerationReturn => {
   const generatePalletNumbersAndSeries = useCallback(
     async (
       count: number,
-      sessionId?: string
+      _sessionId?: string
     ): Promise<{
       palletNumbers: string[];
       series: string[];
@@ -65,14 +65,14 @@ export const usePalletGeneration = (): UsePalletGenerationReturn => {
       error?: string;
     }> => {
       if (count <= 0) {
-        const error = 'Invalid pallet count';
-        setGenerationError(error);
-        toast.error(error);
+        const _error = 'Invalid pallet count';
+        setGenerationError(_error);
+        toast.error(_error);
         return {
           palletNumbers: [],
           series: [],
           success: false,
-          error,
+          error: _error,
         };
       }
 
@@ -83,29 +83,29 @@ export const usePalletGeneration = (): UsePalletGenerationReturn => {
         secureLogger.info({ count }, '[usePalletGeneration] Generating pallet numbers');
 
         // 使用 Server Action
-        const result = await generatePalletNumbers(count, sessionId);
+        const _result = await generatePalletNumbers(count, _sessionId);
 
-        if (result.error) {
-          const error = result.error;
-          setGenerationError(error);
-          toast.error(error);
-          secureLogger.error(result, '[usePalletGeneration] Generation failed');
+        if (_result.error) {
+          const _error = _result.error;
+          setGenerationError(_error);
+          toast.error(_error);
+          secureLogger.error(_result, '[usePalletGeneration] Generation failed');
           return {
             palletNumbers: [],
             series: [],
             success: false,
-            error,
+            error: _error,
           };
         }
 
         secureLogger.info(
-          { count: result.palletNumbers.length },
+          { count: _result.palletNumbers.length },
           '[usePalletGeneration] Generated successfully'
         );
 
         return {
-          palletNumbers: result.palletNumbers,
-          series: result.series,
+          palletNumbers: _result.palletNumbers,
+          series: _result.series,
           success: true,
         };
       } catch (error) {
@@ -129,9 +129,9 @@ export const usePalletGeneration = (): UsePalletGenerationReturn => {
 
   const confirmUsage = useCallback(async (palletNumbers: string[]): Promise<boolean> => {
     try {
-      const result = await confirmPalletUsage(palletNumbers);
-      if (!result.success) {
-        toast.error(result.error || 'Failed to confirm pallet usage');
+      const _result = await confirmPalletUsage(palletNumbers);
+      if (!_result.success) {
+        toast.error(_result.error || 'Failed to confirm pallet usage');
         return false;
       }
       return true;
@@ -144,9 +144,9 @@ export const usePalletGeneration = (): UsePalletGenerationReturn => {
 
   const releaseReservation = useCallback(async (palletNumbers: string[]): Promise<boolean> => {
     try {
-      const result = await releasePalletReservation(palletNumbers);
-      if (!result.success) {
-        toast.error(result.error || 'Failed to release pallet reservation');
+      const _result = await releasePalletReservation(palletNumbers);
+      if (!_result.success) {
+        toast.error(_result.error || 'Failed to release pallet reservation');
         return false;
       }
       return true;

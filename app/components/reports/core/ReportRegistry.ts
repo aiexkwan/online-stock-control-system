@@ -11,32 +11,30 @@ class ReportRegistryClass {
   /**
    * 註冊報表
    */
-  register(config: ReportConfig, dataSources: Map<string, ReportDataSource>): void {
-    if (this.reports.has(config.id)) {
+  register(_config: ReportConfig, dataSources: Map<string, ReportDataSource>): void {
+    if (this.reports.has(_config.id)) {
       (process.env.NODE_ENV as string) !== 'production' &&
-        (process.env.NODE_ENV as string) !== 'production' &&
-        console.warn(`Report "${config.id}" is already registered. Overwriting...`);
+        console.warn(`Report "${_config.id}" is already registered. Overwriting...`);
     }
 
     // 驗證數據源
-    const missingDataSources = config.sections
+    const missingDataSources = _config.sections
       .map(section => section.dataSource)
       .filter(dsId => !dataSources.has(dsId));
 
     if (missingDataSources.length > 0) {
       throw new Error(
-        `Missing data sources for report "${config.id}": ${missingDataSources.join(', ')}`
+        `Missing data sources for report "${_config.id}": ${missingDataSources.join(', ')}`
       );
     }
 
-    this.reports.set(config.id, {
-      config,
+    this.reports.set(_config.id, {
+      _config,
       dataSources,
     });
 
     (process.env.NODE_ENV as string) !== 'production' &&
-      (process.env.NODE_ENV as string) !== 'production' &&
-      console.log(`Report "${config.id}" registered successfully`);
+      console.log(`Report "${_config.id}" registered successfully`);
   }
 
   /**
@@ -64,7 +62,7 @@ class ReportRegistryClass {
    * 按類別獲取報表
    */
   getReportsByCategory(category: string): RegisteredReport[] {
-    return this.getAllReports().filter(report => report.config.category === category);
+    return this.getAllReports().filter(report => report._config.category === category);
   }
 
   /**
@@ -84,45 +82,3 @@ class ReportRegistryClass {
 
 // 單例實例
 export const ReportRegistry = new ReportRegistryClass();
-
-// 註冊現有報表
-import { voidPalletReportConfig } from '../configs/voidPalletReport';
-import { voidPalletDataSources } from '../dataSources/VoidPalletDataSource';
-import { orderLoadingReportConfig } from '../configs/orderLoadingReport';
-import { orderLoadingDataSources } from '../dataSources/OrderLoadingDataSource';
-import { stockTakeReportConfig } from '../configs/stockTakeReport';
-import { stockTakeDataSources } from '../dataSources/StockTakeDataSource';
-import { acoOrderReportConfig } from '../configs/acoOrderReport';
-import { acoOrderDataSources } from '../dataSources/AcoOrderDataSource';
-import { grnReportConfig } from '../configs/grnReport';
-import { grnDataSources } from '../dataSources/GrnDataSource';
-import { transactionReportConfig } from '../configs/transactionReport';
-import { transactionDataSources } from '../dataSources/TransactionDataSource';
-import { exportAllDataReportConfig } from '../configs/exportAllDataReport';
-import { exportAllDataSources } from '../dataSources/ExportAllDataSource';
-
-// 自動註冊報表
-if (typeof window !== 'undefined') {
-  // 只在客戶端註冊
-
-  // Void Pallet Report
-  ReportRegistry.register(voidPalletReportConfig, voidPalletDataSources);
-
-  // Order Loading Report
-  ReportRegistry.register(orderLoadingReportConfig, orderLoadingDataSources);
-
-  // Stock Take Report
-  ReportRegistry.register(stockTakeReportConfig, stockTakeDataSources);
-
-  // ACO Order Report
-  ReportRegistry.register(acoOrderReportConfig, acoOrderDataSources);
-
-  // GRN Report
-  ReportRegistry.register(grnReportConfig, grnDataSources);
-
-  // Transaction Report
-  ReportRegistry.register(transactionReportConfig, transactionDataSources);
-
-  // Export All Data
-  ReportRegistry.register(exportAllDataReportConfig, exportAllDataSources);
-}

@@ -1,5 +1,4 @@
-import Redis from 'ioredis';
-import { DatabaseRecord } from '@/types/database/tables';
+import Redis, { RedisOptions } from 'ioredis';
 import { cacheLogger } from './logger';
 
 // Upstash Redis 配置類型
@@ -45,7 +44,7 @@ export function createRedisClient(config?: UpstashRedisConfig): Redis {
     });
   } else {
     // 傳統配置模式（本地開發）
-    const redisConfig: DatabaseRecord = {
+    const redisConfig: RedisOptions = {
       host: config?.host || process.env.REDIS_HOST || 'localhost',
       port: config?.port || parseInt(process.env.REDIS_PORT || '6379'),
       password: config?.password || process.env.REDIS_PASSWORD,
@@ -54,7 +53,6 @@ export function createRedisClient(config?: UpstashRedisConfig): Redis {
       // 基本配置
       connectTimeout: 10000,
       maxRetriesPerRequest: 3,
-      retryDelayOnFailover: 100,
       lazyConnect: true,
       enableOfflineQueue: false,
 

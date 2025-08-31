@@ -15,7 +15,6 @@ import {
   EnhancedWeightInputListProps,
   DEFAULT_GRN_THEME,
   DEFAULT_GRN_LAYOUT,
-  mergeGrnConfig,
 } from '@/lib/types/grn-props';
 
 // Legacy interface for backward compatibility
@@ -56,14 +55,14 @@ export const WeightInputList: React.FC<WeightInputListPropsUnion> = props => {
     showIndex = false,
     showNetWeight = true,
     showTotalWeight = true,
-    placeholder = 'Enter weight/qty...',
+    placeholder: inputPlaceholder = 'Enter weight/qty...',
   } = props as EnhancedWeightInputListProps;
 
   // Merge configurations with defaults
   const config = React.useMemo(
     () => ({
       theme: {
-        accentColor: (theme?.accentColor || 'orange') as
+        accentColor: (theme?.accentColor || DEFAULT_GRN_THEME.accentColor) as
           | 'orange'
           | 'blue'
           | 'green'
@@ -75,9 +74,9 @@ export const WeightInputList: React.FC<WeightInputListPropsUnion> = props => {
         },
       },
       layout: {
-        compactMode: layout?.compactMode ?? false,
-        autoExpandThreshold: layout?.autoExpandThreshold ?? 5,
-        showWeightSummary: layout?.showWeightSummary ?? true,
+        compactMode: layout?.compactMode ?? DEFAULT_GRN_LAYOUT.compactMode,
+        autoExpandThreshold: layout?.autoExpandThreshold ?? DEFAULT_GRN_LAYOUT.autoExpandThreshold,
+        showWeightSummary: layout?.showWeightSummary ?? DEFAULT_GRN_LAYOUT.showWeightSummary,
       },
       validation: {
         enableRealTimeValidation: validation?.enableRealTimeValidation ?? true,
@@ -107,7 +106,7 @@ export const WeightInputList: React.FC<WeightInputListPropsUnion> = props => {
 
   // Sync local state with props and maintain expansion capability
   React.useEffect(() => {
-    setLocalWeights(prev => {
+    setLocalWeights(_prev => {
       const newWeights = [...grossWeights];
       // Only add empty slot if we haven't reached max capacity and last item has content
       if (
@@ -121,7 +120,7 @@ export const WeightInputList: React.FC<WeightInputListPropsUnion> = props => {
   }, [grossWeights, effectiveMaxItems]);
 
   // Only use confirmed weights from props, not local state
-  const confirmedWeightsCount = grossWeights.filter(w => w.trim() !== '').length;
+  const confirmedWeightsCount = grossWeights.filter((w: string) => w.trim() !== '').length;
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Show all local weights since the array auto-expands as needed
@@ -151,10 +150,10 @@ export const WeightInputList: React.FC<WeightInputListPropsUnion> = props => {
   // Sync local changes back to parent on blur/finish
   const syncToParent = React.useCallback(() => {
     // Filter out empty slots and sync to parent
-    const validWeights = localWeights.filter(w => w.trim() !== '');
+    const validWeights = localWeights.filter((w: string) => w.trim() !== '');
 
     // Only update parent if there's a real change
-    const currentValid = grossWeights.filter(w => w.trim() !== '');
+    const currentValid = grossWeights.filter((w: string) => w.trim() !== '');
 
     // Simple comparison - if different lengths or different values, sync
     const needsSync =

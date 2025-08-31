@@ -6,7 +6,7 @@ import LoginForm from './LoginForm';
 
 interface LoginPageContentProps {
   urlSearchParams?: URLSearchParams | null;
-  onError: (error: boolean) => void;
+  onError: (_error: boolean) => void;
 }
 
 /**

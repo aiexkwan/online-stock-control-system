@@ -35,7 +35,6 @@
 - /api/security/monitor
 - /api/send-order-email
 - /api/stock-count
-- /api/test-openai
 ```
 
 ### GraphQL Configuration
@@ -201,7 +200,7 @@ Key Resolvers:
 
 - **OpenAI Integration**:
   - SDK: `openai: 4.104.0`
-  - Endpoints: `/api/test-openai`, `/api/ask-database`
+  - Endpoints: `/api/ask-database`
   - Models: GPT-4o-mini, GPT-4o, GPT-3.5-turbo
 
 - **Anthropic Integration**:

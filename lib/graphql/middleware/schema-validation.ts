@@ -4,8 +4,7 @@
  */
 
 import { GraphQLError } from 'graphql';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { createClient } from '@/app/utils/supabase/server';
+import { createClient } from '../../../app/utils/supabase/server';
 import { DATABASE_FIELD_MAPPINGS, FieldMapper } from '../config/field-mappings';
 
 export interface SchemaValidationResult {
@@ -47,7 +46,7 @@ export class SchemaValidator {
     const missingColumns: Record<string, string[]> = {};
     let valid = true;
 
-    for (const [tableName, mapping] of Object.entries(DATABASE_FIELD_MAPPINGS)) {
+    for (const [tableName, _mapping] of Object.entries(DATABASE_FIELD_MAPPINGS)) {
       try {
         const validation = await FieldMapper.validateTableSchema(supabase, tableName);
 

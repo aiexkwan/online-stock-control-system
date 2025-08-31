@@ -1,5 +1,5 @@
-import { isProduction } from '@/lib/utils/env';
-import { featureFlagLogger } from '@/lib/logger';
+import { isProduction } from '../utils/env';
+import { featureFlagLogger } from '../logger';
 import {
   FeatureFlagProvider,
   FeatureFlagConfig,

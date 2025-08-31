@@ -5,9 +5,9 @@
  * 最終目標：v1.4 完全移除 GraphQL
  */
 
-import { featureFlagManager } from '@/lib/feature-flags/FeatureFlagManager';
-import { KnownFeatureFlags } from '@/lib/feature-flags/types';
-import { logger } from '@/lib/logger';
+import { featureFlagManager } from '../feature-flags/FeatureFlagManager';
+import { KnownFeatureFlags } from '../feature-flags/types';
+import { logger } from '../logger';
 
 export interface APIRouterConfig {
   userId?: string;
@@ -76,7 +76,7 @@ export class APIRouter {
         context
       );
 
-      const percentage = percentageFlag.variant ? parseInt(percentageFlag.variant) : 0;
+      const percentage = percentageFlag.variant ? parseInt(percentageFlag.variant, 10) || 0 : 0;
 
       // 檢查是否啟用 fallback
       const fallbackEnabled = await featureFlagManager.isEnabled(

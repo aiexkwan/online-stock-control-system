@@ -85,8 +85,8 @@ export function UnifiedPrintInterface({ config, className }: UnifiedPrintInterfa
 
   const handleDataChange = useCallback(
     (data: PrintData) => {
-      formState.data = { ...formState.data, ...data };
-      dispatch({ type: 'SET_DATA', data: formState.data });
+      const updatedData = { ...formState.data, ...data };
+      dispatch({ type: 'SET_DATA', data: updatedData });
     },
     [formState]
   );
@@ -120,8 +120,8 @@ export function UnifiedPrintInterface({ config, className }: UnifiedPrintInterfa
           dispatch({ type: 'RESET_FORM' });
           setShowPrintDialog(false);
         }
-      } catch (err) {
-        console.error('Print failed:', err);
+      } catch (error) {
+        console.error('Print failed:', error);
       }
     },
     [config.type, formState.data, print]

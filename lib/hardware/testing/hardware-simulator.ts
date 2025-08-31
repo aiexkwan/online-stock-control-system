@@ -5,14 +5,7 @@
 
 import { EventEmitter } from 'events';
 import { createLogger } from '../../logger';
-import {
-  PrintJob,
-  PrintResult,
-  ScanResult,
-  DeviceStatus,
-  PrinterStatus,
-  ScannerStatus,
-} from '../types';
+import { PrintJob, PrintResult, ScanResult, DeviceStatus } from '../types';
 
 const logger = createLogger('hardware-simulator');
 
@@ -23,6 +16,7 @@ export class HardwareSimulator extends EventEmitter {
   private simulateDelays = true;
   private printDelay = 1000; // 1 second
   private scanDelay = 500; // 0.5 seconds
+  private scenarioInterval?: NodeJS.Timeout;
 
   constructor() {
     super();
@@ -70,11 +64,14 @@ export class HardwareSimulator extends EventEmitter {
       await this.delay(this.printDelay);
     }
 
+    // 生成或使用現有的 job ID
+    const jobId = job.id || this.generateJobId();
+
     if (this.simulateFailures && Math.random() < 0.1) {
       // 10% chance of failure
       return {
         success: false,
-        jobId: job.id!,
+        jobId,
         error: 'Simulated print failure: Paper jam',
       };
     }
@@ -99,7 +96,7 @@ export class HardwareSimulator extends EventEmitter {
 
     return {
       success: true,
-      jobId: job.id!,
+      jobId,
       pdfUrl: 'blob:mock-pdf-url',
       printedAt: new Date().toISOString(),
       message: 'Print simulated successfully',
@@ -174,6 +171,10 @@ export class HardwareSimulator extends EventEmitter {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
+  private generateJobId(): string {
+    return `job-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }
+
   private generateMockScanData(): string {
     const types = ['pallet', 'product', 'location'];
     const type = types[Math.floor(Math.random() * types.length)];
@@ -198,6 +199,12 @@ export class HardwareSimulator extends EventEmitter {
   async runTestScenario(scenario: 'success' | 'failure' | 'mixed') {
     logger.info({ scenario }, 'Running hardware test scenario');
 
+    // Clear any existing interval
+    if (this.scenarioInterval) {
+      clearInterval(this.scenarioInterval);
+      this.scenarioInterval = undefined;
+    }
+
     switch (scenario) {
       case 'success':
         this.setSimulateFailures(false);
@@ -207,11 +214,20 @@ export class HardwareSimulator extends EventEmitter {
         break;
       case 'mixed':
         // Randomly switch between success and failure
-        setInterval(() => {
+        this.scenarioInterval = setInterval(() => {
           this.setSimulateFailures(Math.random() < 0.3);
         }, 5000);
         break;
     }
+  }
+
+  // Cleanup method
+  cleanup() {
+    if (this.scenarioInterval) {
+      clearInterval(this.scenarioInterval);
+      this.scenarioInterval = undefined;
+    }
+    this.removeAllListeners();
   }
 }
 

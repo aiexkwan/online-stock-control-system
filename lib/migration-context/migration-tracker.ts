@@ -3,7 +3,7 @@
  * Provides real-time tracking and context management for card migration
  */
 
-import { createClient } from '@/app/utils/supabase/server';
+import { createClient } from '../../app/utils/supabase/client';
 
 // ============================================================================
 // Types and Interfaces
@@ -283,15 +283,15 @@ export const CARD_MIGRATION_REGISTRY: Record<string, Partial<CardMigrationRecord
 
 export class MigrationTracker {
   private static instance: MigrationTracker;
-  private supabase!: Awaited<ReturnType<typeof createClient>>;
+  private supabase: ReturnType<typeof createClient>;
   private cache: Map<string, CardMigrationRecord> = new Map();
 
   private constructor() {
+    this.supabase = createClient();
     this.init();
   }
 
   private async init() {
-    this.supabase = await createClient();
     await this.loadFromDatabase();
   }
 
@@ -328,10 +328,18 @@ export class MigrationTracker {
             ? new Date(record.migration_end_date as string)
             : undefined,
           performanceBaseline: (record.performance_baseline as PerformanceMetrics) || {
-            renderTime: 0,
+            renderTime: {
+              p50: 0,
+              p75: 0,
+              p95: 0,
+            },
             bundleSize: 0,
-            memoryUsage: 0,
-            loadTime: 0,
+            memoryUsage: {
+              initial: 0,
+              peak: 0,
+              average: 0,
+            },
+            apiLatency: {},
           },
           performanceCurrent: record.performance_current as PerformanceMetrics | undefined,
           issues: (record.issues as MigrationIssue[]) || [],

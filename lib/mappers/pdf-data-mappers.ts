@@ -11,8 +11,8 @@
 
 import { format } from 'date-fns';
 import * as QRCode from 'qrcode';
-import type { PrintLabelPdfProps } from '@/components/print-label-pdf/PrintLabelPdf';
-import type { LabelMode } from '@/lib/types/grn';
+import type { PrintLabelPdfProps } from '../../components/print-label-pdf/PrintLabelPdf';
+import type { LabelMode } from '../types/grn';
 
 // ============================================================================
 // 類型定義 - 輸入數據結構

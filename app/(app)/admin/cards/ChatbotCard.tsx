@@ -383,7 +383,7 @@ export default function ChatbotCard({ className }: ChatbotCardProps) {
   const [isDetectingAnomalies, setIsDetectingAnomalies] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [sessionId] = useState(() => `session_${Date.now()}`);
+  const [_sessionId] = useState(() => `session_${Date.now()}`);
 
   // Check for anomaly detection access
   const hasAnomalyDetectionAccess = user?.email === 'akwan@pennineindustries.com';
@@ -554,7 +554,7 @@ export default function ChatbotCard({ className }: ChatbotCardProps) {
     try {
       const requestBody = {
         question: messageToSend,
-        sessionId,
+        _sessionId,
         stream: useStreaming,
         features: {
           enableCache: true,

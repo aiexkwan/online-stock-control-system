@@ -9,7 +9,7 @@ import { unifiedAuth } from '../../utils/unified-auth';
 
 interface RefactoredRegisterFormProps {
   onSuccess?: () => void;
-  onError?: (error: string) => void;
+  onError?: (_error: string) => void;
 }
 
 /**

@@ -61,10 +61,10 @@ export const ClockNumberConfirmDialog: React.FC<ClockNumberConfirmDialogProps> =
         .single();
 
       // 使用 Promise.race 處理超時
-      const { data, error } = await Promise.race([queryPromise, timeoutPromise]);
+      const { data, error: queryError } = await Promise.race([queryPromise, timeoutPromise]);
 
-      if (error) {
-        console.error('[ClockNumberConfirmDialog] Error validating clock number:', error);
+      if (queryError) {
+        console.error('[ClockNumberConfirmDialog] Error validating clock number:', queryError);
         return false;
       }
 
@@ -72,9 +72,9 @@ export const ClockNumberConfirmDialog: React.FC<ClockNumberConfirmDialogProps> =
         (process.env.NODE_ENV as string) !== 'production' &&
         console.log('[ClockNumberConfirmDialog] Validation result:', data);
       return !!data;
-    } catch (error: unknown) {
-      console.error('[ClockNumberConfirmDialog] Exception during validation:', error);
-      if (getErrorMessage(error) === 'Validation timeout') {
+    } catch (validationError: unknown) {
+      console.error('[ClockNumberConfirmDialog] Exception during validation:', validationError);
+      if (getErrorMessage(validationError) === 'Validation timeout') {
         toast.error('Validation timeout. Please try again.');
       }
       return false;
@@ -114,8 +114,8 @@ export const ClockNumberConfirmDialog: React.FC<ClockNumberConfirmDialogProps> =
         setError('Clock number not found. Please check and try again.');
         toast.error('Invalid clock number');
       }
-    } catch (error) {
-      console.error('[ClockNumberConfirmDialog] Error during confirmation:', error);
+    } catch (confirmError: unknown) {
+      console.error('[ClockNumberConfirmDialog] Error during confirmation:', confirmError);
       setError('An error occurred while validating clock number');
       toast.error('Validation error occurred');
     } finally {

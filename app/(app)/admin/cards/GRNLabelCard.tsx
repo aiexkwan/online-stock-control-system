@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useMemo, memo } from 'react';
-// import { toast } from 'sonner'; // Removed - not used
+// import { _toast } from 'sonner'; // Removed - not used
 import { Package } from 'lucide-react';
 import { getOptimizedClient } from '@/app/utils/supabase/optimized-client';
 import { getGrnDatabaseService } from '@/lib/database/grn-database-service';
@@ -100,7 +100,7 @@ const GRN_CSS_CLASSES = {
 const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
   // Handle both legacy and enhanced props
   const enhancedProps: EnhancedGRNLabelCardProps = React.useMemo(() => {
-    // Check if this is legacy props (only has className)
+    // Check if this is legacy props (only has _className)
     if ('className' in props && Object.keys(props).length === 1) {
       return convertLegacyProps(props as GRNLabelCardProps);
     }
@@ -109,7 +109,7 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
   }, [props]);
 
   // Merge with defaults
-  const config = React.useMemo(
+  const _config = React.useMemo(
     () => ({
       theme: mergeGrnConfig(enhancedProps.theme, DEFAULT_GRN_THEME),
       layout: mergeGrnConfig(enhancedProps.layout, DEFAULT_GRN_LAYOUT),
@@ -138,21 +138,21 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
   const logger = useMemo(() => {
     const loggerInstance = createGrnLogger('GRNLabelCard');
     if (debug) {
-      loggerInstance.info('GRN Label Card initialized with config:', {
-        theme: config.theme.accentColor,
-        layout: config.layout.compactMode ? 'compact' : 'full',
-        features: Object.keys(config.features).filter(
-          k => config.features[k as keyof typeof config.features]
+      loggerInstance.info('GRN Label Card initialized with _config:', {
+        theme: _config.theme.accentColor,
+        layout: _config.layout.compactMode ? 'compact' : 'full',
+        features: Object.keys(_config.features).filter(
+          k => _config.features[k as keyof typeof _config.features]
         ),
         disabled,
         readOnly,
       });
     }
     return loggerInstance;
-  }, [debug, config, disabled, readOnly]);
+  }, [debug, _config, disabled, readOnly]);
 
   // Use optimized Supabase client with singleton pattern
-  const [_supabase] = React.useState(() => {
+  const [supabase] = React.useState(() => {
     if (typeof window !== 'undefined') {
       return getOptimizedClient();
     }
@@ -261,33 +261,28 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
   });
 
   // Use the business logic hook with debounced progress updates and resource management
-  const { processPrintRequest, cancelCurrentOperation } =
-    useAdminGrnLabelBusiness({
-      state,
-      actions: {
-        ...actions,
-        // Enhance actions with debounced progress updates
-        setProgress: progress => {
-          if (resourceCleanup.isMounted()) {
-            debouncedUpdateProgress({
-              current: progress.current,
-              total: progress.total,
-              status: progress.status,
-            });
-          }
-        },
-        updateProgressStatus: (index, status) => {
-          if (resourceCleanup.isMounted()) {
-            debouncedUpdateProgressStatus(
-              index,
-              status,
-              status === 'Success' || status === 'Failed'
-            );
-          }
-        },
+  const { processPrintRequest, cancelCurrentOperation } = useAdminGrnLabelBusiness({
+    state,
+    actions: {
+      ...actions,
+      // Enhance actions with debounced progress updates
+      setProgress: progress => {
+        if (resourceCleanup.isMounted()) {
+          debouncedUpdateProgress({
+            current: progress.current,
+            total: progress.total,
+            status: progress.status,
+          });
+        }
       },
-      currentUserId: currentUserId || '',
-    });
+      updateProgressStatus: (index, status) => {
+        if (resourceCleanup.isMounted()) {
+          debouncedUpdateProgressStatus(index, status, status === 'Success' || status === 'Failed');
+        }
+      },
+    },
+    currentUserId: currentUserId || '',
+  });
 
   // User ID 驗證對話框狀態
   const [showUserIdDialog, setShowUserIdDialog] = React.useState(false);
@@ -317,21 +312,21 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
 
       // Apply custom validation if available
       if (
-        config.validation.customValidators?.[
-          field as keyof typeof config.validation.customValidators
+        _config.validation.customValidators?.[
+          field as keyof typeof _config.validation.customValidators
         ]
       ) {
         const validator =
-          config.validation.customValidators[
-            field as keyof typeof config.validation.customValidators
+          _config.validation.customValidators[
+            field as keyof typeof _config.validation.customValidators
           ];
         const validationResult = validator!(value);
         if (validationResult !== true) {
           const errorMessage =
             typeof validationResult === 'string' ? validationResult : 'Invalid value';
-          logger.warn(`Custom validation failed for ${field}:`, errorMessage);
+          logger.warn(`Custom validation failed for ${String(field)}:`, errorMessage);
           if (callbacks?.onValidationError) {
-            callbacks.onValidationError(field, errorMessage);
+            callbacks.onValidationError(String(field), errorMessage);
           }
           return;
         }
@@ -354,7 +349,7 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
         callbacks.onFormChange(callbackFormData, field as keyof typeof state.formData);
       }
     },
-    [actions, disabled, readOnly, config, callbacks, logger, state]
+    [actions, disabled, readOnly, callbacks, logger, state, _config]
   );
 
   // Enhanced cleanup with resource management
@@ -413,7 +408,7 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
         // 確保必需屬性存在
         actions.setSupplierInfo({
           code: validated.code,
-          name: validated.name
+          name: validated.name,
         });
         actions.setSupplierError(null);
         logger.debug('Supplier info validated and set', validated);
@@ -494,7 +489,7 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
       }
 
       const currentState = stateRef.current;
-      const maxItems = config.layout.maxWeightInputs;
+      const maxItems = _config.layout.maxWeightInputs;
 
       // Validate weight input using Zod
       if (value.trim() !== '' && !validateGrossWeight(value)) {
@@ -550,7 +545,16 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
         );
       }
     },
-    [actions, currentUserId, logger, disabled, readOnly, config.layout.maxWeightInputs, callbacks, resourceCleanup]
+    [
+      actions,
+      currentUserId,
+      logger,
+      disabled,
+      readOnly,
+      callbacks,
+      resourceCleanup,
+      _config.layout.maxWeightInputs,
+    ]
   );
 
   // Memoized weight remove callback to prevent unnecessary re-renders
@@ -589,8 +593,8 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
   const hasValidLabelModeConfig = useMemo(() => {
     return (
       state.labelMode === 'qty' ||
-      (Object.values(state.palletType).some(v => v.trim() !== '') &&
-        Object.values(state.packageType).some(v => v.trim() !== ''))
+      (Object.values(state.palletType).some(v => typeof v === 'string' && v.trim() !== '') &&
+        Object.values(state.packageType).some(v => typeof v === 'string' && v.trim() !== ''))
     );
   }, [state.labelMode, state.palletType, state.packageType]);
 
@@ -604,7 +608,7 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
 
   // Print handler
   const handlePrintClick = useCallback(async () => {
-    if (!config.features.enablePrinting) {
+    if (!_config.features.enablePrinting) {
       logger.warn('Print functionality is disabled');
       return;
     }
@@ -682,23 +686,23 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
   }, [
     isFormValid,
     currentUserId,
-    config.features,
     disabled,
     readOnly,
     callbacks,
     logger,
     state,
     processPrintRequest,
+    _config.features.enablePrinting,
   ]);
 
   // User ID 驗證處理函數
   const handleUserIdVerified = React.useCallback(
-    (userId: string) => {
+    (_userId: string) => {
       setShowUserIdDialog(false);
       // 驗證完成後繼續打印流程
       setTimeout(async () => {
         try {
-          await processPrintRequest(userId);
+          await processPrintRequest(_userId);
           if (callbacks?.onPrintSuccess) {
             callbacks.onPrintSuccess(state.grossWeights.filter(w => w.trim() !== '').length);
           }
@@ -722,14 +726,13 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
   // Apply theme-based styling
   const themeClasses = React.useMemo(() => {
     const base = `h-full ${className || ''}`;
-    const _themeColor = config.theme.accentColor;
-    const customContainer = config.theme.customClasses?.container || '';
+    const customContainer = _config.theme.customClasses?.container || '';
 
     return cn(base, customContainer, {
-      'transition-all duration-300': config.theme.enableAnimations,
+      'transition-all duration-300': _config.theme.enableAnimations,
       'opacity-50 pointer-events-none': disabled,
     });
-  }, [className, config.theme, disabled]);
+  }, [disabled, _config.theme, className]);
 
   return (
     <div className={themeClasses} id={id}>
@@ -801,12 +804,12 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
                   labelMode={state.labelMode}
                   selectedPalletType={
                     (Object.entries(state.palletType).find(
-                      ([, value]) => (parseInt(value) || 0) > 0
+                      ([, value]) => (parseInt(String(value)) || 0) > 0
                     )?.[0] || 'notIncluded') as PalletTypeKey
                   }
                   selectedPackageType={
                     (Object.entries(state.packageType).find(
-                      ([, value]) => (parseInt(value) || 0) > 0
+                      ([, value]) => (parseInt(String(value)) || 0) > 0
                     )?.[0] || 'notIncluded') as PackageTypeKey
                   }
                   maxItems={22}

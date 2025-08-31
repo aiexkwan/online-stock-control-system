@@ -13,7 +13,7 @@ import {
   type VoidPalletFilters,
 } from '@/app/actions/DownloadCentre-Actions';
 import { safeString, safeOptionalString, safeOptionalNumber } from '@/lib/types/type-guards';
-import { isErrorResult, extractErrorMessage } from '@/lib/types/api';
+import { isErrorResult, extractErrorMessage, type ActionResult } from '@/lib/types/api';
 
 // Void Pallet Summary data source
 const voidPalletSummaryDataSource: ReportDataSource = {

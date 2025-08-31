@@ -1,15 +1,15 @@
 'use client';
 
 import React, { forwardRef } from 'react';
-import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
+import { Input } from '../../../../components/ui/input';
+import { cn } from '../../../../lib/utils';
 
 export interface ValidationRule {
   validate: (value: unknown) => boolean | string;
   message?: string;
 }
 
-export interface ValidationInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+export interface ValidationInputProps {
   /** Validation rules */
   rules?: ValidationRule[];
   /** Error message to display */
@@ -24,6 +24,14 @@ export interface ValidationInputProps extends React.InputHTMLAttributes<HTMLInpu
   helperText?: string;
   /** Success message */
   success?: string;
+  /** CSS class name */
+  className?: string;
+  /** onChange handler */
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  /** onBlur handler */
+  onBlur?: (e: React.FocusEvent<HTMLInputElement>) => void;
+  /** All other HTML input attributes */
+  [key: string]: any;
 }
 
 /**
@@ -39,7 +47,7 @@ export interface ValidationInputProps extends React.InputHTMLAttributes<HTMLInpu
  *     { validate: (v) => !!v?.trim(), message: 'Product code is required' },
  *     { validate: (v) => v?.length >= 3, message: 'Minimum 3 characters' }
  *   ]}
- *   error={errors.productCode}
+ *   error ={errors.productCode}
  * />
  * ```
  */

@@ -17,9 +17,7 @@ import React, { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, XCircle, List, Package2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import {
-  cardTextStyles,
-} from '@/lib/card-system/theme';
+import { cardTextStyles } from '@/lib/card-system/theme';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
@@ -44,10 +42,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { SearchInput, SearchInputRef, StepIndicator, Step , StatusOverlay } from '../components/shared';
-import type {
-  VoidPalletCardProps,
-} from '../types/data-management';
+import {
+  SearchInput,
+  SearchInputRef,
+  StepIndicator,
+  Step,
+  StatusOverlay,
+} from '../components/shared';
+import type { VoidPalletCardProps } from '../types/data-management';
 import { VOID_REASONS } from '../constants/voidPallet';
 import { useVoidPallet } from '../hooks/useVoidPallet';
 
@@ -83,7 +85,6 @@ export const VoidPalletCard: React.FC<VoidPalletCardProps> = ({
     searchValue,
     showQrScanner,
     foundPallet,
-    productDescription: _productDescription,
     voidReason,
     voidResult,
     showConfirmDialog,
@@ -103,7 +104,6 @@ export const VoidPalletCard: React.FC<VoidPalletCardProps> = ({
     setFoundPallet,
     setBatchItems,
     setShowAlreadyVoidedDialog,
-    setAlreadyVoidedPalletNum: _setAlreadyVoidedPalletNum,
     handleSearch,
     handleVoid,
     handleQrScan,

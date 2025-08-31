@@ -46,7 +46,8 @@ export function adaptPrintRequest(oldRequest: OldPrintRequest): NewPrintRequest 
     metadata.palletNumbers = oldRequest.data.palletNumbers as string[];
   }
   if (oldRequest.data && 'series' in oldRequest.data) {
-    metadata.series = oldRequest.data.series as string[];
+    const series = oldRequest.data.series;
+    metadata.series = Array.isArray(series) ? series : typeof series === 'string' ? [series] : [];
   }
   if (oldRequest.data && 'quantity' in oldRequest.data) {
     metadata.quantity = oldRequest.data.quantity as number;
@@ -60,9 +61,9 @@ export function adaptPrintRequest(oldRequest: OldPrintRequest): NewPrintRequest 
     pdfBlobs,
     metadata,
     options: {
-      copies: oldRequest.options.copies,
-      paperSize: oldRequest.options.paperSize === PaperSize.LETTER ? 'Letter' : 'A4',
-      orientation: oldRequest.options.orientation,
+      copies: oldRequest.options?.copies || 1,
+      paperSize: oldRequest.options?.paperSize === PaperSize.LETTER ? 'Letter' : 'A4',
+      orientation: oldRequest.options?.orientation || 'portrait',
     },
   };
 }

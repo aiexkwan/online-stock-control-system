@@ -10,17 +10,19 @@ import {
   useWarehouseOrder,
   useAcoOrderReport,
   useOrderLoadingRecords,
+} from '../useOrderData';
+import {
   WarehouseOrderFilterInput,
   OrderLoadingFilterInput,
-} from '../useOrderData';
-import { WarehouseOrderStatus } from '../types/orderData.types';
+  WarehouseOrderStatus,
+} from '../types/orderData.types';
 
 /**
  * Example 1: Complete Order Management Card
  */
 export function OrderManagementCard() {
   const [selectedOrderId, setSelectedOrderId] = useState<string>('');
-  const [filter, setFilter] = useState<WarehouseOrderFilterInput>({});
+  const [filter, _setFilter] = useState<WarehouseOrderFilterInput>({});
 
   // Use the main hook with all features enabled
   const orderData = useOrderData({
@@ -45,7 +47,7 @@ export function OrderManagementCard() {
 
   const handleFilterChange = useCallback(
     (newFilter: WarehouseOrderFilterInput) => {
-      setFilter(newFilter);
+      _setFilter(newFilter);
       orderData.setFilter(newFilter);
     },
     [orderData]
@@ -119,7 +121,7 @@ export function OrderManagementCard() {
  * Example 2: Simple Warehouse Orders List Card
  */
 export function WarehouseOrdersListCard() {
-  const [filter, setFilter] = useState<WarehouseOrderFilterInput>({
+  const [filter, _setFilter] = useState<WarehouseOrderFilterInput>({
     status: 'PENDING',
   });
 

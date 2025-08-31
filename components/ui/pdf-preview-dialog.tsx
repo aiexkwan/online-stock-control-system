@@ -63,13 +63,14 @@ export const PDFPreviewDialog: React.FC<PDFPreviewDialogProps> = ({
   }, [open]);
 
   // PDF載入處理
-  const handlePDFLoad = useCallback(() => {
+  const handlePDFLoad = useCallback((event: React.SyntheticEvent<HTMLIFrameElement>) => {
+    console.log('[PDFPreviewDialog] PDF loaded successfully');
     setState(prev => ({ ...prev, loading: false, error: null }));
   }, []);
 
-  const handlePDFError = useCallback((error: string) => {
-    console.error('[PDFPreviewDialog] PDF load error:', error);
-    setState(prev => ({ ...prev, loading: false, error }));
+  const handlePDFError = useCallback((event: React.SyntheticEvent<HTMLIFrameElement>) => {
+    console.error('[PDFPreviewDialog] PDF load error:', event);
+    setState(prev => ({ ...prev, loading: false, error: 'Failed to load PDF document' }));
   }, []);
 
   // 控制功能
@@ -279,7 +280,7 @@ export const PDFPreviewDialog: React.FC<PDFPreviewDialogProps> = ({
                 className='h-full w-full border-0 bg-white shadow-lg'
                 title={`PDF Preview: ${fileName}`}
                 onLoad={handlePDFLoad}
-                onError={() => handlePDFError('Failed to load PDF document')}
+                onError={handlePDFError}
                 sandbox='allow-scripts allow-same-origin'
                 style={{
                   minHeight: '600px',

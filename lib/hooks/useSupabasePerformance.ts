@@ -9,12 +9,12 @@ import {
   getPerformanceMonitor,
   type PerformanceReport,
   type PerformanceAlert,
-} from '@/lib/monitoring/supabase-performance-monitor';
+} from '../monitoring/supabase-performance-monitor';
 
 // Hook configuration
 export interface UseSupabasePerformanceOptions {
   enabled?: boolean;
-  showAlerts?: boolean;
+  _showAlerts?: boolean;
   alertToast?: boolean;
   updateInterval?: number;
   onAlert?: (alert: PerformanceAlert) => void;
@@ -52,7 +52,7 @@ export function useSupabasePerformance(
 ): UseSupabasePerformanceReturn {
   const {
     enabled = true,
-    showAlerts = true,
+    _showAlerts = true,
     alertToast = false,
     updateInterval = 30000,
     onAlert,
@@ -75,7 +75,7 @@ export function useSupabasePerformance(
     monitorRef.current = getPerformanceMonitor({
       enabled: true,
       interval: updateInterval,
-      alertCallback: alert => {
+      alertCallback: (alert: PerformanceAlert) => {
         // Update alerts state
         setAlerts(prev => [...prev.slice(-9), alert]); // Keep last 10 alerts
 
@@ -98,7 +98,7 @@ export function useSupabasePerformance(
           onAlert(alert);
         }
       },
-      metricsCallback: report => {
+      metricsCallback: (report: PerformanceReport) => {
         // Update metrics from report
         if (report.clientMetrics) {
           const totalCacheAccess =
@@ -236,10 +236,10 @@ export function useSupabasePerformance(
 export function useGrnPerformance() {
   return useSupabasePerformance({
     enabled: true,
-    showAlerts: true,
+    _showAlerts: true,
     alertToast: true,
     updateInterval: 15000, // More frequent updates for GRN operations
-    onAlert: alert => {
+    onAlert: (alert: PerformanceAlert) => {
       // Log GRN-specific alerts
       if (alert.severity === 'error' || alert.severity === 'critical') {
         console.error('[GRN Performance Alert]', alert);

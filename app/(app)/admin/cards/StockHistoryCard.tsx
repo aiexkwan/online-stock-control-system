@@ -317,15 +317,15 @@ export function StockHistoryCard({ warehouse, limit = 40 }: StockHistoryCardProp
                   <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
                     <div>
                       <p className='text-sm text-muted-foreground'>Pallet Number</p>
-                      <p className='text-lg font-semibold'>{palletHistory.data.palletNumber}</p>
+                      <p className='text-lg font-semibold'>{palletHistory.data?.palletNumber}</p>
                     </div>
                     <div>
                       <p className='text-sm text-muted-foreground'>Product</p>
                       <p className='text-lg font-semibold'>
-                        {palletHistory.data.palletInfo.productCode}
+                        {palletHistory.data?.palletInfo?.productCode}
                       </p>
                       <p className='text-sm text-gray-400'>
-                        Qty: {palletHistory.data.palletInfo.quantity}
+                        Qty: {palletHistory.data?.palletInfo?.quantity}
                       </p>
                     </div>
                   </div>

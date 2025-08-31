@@ -1,127 +1,204 @@
 'use client';
 
 import { useMemo } from 'react';
-import { ProductInfo, SlateDetail, AcoOrderDetail, FormValidation } from '../types';
+import { ProductInfo, SlateDetail, AcoOrderDetail, FormValidation, ErrorInfo } from '../types';
 
+/**
+ * 企業級表單驗證輸入介面
+ * 提供完整的類型安全性和可擴展性
+ */
 interface ValidationInput {
-  // Basic fields
-  productCode: string;
-  productInfo: ProductInfo | null;
-  quantity: string;
-  count: string;
-  operator: string;
-  userId: string;
+  // 基本欄位
+  readonly productCode: string;
+  readonly productInfo: ProductInfo | null;
+  readonly quantity: string;
+  readonly count: string;
+  readonly operator: string;
+  readonly userId: string;
 
-  // ACO specific
-  acoOrderRef: string;
-  acoOrderDetails: AcoOrderDetail[];
-  acoNewRef: boolean;
-  acoNewProductCode: string;
-  acoNewOrderQty: string;
-  acoRemain: string | null;
-  isAcoOrderExcess: boolean;
-  isProductIncludedInOrder: boolean;
-  isAcoOrderFullfilled: boolean;
+  // ACO 訂單專用欄位
+  readonly acoOrderRef: string;
+  readonly acoOrderDetails: readonly AcoOrderDetail[];
+  readonly acoNewRef: boolean;
+  readonly acoNewProductCode: string;
+  readonly acoNewOrderQty: string;
+  readonly acoRemain: string | null;
+  readonly isAcoOrderExcess: boolean;
+  readonly isProductIncludedInOrder: boolean;
+  readonly isAcoOrderFullfilled: boolean;
 
-  // Slate specific
-  slateDetail: SlateDetail;
+  // Slate 產品專用欄位
+  readonly slateDetail: SlateDetail;
 
-  // Source action (for void correction)
-  sourceAction?: string | null;
+  // 來源操作（用於作廢修正）
+  readonly sourceAction?: string | null;
 }
 
+/**
+ * 驗證規則配置介面
+ * 支援不同產品類型的條件驗證
+ */
 interface ValidationRules {
-  validateBasicFields: boolean;
-  validateAcoFields: boolean;
-  validateSlateFields: boolean;
+  readonly validateBasicFields: boolean;
+  readonly validateAcoFields: boolean;
+  readonly validateSlateFields: boolean;
 }
 
+/**
+ * 企業級表單驗證 Hook
+ * 提供完整的類型安全驗證和錯誤處理
+ *
+ * @param input 驗證輸入參數
+ * @returns 驗證結果包含驗證狀態和錯誤訊息
+ */
 export const useFormValidation = (input: ValidationInput): FormValidation => {
   return useMemo(() => {
-    const errors: string[] = [];
-    const fieldErrors: Record<string, string> = {};
+    const errors: ErrorInfo[] = [];
+    const fieldErrors: Record<string, ErrorInfo> = {};
 
-    // Determine validation rules based on product type
+    // 根據產品類型決定驗證規則
     const rules: ValidationRules = {
       validateBasicFields: true,
       validateAcoFields: input.productInfo?.type === 'ACO',
       validateSlateFields: input.productInfo?.type === 'Slate',
     };
 
-    // Basic field validation
+    // 基本欄位驗證
     if (rules.validateBasicFields) {
-      // Product Code validation
+      // 產品代碼驗證
       if (!input.productCode.trim()) {
-        errors.push('Product Code is required.');
-        fieldErrors.productCode = 'Product Code is required.';
+        const errorInfo: ErrorInfo = {
+          code: 'PRODUCT_CODE_REQUIRED',
+          message: 'Product Code is required.',
+          timestamp: new Date(),
+        };
+        errors.push(errorInfo);
+        fieldErrors.productCode = errorInfo;
       }
 
-      // Product Info validation
+      // 產品資訊驗證
       if (!input.productInfo) {
-        errors.push('Product information is missing. Please enter a valid Product Code.');
-        fieldErrors.productInfo = 'Product information is missing.';
+        const errorInfo: ErrorInfo = {
+          code: 'PRODUCT_INFO_MISSING',
+          message: 'Product information is missing. Please enter a valid Product Code.',
+          timestamp: new Date(),
+        };
+        errors.push(errorInfo);
+        fieldErrors.productInfo = errorInfo;
       }
 
-      // Quantity validation
-      if (!input.quantity || parseInt(input.quantity, 10) <= 0) {
-        errors.push('Quantity must be a positive number.');
-        fieldErrors.quantity = 'Quantity must be a positive number.';
+      // 數量驗證
+      const quantityNum = parseInt(input.quantity, 10);
+      if (!input.quantity || isNaN(quantityNum) || quantityNum <= 0) {
+        const errorInfo: ErrorInfo = {
+          code: 'QUANTITY_INVALID',
+          message: 'Quantity must be a positive number.',
+          timestamp: new Date(),
+        };
+        errors.push(errorInfo);
+        fieldErrors.quantity = errorInfo;
       }
 
-      // Count validation
-      if (!input.count || parseInt(input.count, 10) <= 0) {
-        errors.push('Count (number of labels) must be a positive number.');
-        fieldErrors.count = 'Count must be a positive number.';
+      // 標籤數量驗證
+      const countNum = parseInt(input.count, 10);
+      if (!input.count || isNaN(countNum) || countNum <= 0) {
+        const errorInfo: ErrorInfo = {
+          code: 'COUNT_INVALID',
+          message: 'Count (number of labels) must be a positive number.',
+          timestamp: new Date(),
+        };
+        errors.push(errorInfo);
+        fieldErrors.count = errorInfo;
       }
 
-      // User ID validation
+      // 使用者ID驗證
       if (!input.userId) {
-        errors.push('User ID is missing. Please ensure you are logged in correctly.');
-        fieldErrors.userId = 'User ID is missing.';
+        const errorInfo: ErrorInfo = {
+          code: 'USER_ID_MISSING',
+          message: 'User ID is missing. Please ensure you are logged in correctly.',
+          timestamp: new Date(),
+        };
+        errors.push(errorInfo);
+        fieldErrors.userId = errorInfo;
       }
 
-      // Source action validation (for void correction)
+      // 來源操作驗證（用於作廢修正）
       if (input.sourceAction && input.productCode.trim() && !input.productInfo) {
-        errors.push('Product information must be loaded for void correction.');
-        fieldErrors.sourceAction = 'Product information required for correction.';
+        const errorInfo: ErrorInfo = {
+          code: 'SOURCE_ACTION_INVALID',
+          message: 'Product information must be loaded for void correction.',
+          timestamp: new Date(),
+        };
+        errors.push(errorInfo);
+        fieldErrors.sourceAction = errorInfo;
       }
     }
 
-    // ACO specific validation
+    // ACO 特定驗證
     if (rules.validateAcoFields) {
-      // ACO Order Ref validation
+      // ACO 訂單編號驗證
       if (!input.acoOrderRef.trim()) {
-        errors.push('ACO Order Ref is required for ACO products.');
-        fieldErrors.acoOrderRef = 'ACO Order Ref is required.';
+        const errorInfo: ErrorInfo = {
+          code: 'ACO_ORDER_REF_REQUIRED',
+          message: 'ACO Order Ref is required for ACO products.',
+          timestamp: new Date(),
+        };
+        errors.push(errorInfo);
+        fieldErrors.acoOrderRef = errorInfo;
       }
 
-      // ACO order state validation
+      // ACO 訂單狀態驗證
       if (input.acoOrderRef.trim() && input.acoRemain === null) {
-        errors.push('Please search for the ACO order first.');
-        fieldErrors.acoSearch = 'Order search required.';
+        const errorInfo: ErrorInfo = {
+          code: 'ACO_ORDER_SEARCH_REQUIRED',
+          message: 'Please search for the ACO order first.',
+          timestamp: new Date(),
+        };
+        errors.push(errorInfo);
+        fieldErrors.acoSearch = errorInfo;
       }
 
       if (input.isAcoOrderExcess) {
-        errors.push('Input quantity exceeds order remaining quantity.');
-        fieldErrors.acoQuantity = 'Quantity exceeds remaining.';
+        const errorInfo: ErrorInfo = {
+          code: 'ACO_QUANTITY_EXCESS',
+          message: 'Input quantity exceeds order remaining quantity.',
+          timestamp: new Date(),
+        };
+        errors.push(errorInfo);
+        fieldErrors.acoQuantity = errorInfo;
       }
 
       if (input.isAcoOrderFullfilled) {
-        errors.push('ACO order is already fulfilled.');
-        fieldErrors.acoOrder = 'Order already fulfilled.';
+        const errorInfo: ErrorInfo = {
+          code: 'ACO_ORDER_FULFILLED',
+          message: 'ACO order is already fulfilled.',
+          timestamp: new Date(),
+        };
+        errors.push(errorInfo);
+        fieldErrors.acoOrder = errorInfo;
       }
 
       if (!input.isProductIncludedInOrder && input.acoRemain !== null) {
-        errors.push('Product code is not included in this ACO order.');
-        fieldErrors.acoProduct = 'Product not in order.';
+        const errorInfo: ErrorInfo = {
+          code: 'ACO_PRODUCT_NOT_IN_ORDER',
+          message: 'Product code is not included in this ACO order.',
+          timestamp: new Date(),
+        };
+        errors.push(errorInfo);
+        fieldErrors.acoProduct = errorInfo;
       }
     }
 
-    // Slate specific validation
+    // Slate 特定驗證
     if (rules.validateSlateFields) {
       if (!input.slateDetail.batchNumber.trim()) {
-        errors.push('Batch Number is required for Slate products.');
-        fieldErrors.slateBatchNumber = 'Batch Number is required.';
+        const errorInfo: ErrorInfo = {
+          code: 'SLATE_BATCH_NUMBER_REQUIRED',
+          message: 'Batch Number is required for Slate products.',
+          timestamp: new Date(),
+        };
+        errors.push(errorInfo);
+        fieldErrors.slateBatchNumber = errorInfo;
       }
     }
 
@@ -135,8 +212,21 @@ export const useFormValidation = (input: ValidationInput): FormValidation => {
   }, [input]);
 };
 
-// Helper function to get validation summary
-export const getValidationSummary = (validation: FormValidation) => {
+/**
+ * 驗證摘要類型定義
+ */
+interface ValidationSummary {
+  readonly type: 'success' | 'error';
+  readonly message: string;
+  readonly details?: readonly string[];
+}
+
+/**
+ * 獲取驗證結果摘要
+ * @param validation 表單驗證結果
+ * @returns 驗證摘要資訊
+ */
+export const getValidationSummary = (validation: FormValidation): ValidationSummary => {
   if (validation.isValid) {
     return { type: 'success', message: 'All fields are valid.' };
   }
@@ -145,19 +235,29 @@ export const getValidationSummary = (validation: FormValidation) => {
   return {
     type: 'error',
     message: `${errorCount} validation error${errorCount > 1 ? 's' : ''} found.`,
-    details: validation.errors,
+    details: validation.errors.map(err => err.message),
   };
 };
 
-// Helper function to check specific field validation
+/**
+ * 檢查特定欄位是否有效
+ * @param validation 表單驗證結果
+ * @param fieldName 欄位名稱
+ * @returns 欄位是否有效
+ */
 export const isFieldValid = (validation: FormValidation, fieldName: string): boolean => {
   return !validation.fieldErrors[fieldName];
 };
 
-// Helper function to get field error message
+/**
+ * 獲取欄位錯誤訊息
+ * @param validation 表單驗證結果
+ * @param fieldName 欄位名稱
+ * @returns 欄位錯誤訊息（如果有的話）
+ */
 export const getFieldError = (
   validation: FormValidation,
   fieldName: string
 ): string | undefined => {
-  return validation.fieldErrors[fieldName];
+  return validation.fieldErrors[fieldName]?.message;
 };

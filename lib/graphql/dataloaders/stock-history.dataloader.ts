@@ -48,7 +48,7 @@ interface PalletInfo {
   plt_num: string;
 }
 
-interface OperatorInfo {
+interface _OperatorInfo {
   id: number;
   name: string;
 }
@@ -61,7 +61,7 @@ interface SearchResult {
   relevance: number;
 }
 
-interface StockRecord {
+interface _StockRecord {
   id: string;
   plt_num: string;
   loc: string;
@@ -69,7 +69,7 @@ interface StockRecord {
   [key: string]: unknown;
 }
 
-interface PalletHistoryBatchQuery {
+interface _PalletHistoryBatchQuery {
   productCode: string;
   filter: FilterOptions;
   pagination: PaginationOptions;
@@ -91,7 +91,7 @@ interface DatabaseOperator {
   name: string;
 }
 
-interface DatabaseProductInfo {
+interface _DatabaseProductInfo {
   code: string;
   description?: string;
   type?: string;
@@ -200,9 +200,9 @@ export class StockHistoryDataLoader {
               );
 
               // Step 3: Get operator names separately to avoid JOINs
-              const operatorIds = [
-                ...new Set(deduplicatedHistory.map(h => h.id).filter(id => id !== null)),
-              ];
+              const operatorIds = Array.from(
+                new Set(deduplicatedHistory.map(h => h.id).filter(id => id !== null))
+              );
               let operatorMap = new Map<number, string>();
 
               if (operatorIds.length > 0) {
@@ -350,9 +350,9 @@ export class StockHistoryDataLoader {
               }
 
               // Get operator names separately
-              const operatorIds = [
-                ...new Set(deduplicatedData.map(h => h.id).filter(id => id !== null)),
-              ];
+              const operatorIds = Array.from(
+                new Set(deduplicatedData.map(h => h.id).filter(id => id !== null))
+              );
               let operatorMap = new Map<number, string>();
 
               if (operatorIds.length > 0) {
@@ -456,7 +456,7 @@ export class StockHistoryDataLoader {
 
               const { data, error } = await supabase.rpc('execute_sql', {
                 query,
-                params: [startDate, endDate],
+                _params: [startDate, endDate],
               });
 
               if (error) {
@@ -741,9 +741,9 @@ export class StockHistoryDataLoader {
     console.log(`[getPalletHistoryByProduct] Raw query returned ${data?.length || 0} records`);
 
     // Get unique operator IDs and fetch operator names separately
-    const operatorIds = [
-      ...new Set(data?.map((item: DatabaseRecord) => item.id).filter(id => id !== null)),
-    ];
+    const operatorIds = Array.from(
+      new Set(data?.map((item: DatabaseRecord) => item.id).filter(id => id !== null))
+    );
     let operatorMap = new Map<number, string>();
 
     if (operatorIds.length > 0) {
@@ -859,7 +859,7 @@ export class StockHistoryDataLoader {
 
   static async getPalletHistoryByNumber(
     palletNumber: string,
-    _options: { includeJourney: boolean },
+    options: { includeJourney: boolean },
     context: GraphQLContext
   ) {
     // Validate input and normalize
@@ -897,7 +897,7 @@ export class StockHistoryDataLoader {
     // Get pallet info and product code
     let productCode = '';
     let quantity = 0;
-    let palletInfoData = null;
+    let _palletInfoData = null;
 
     try {
       const { data: palletInfo, error: palletError } = await context.supabase
@@ -909,7 +909,7 @@ export class StockHistoryDataLoader {
       if (!palletError && palletInfo) {
         productCode = palletInfo.product_code || '';
         quantity = palletInfo.product_qty || 0;
-        palletInfoData = palletInfo;
+        _palletInfoData = palletInfo;
         console.log(`[getPalletHistoryByNumber] Found pallet info:`, {
           productCode,
           quantity,
@@ -1159,9 +1159,9 @@ export class StockHistoryDataLoader {
   }
 
   static async computePalletCurrentStatus(
-    _palletNumber: string,
+    palletNumber: string,
     records: StockHistoryRecord[],
-    _context: GraphQLContext
+    context: GraphQLContext
   ) {
     if (records.length === 0) {
       return {
@@ -1336,7 +1336,7 @@ export class StockHistoryDataLoader {
 
   // Statistics computation
   static async getStockHistoryStats(
-    _filter: FilterOptions,
+    filter: FilterOptions,
     timeframe: string,
     context: GraphQLContext
   ) {

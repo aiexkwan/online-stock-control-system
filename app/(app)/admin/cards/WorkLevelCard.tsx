@@ -6,7 +6,7 @@
 
 'use client';
 
-import React, { useMemo, useState, useCallback, useEffect, useRef } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { useQuery, gql } from '@apollo/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -129,7 +129,7 @@ const DEFAULT_COLORS = cardChartColors.extended;
 
 export const WorkLevelCard: React.FC<WorkLevelCardProps> = ({
   chartTypes,
-  _dataSources,
+  dataSources,
   dateRange,
   timeGranularity = TimeGranularity.Day,
   aggregationType = AggregationType.Sum,
@@ -149,8 +149,6 @@ export const WorkLevelCard: React.FC<WorkLevelCardProps> = ({
   onChartClick,
   onRefresh,
 }) => {
-  // Cleanup ref for polling interval
-  const _cleanupRef = useRef<(() => void) | null>(null);
   // 部門篩選狀態 - 改為單選
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
 
@@ -199,7 +197,7 @@ export const WorkLevelCard: React.FC<WorkLevelCardProps> = ({
   );
 
   // 執行 GraphQL 查詢
-  const { data, loading, error, refetch, stopPolling, startPolling: _startPolling } = useQuery<{
+  const { data, loading, error, refetch, stopPolling } = useQuery<{
     chartCardData: ChartCardData;
   }>(CHART_CARD_QUERY, {
     variables: { input: queryInput },
@@ -224,7 +222,7 @@ export const WorkLevelCard: React.FC<WorkLevelCardProps> = ({
   };
 
   // 渲染圖表組件
-  const renderChart = (config: ChartConfig, datasets: ChartDataset[], _index: number) => {
+  const renderChart = (config: ChartConfig, datasets: ChartDataset[]) => {
     // 對於多線圖表（如 Work Level），需要重組數據
     const isMultiLineChart = datasets.length > 1 && config.type === ChartType.Line;
 
@@ -232,7 +230,7 @@ export const WorkLevelCard: React.FC<WorkLevelCardProps> = ({
 
     if (isMultiLineChart) {
       // 為多線圖表創建數據點，每個 x 值包含所有 dataset 的 y 值
-      const allXValues = [...new Set(datasets.flatMap(ds => ds.data.map(d => d.x)))].sort();
+      const allXValues = Array.from(new Set(datasets.flatMap(ds => ds.data.map(d => d.x)))).sort();
       chartData = allXValues.map(x => {
         const point: Record<string, unknown> = { name: x };
         datasets.forEach(dataset => {
@@ -543,8 +541,7 @@ export const WorkLevelCard: React.FC<WorkLevelCardProps> = ({
                           return department === selectedDepartment;
                         });
                         return hasSelectedDepartment;
-                      }),
-                      0
+                      })
                     )}
                   </ResponsiveContainer>
                 </div>

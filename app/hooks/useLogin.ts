@@ -77,10 +77,10 @@ export function useLogin(): UseLoginReturn {
         const redirectPath = await redirect.redirectToUserPage(email);
 
         return { success: true, redirectPath };
-      } catch (error) {
+      } catch {
         // If redirect fails, still consider login successful
         const fallbackPath = await redirect.getUserRedirectPath(email);
-        console.warn('[useLogin] Redirect failed, providing fallback path:', error);
+        console.warn('[useLogin] Redirect failed, providing fallback path');
 
         return { success: true, redirectPath: fallbackPath };
       }

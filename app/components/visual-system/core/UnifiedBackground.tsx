@@ -160,7 +160,7 @@ class WebGLManager {
   startRendering(renderCallback: (gl: WebGLRenderingContext, program: WebGLProgram) => void) {
     if (!this.gl || !this.program || this.animationId !== null) return;
 
-    const render = (time: number) => {
+    const render = (_time: number) => {
       if (this.gl && this.program) {
         renderCallback(this.gl, this.program);
       }
@@ -250,7 +250,7 @@ export function UnifiedBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const managerRef = useRef(WebGLManager.getInstance());
   const [isActive, setIsActive] = useState(false);
-  const { state, config } = useVisualSystem();
+  const { state, _config } = useVisualSystem();
 
   // 渲染回調（移除尺寸檢查，避免性能問題）
   const startRendering = useCallback(() => {

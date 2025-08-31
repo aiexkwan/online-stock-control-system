@@ -9,6 +9,11 @@ import type { ExtractedOrderItem } from '@/lib/types/order-extraction';
  * Safely download a file by creating a blob URL
  */
 const safeDownloadFile = (content: string, filename: string, mimeType: string): void => {
+  // Check if we're in browser environment
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    throw new Error('File download is only available in browser environment');
+  }
+
   try {
     const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
@@ -33,7 +38,7 @@ const safeDownloadFile = (content: string, filename: string, mimeType: string): 
 /**
  * Escape CSV values to prevent injection attacks
  */
-const escapeCsvValue = (value: string | number | undefined): string => {
+const escapeCsvValue = (value: string | number | undefined | null): string => {
   if (value === undefined || value === null) return '';
 
   const stringValue = String(value);
@@ -118,9 +123,9 @@ export const exportToJSON = (data: ExtractedOrderItem[], filename: string = 'ord
       delivery_add: item.delivery_add,
       invoice_to: item.invoice_to,
       // Include data quality flags if available
-      ...(item.was_corrected && { was_corrected: true }),
-      ...(item.original_code && { original_code: item.original_code }),
-      ...(item.confidence_score && { confidence_score: item.confidence_score }),
+      ...(item.was_corrected === true && { was_corrected: true }),
+      ...(item.original_code !== undefined && { original_code: item.original_code }),
+      ...(item.confidence_score !== undefined && { confidence_score: item.confidence_score }),
     })),
   };
 
@@ -145,6 +150,15 @@ export const copyToClipboard = async (data: ExtractedOrderItem[]): Promise<void>
   ].join('\n');
 
   try {
+    // Check if we're in browser environment
+    if (
+      typeof window === 'undefined' ||
+      typeof document === 'undefined' ||
+      typeof navigator === 'undefined'
+    ) {
+      throw new Error('Clipboard access is only available in browser environment');
+    }
+
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(csvContent);
     } else {
@@ -178,6 +192,11 @@ export const shareData = async (data: ExtractedOrderItem[], orderRef: string): P
     .join('\n')}${data.length > 5 ? '\n...and more' : ''}`;
 
   try {
+    // Check if we're in browser environment
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+      throw new Error('Web Share is only available in browser environment');
+    }
+
     if (navigator.share) {
       await navigator.share({
         title: `Order ${orderRef} - Extraction Results`,
@@ -204,7 +223,10 @@ export const generateSummaryText = (data: ExtractedOrderItem[], orderRef: string
 
   const totalItems = data.length;
   const uniqueProducts = new Set(data.map(item => item.product_code)).size;
-  const totalQuantity = data.reduce((sum, item) => sum + (item.product_qty || 0), 0);
+  const totalQuantity = data.reduce(
+    (sum, item) => sum + (typeof item.product_qty === 'number' ? item.product_qty : 0),
+    0
+  );
   const correctedItems = data.filter(item => item.was_corrected).length;
 
   return `Order ${orderRef} Extraction Summary:
@@ -225,14 +247,34 @@ export const validateExportData = (data: unknown): data is ExtractedOrderItem[] 
   }
 
   return data.every(
-    item =>
+    (item): item is ExtractedOrderItem =>
       item &&
       typeof item === 'object' &&
-      typeof item.product_code === 'string' &&
-      typeof item.product_desc === 'string' &&
-      typeof item.product_qty === 'number' &&
-      item.product_code.length > 0 &&
-      item.product_desc.length > 0 &&
-      item.product_qty >= 0
+      typeof (item as any).order_ref === 'string' &&
+      typeof (item as any).account_num === 'string' &&
+      typeof (item as any).delivery_add === 'string' &&
+      typeof (item as any).invoice_to === 'string' &&
+      typeof (item as any).product_code === 'string' &&
+      typeof (item as any).product_desc === 'string' &&
+      typeof (item as any).product_qty === 'number' &&
+      (item as any).order_ref.length > 0 &&
+      (item as any).account_num.length > 0 &&
+      (item as any).delivery_add.length > 0 &&
+      (item as any).invoice_to.length > 0 &&
+      (item as any).product_code.length > 0 &&
+      (item as any).product_desc.length > 0 &&
+      (item as any).product_qty >= 0 &&
+      // Validate optional fields if present
+      ((item as any).customer_ref === undefined ||
+        typeof (item as any).customer_ref === 'string') &&
+      ((item as any).weight === undefined || typeof (item as any).weight === 'number') &&
+      ((item as any).unit_price === undefined || typeof (item as any).unit_price === 'string') &&
+      ((item as any).is_valid === undefined || typeof (item as any).is_valid === 'boolean') &&
+      ((item as any).was_corrected === undefined ||
+        typeof (item as any).was_corrected === 'boolean') &&
+      ((item as any).original_code === undefined ||
+        typeof (item as any).original_code === 'string') &&
+      ((item as any).confidence_score === undefined ||
+        typeof (item as any).confidence_score === 'number')
   );
 };

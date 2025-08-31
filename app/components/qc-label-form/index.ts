@@ -21,7 +21,7 @@ export {
   ResponsiveStack,
   ResponsiveGrid,
 } from './ResponsiveLayout';
-export { EnhancedFormField, EnhancedInput, EnhancedSelect } from './EnhancedFormField';
+export { EnhancedFormField } from './EnhancedFormField';
 export { Accordion, AccordionItem, AccordionGroup } from './Accordion';
 export { EnhancedProgressBar } from './EnhancedProgressBar';
 

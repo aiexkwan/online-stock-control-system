@@ -1,9 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react'; // Removed unused: useState, useMemo
+import { useCallback, useEffect, useRef } from 'react'; // Removed unused: useState, _useMemo
 import { toast } from 'sonner';
 // Removed unused import: format from 'date-fns'
-import { useResourceCleanup } from '@/lib/hooks/useResourceCleanup';
+import { useResourceCleanup } from '../../../../lib/hooks/useResourceCleanup';
 // Removed unused import: getOptimizedClient
 // Removed unused import: getGrnDatabaseService
 // Moved to unified grn library import below
@@ -13,30 +13,30 @@ import {
   createGrnDatabaseEntriesBatch,
   // type GrnPalletInfoPayload, // Unused type
   // type GrnRecordPayload, // Unused type
-} from '@/app/actions/grnActions';
-import { PALLET_TYPE_OPTIONS, PACKAGE_TYPE_OPTIONS } from '@/app/constants/grnConstants';
+} from '../../../actions/grnActions';
+import { PALLET_TYPE_OPTIONS, PACKAGE_TYPE_OPTIONS } from '../../../constants/grnConstants';
 // 使用統一的 PDF 生成 Hook
-import { useUnifiedPdfGeneration } from '@/hooks/useUnifiedPdfGeneration';
-import { PdfType } from '@/lib/services/unified-pdf-service';
-import type { GrnLabelInputData } from '@/lib/mappers/pdf-data-mappers';
-import { logger } from '@/lib/logger';
+import { useUnifiedPdfGeneration } from '../../../../hooks/useUnifiedPdfGeneration';
+import { PdfType } from '../../../../lib/services/unified-pdf-service';
+import type { GrnLabelInputData } from '../../../../lib/mappers/pdf-data-mappers';
+import { logger } from '../../../../lib/logger';
 // Removed unused imports from grnConstants:
 // PALLET_WEIGHTS, PACKAGE_WEIGHTS, LABEL_MODES
 // type PalletTypeKey, type PackageTypeKey, type LabelMode
 
 // Import reducer types from unified library
-import type { GrnFormState } from '@/lib/grn/hooks/useGrnFormReducer';
+import type { GrnFormState } from '../../../../lib/grn/hooks/useGrnFormReducer';
 // Removed unused import: GrnFormAction
 
 // Import GRN modules from unified library
-import { grnErrorHandler, useWeightCalculation, usePalletGenerationGrn } from '@/lib/grn';
+import { grnErrorHandler, useWeightCalculation, usePalletGenerationGrn } from '../../../../lib/grn';
 // Removed unused import: confirmPalletUsage
 
 interface UseGrnLabelBusinessV3Props {
   state: GrnFormState;
   actions: {
     setSupplierInfo: (supplierInfo: GrnFormState['supplierInfo']) => void;
-    setSupplierError: (error: string | null) => void;
+    setSupplierError: (_error: string | null) => void;
     setProcessing: (isProcessing: boolean) => void;
     setProgress: (progress: GrnFormState['progress']) => void;
     updateProgressStatus: (
@@ -151,14 +151,12 @@ export const useAdminGrnLabelBusiness = ({
         }
 
         const numberOfPalletsToProcess = filledGrossWeights.length;
-        const palletCountForGrnRecord = Object.values(state.palletType).reduce(
-          (sum, v) => sum + (parseInt(v) || 0),
-          0
-        );
-        const packageCountForGrnRecord = Object.values(state.packageType).reduce(
-          (sum, v) => sum + (parseInt(v) || 0),
-          0
-        );
+        const palletCountForGrnRecord = Object.values(
+          state.palletType as Record<string, string>
+        ).reduce((sum, v) => sum + (parseInt(String(v)) || 0), 0);
+        const packageCountForGrnRecord = Object.values(
+          state.packageType as Record<string, string>
+        ).reduce((sum, v) => sum + (parseInt(String(v)) || 0), 0);
 
         // 將 key 轉換為顯示標籤
         const selectedPalletTypeOption = PALLET_TYPE_OPTIONS.find(
@@ -226,9 +224,9 @@ export const useAdminGrnLabelBusiness = ({
             state.labelMode,
             grossWeights,
             netWeights,
-            quantities,
-            palletCountForGrnRecord,
-            packageCountForGrnRecord,
+            quantities as number[],
+            palletCountForGrnRecord as number,
+            packageCountForGrnRecord as number,
             selectedPalletTypeString,
             selectedPackageTypeString,
             [] // pdfUrls - 將在後續處理中填入
@@ -251,13 +249,14 @@ export const useAdminGrnLabelBusiness = ({
 
             // 從統一 RPC 結果中獲取棧板號碼和系列號
             // 策略4: unknown + type narrowing - 安全的陣列類型轉換
-            palletNumbers = Array.isArray(batchResult.data?.pallet_numbers)
-              ? batchResult.data.pallet_numbers.filter(
-                  (item): item is string => typeof item === 'string'
-                )
+            const batchData = batchResult.data as
+              | { pallet_numbers?: unknown[]; series?: unknown[] }
+              | undefined;
+            palletNumbers = Array.isArray(batchData?.pallet_numbers)
+              ? batchData.pallet_numbers.filter((item): item is string => typeof item === 'string')
               : [];
-            series = Array.isArray(batchResult.data?.series)
-              ? batchResult.data.series.filter((item): item is string => typeof item === 'string')
+            series = Array.isArray(batchData?.series)
+              ? batchData.series.filter((item): item is string => typeof item === 'string')
               : [];
 
             console.log('[DEBUG] Extracted palletNumbers:', palletNumbers);
@@ -415,9 +414,9 @@ export const useAdminGrnLabelBusiness = ({
               });
 
               try {
-                // 動態導入統一打印服務
+                // 動態導入統一打印服務 - 使用相對路徑以避免模塊解析問題
                 const { unifiedPrintService } = await import(
-                  '@/lib/services/unified-print-service'
+                  '../../../../lib/services/unified-print-service'
                 );
 
                 await unifiedPrintService.printBatch(collectedPdfBlobs, {

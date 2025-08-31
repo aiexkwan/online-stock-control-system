@@ -12,51 +12,60 @@ interface RequiredEnvVars {
   };
 }
 
+type EnvValidatorFunction = (value: string) => boolean;
+
+interface ValidationResult {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
 const ENV_CONFIG: RequiredEnvVars = {
   // Supabase Configuration
   NEXT_PUBLIC_SUPABASE_URL: {
     required: true,
     sensitive: false,
-    validator: value => value.startsWith('https://') && value.includes('.supabase.co'),
+    validator: (value: string): boolean =>
+      value.startsWith('https://') && value.includes('.supabase.co'),
   },
   NEXT_PUBLIC_SUPABASE_ANON_KEY: {
     required: true,
     sensitive: true,
     mask: true,
-    validator: value => value.startsWith('eyJ'),
+    validator: (value: string): boolean => value.startsWith('eyJ'),
   },
   SUPABASE_SERVICE_ROLE_KEY: {
     required: true,
     sensitive: true,
     mask: true,
-    validator: value => value.startsWith('eyJ'),
+    validator: (value: string): boolean => value.startsWith('eyJ'),
   },
   SUPABASE_ACCESS_TOKEN: {
     required: false,
     sensitive: true,
     mask: true,
-    validator: value => value.startsWith('sbp_'),
+    validator: (value: string): boolean => value.startsWith('sbp_'),
   },
   // OpenAI Configuration
   OPENAI_API_KEY: {
     required: false,
     sensitive: true,
     mask: true,
-    validator: value => value.startsWith('sk-'),
+    validator: (value: string): boolean => value.startsWith('sk-'),
   },
   // Email Service
   RESEND_API_KEY: {
     required: false,
     sensitive: true,
     mask: true,
-    validator: value => value.startsWith('re_'),
+    validator: (value: string): boolean => value.startsWith('re_'),
   },
   // Authentication
   NEXTAUTH_SECRET: {
     required: true,
     sensitive: true,
     mask: true,
-    validator: value => value.length >= 32,
+    validator: (value: string): boolean => value.length >= 32,
   },
 };
 
@@ -67,12 +76,12 @@ export class EnvValidator {
   /**
    * 驗證所有環境變數
    */
-  static validate(): { valid: boolean; errors: string[]; warnings: string[] } {
+  static validate(): ValidationResult {
     this.errors = [];
     this.warnings = [];
 
     for (const [key, config] of Object.entries(ENV_CONFIG)) {
-      const value = process.env[key];
+      const value: string | undefined = process.env[key];
 
       if (config.required && !value) {
         this.errors.push(`Missing required environment variable: ${key}`);
@@ -108,17 +117,21 @@ export class EnvValidator {
    */
   private static validateProductionRules(): void {
     // 確保 NEXTAUTH_SECRET 不是預設值
-    if (process.env.NEXTAUTH_SECRET === 'your-secret-key-here') {
+    const nextAuthSecret: string | undefined = process.env.NEXTAUTH_SECRET;
+    if (nextAuthSecret === 'your-secret-key-here') {
       this.errors.push('NEXTAUTH_SECRET must be changed from default value in production');
     }
 
     // 確保不使用 localhost URLs
-    if (process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('localhost')) {
+    const supabaseUrl: string | undefined = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (supabaseUrl?.includes('localhost')) {
       this.errors.push('NEXT_PUBLIC_SUPABASE_URL cannot use localhost in production');
     }
 
     // 警告使用 SYS_LOGIN 和 SYS_PASSWORD（應該遷移到更安全的認證方式）
-    if (process.env.SYS_LOGIN || process.env.SYS_PASSWORD) {
+    const sysLogin: string | undefined = process.env.SYS_LOGIN;
+    const sysPassword: string | undefined = process.env.SYS_PASSWORD;
+    if (sysLogin || sysPassword) {
       this.warnings.push(
         'SYS_LOGIN and SYS_PASSWORD are deprecated. Consider migrating to OAuth or JWT-based authentication'
       );
@@ -130,7 +143,7 @@ export class EnvValidator {
    */
   static getSafeValue(key: string): string {
     const config = ENV_CONFIG[key];
-    const value = process.env[key];
+    const value: string | undefined = process.env[key];
 
     if (!value) return '<not set>';
     if (!config?.mask) return value;
@@ -187,11 +200,12 @@ export class EnvValidator {
 
 // 在應用啟動時自動驗證
 if (typeof window === 'undefined') {
-  const validation = EnvValidator.validate();
+  const validation: ValidationResult = EnvValidator.validate();
   if (!validation.valid && process.env.NODE_ENV === 'production') {
     console.error('Environment validation failed:', validation.errors);
     // 在生產環境中，環境變數驗證失敗應該阻止應用啟動
-    if (process.env.FAIL_ON_ENV_ERROR === 'true') {
+    const failOnError: string | undefined = process.env.FAIL_ON_ENV_ERROR;
+    if (failOnError === 'true') {
       process.exit(1);
     }
   }

@@ -57,7 +57,6 @@ async function recordProductHistory(
       // 不拋出錯誤，避免影響主要操作
     } else {
       isDevelopment() &&
-        isDevelopment() &&
         console.log(
           `[recordProductHistory] Recorded: ${action} for ${productCode} by user ID ${userId}`
         );
@@ -153,9 +152,7 @@ export async function updateProduct(
     }
 
     if (allMatches.length > 1) {
-      isDevelopment() &&
-        isDevelopment() &&
-        console.warn(`Multiple products found for code "${code}":`, allMatches);
+      isDevelopment() && console.warn(`Multiple products found for code "${code}":`, allMatches);
     }
 
     // 使用第一個匹配的實際代碼
@@ -183,7 +180,7 @@ export async function updateProduct(
     // 記錄操作歷史
     await recordProductHistory('Edit', actualCode);
 
-    return { success: true, data: data[0] };
+    return { success: true, data: data[0] as ProductData };
   } catch (error) {
     console.error('Error in updateProduct:', error);
     return { success: false, error: 'Failed to update product' };
@@ -209,7 +206,7 @@ export async function createProduct(productData: ProductData): Promise<ProductAc
     // 記錄操作歷史
     await recordProductHistory('Add', productData.code);
 
-    return { success: true, data };
+    return { success: true, data: data as ProductData };
   } catch (error) {
     console.error('Error in createProduct:', error);
     return { success: false, error: 'Failed to create product' };
@@ -242,7 +239,6 @@ export async function checkProductExists(
 
     if (data.length > 1) {
       isDevelopment() &&
-        isDevelopment() &&
         console.warn(
           `Multiple products found for code "${code}":`,
           data.map(p => p.code)
@@ -335,7 +331,7 @@ export async function getProductByCodeSQL(code: string): Promise<ProductActionRe
       return { success: false, error: error.message };
     }
 
-    return { success: true, data };
+    return { success: true, data: data as ProductData };
   } catch (error) {
     console.error('Error in getProductByCodeSQL:', error);
     return { success: false, error: 'Unexpected error occurred' };
@@ -386,7 +382,7 @@ export async function updateProductOptimized(
       return { success: false, error: 'Product not found for update' };
     }
 
-    return { success: true, data: data[0] };
+    return { success: true, data: data[0] as ProductData };
   } catch (error) {
     console.error('Error in updateProductOptimized:', error);
     return { success: false, error: 'Failed to execute optimized update' };

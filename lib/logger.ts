@@ -1,10 +1,21 @@
-import pino from 'pino';
-import { DatabaseRecord } from '@/types/database/tables';
-import { ApiResponse, ApiRequest, QueryParams } from '@/lib/validation/zod-schemas';
-import { isProduction, isNotProduction } from '@/lib/utils/env';
+// Pino 庫的動態導入 (避免 esModuleInterop 問題)
+const pino = require('pino') as typeof import('pino');
+
+import { DatabaseRecord } from '../types/database/tables';
+import { ApiResponse, ApiRequest, QueryParams } from './validation/zod-schemas';
+import { isProduction, isNotProduction } from './utils/env';
+
+// Pino 類型定義
+type PinoLogger = ReturnType<typeof pino>;
+type PinoLoggerOptions = Parameters<typeof pino>[0];
+
+// Pino 實例創建函數
+const createPinoInstance = (options: PinoLoggerOptions): PinoLogger => {
+  return pino(options);
+};
 
 // 基礎 logger 配置
-const baseOptions: pino.LoggerOptions = {
+const baseOptions: PinoLoggerOptions = {
   level: process.env.LOG_LEVEL || (isProduction() ? 'info' : 'debug'),
   formatters: {
     bindings: () => ({
@@ -25,7 +36,7 @@ const baseOptions: pino.LoggerOptions = {
 };
 
 // 建立主 logger - 在 Next.js 環境中避免使用 transport
-let logger: pino.Logger;
+let logger: PinoLogger;
 
 if (isNotProduction() && typeof window === 'undefined') {
   // 只在 server-side 開發環境使用 pretty print
@@ -34,21 +45,21 @@ if (isNotProduction() && typeof window === 'undefined') {
     // const pretty = require('pino-pretty');
     // 由於 pino-pretty 是開發依賴，在生產環境可能不可用
     // 暫時使用基本 logger 避免動態 require 問題
-    logger = pino(baseOptions);
+    logger = createPinoInstance(baseOptions);
     console.log('[Logger] Using basic logger to avoid dynamic require issues');
-  } catch (error) {
+  } catch (_error) {
     // 如果 pino-pretty 有問題，使用基本 logger
-    logger = pino(baseOptions);
+    logger = createPinoInstance(baseOptions);
   }
 } else {
   // Production 或 client-side 使用基本 logger
-  logger = pino(baseOptions);
+  logger = createPinoInstance(baseOptions);
 }
 
 export { logger };
 
 // 為不同模組建立 child logger
-export const createLogger = (module: string): pino.Logger => {
+export const createLogger = (module: string): PinoLogger => {
   return logger.child({ module });
 };
 

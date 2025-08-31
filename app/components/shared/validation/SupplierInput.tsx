@@ -3,10 +3,8 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Search, Check, X, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { createClient } from '@/app/utils/supabase/client';
 import { cn } from '@/lib/utils';
-// Debounce utility
 
 export interface SupplierInfo {
   supplier_code: string;
@@ -124,8 +122,8 @@ export function SupplierInput({
           setError(null);
           onSupplierValidated?.(supplierInfo);
         }
-      } catch (err) {
-        console.error('[SupplierInput] Error validating supplier:', err);
+      } catch (_err) {
+        console.error('[SupplierInput] Error validating supplier:', _err);
         setSupplierInfo(null);
         setError('Error validating supplier');
         onSupplierValidated?.(null);
@@ -178,29 +176,16 @@ export function SupplierInput({
             selectSupplier(transformedData[0]);
           }
         }
-      } catch (err) {
-        console.error('[SupplierInput] Error searching suppliers:', err);
+      } catch (_err) {
+        console.error('[SupplierInput] Error searching suppliers:', _err);
         setSuggestions([]);
       }
     },
-    [enableSuggestions, autoSelectSingleMatch, supabase, selectSupplier]
-  );
-
-  // Debounced search
-  const debouncedSearch = useCallback(
-    (value: string) => {
-      const timeoutId = setTimeout(() => {
-        searchSuppliers(value);
-      }, 300);
-
-      // Store timeout ID for cleanup
-      return () => clearTimeout(timeoutId);
-    },
-    [searchSuppliers]
+    [enableSuggestions, autoSelectSingleMatch, selectSupplier, supabase]
   );
 
   // Track debounce timeout
-  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Handle input change
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

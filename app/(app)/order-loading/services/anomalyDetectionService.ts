@@ -11,7 +11,7 @@ interface AnomalyCheckResult {
  * Check for anomalous operation patterns
  */
 export async function checkOperationAnomaly(
-  userId: string,
+  _userId: string,
   _orderRef: string
 ): Promise<AnomalyCheckResult> {
   const supabase = await createClient();
@@ -24,7 +24,7 @@ export async function checkOperationAnomaly(
     const { data: recentScans, error: scanError } = await supabase
       .from('order_loading_history')
       .select('*')
-      .eq('action_by', userId)
+      .eq('action_by', _userId)
       .gte('action_time', oneMinuteAgo.toISOString())
       .order('action_time', { ascending: false });
 
@@ -41,7 +41,7 @@ export async function checkOperationAnomaly(
     const { data: recentAttempts } = await supabase
       .from('record_history')
       .select('*')
-      .eq('id', parseInt(userId))
+      .eq('id', parseInt(_userId))
       .in('action', ['Order Load', 'Order Load Failed'])
       .order('time', { ascending: false })
       .limit(10);
@@ -67,7 +67,7 @@ export async function checkOperationAnomaly(
     const { data: recentLoads } = await supabase
       .from('order_loading_history')
       .select('order_ref')
-      .eq('action_by', userId)
+      .eq('action_by', _userId)
       .eq('action_type', 'load')
       .gte('action_time', fiveMinutesAgo.toISOString());
 
@@ -94,7 +94,7 @@ export async function checkOperationAnomaly(
  * Log failed scan attempt for anomaly detection
  */
 export async function logFailedScan(
-  userId: string,
+  _userId: string,
   orderRef: string,
   palletNum: string,
   errorType: string
@@ -103,8 +103,8 @@ export async function logFailedScan(
 
   try {
     await supabase.from('record_history').insert({
-      time: new Date().toISOString(),
-      id: parseInt(userId) || 0,
+      _time: new Date().toISOString(),
+      id: parseInt(_userId) || 0,
       action: 'Order Load Failed',
       plt_num: palletNum,
       loc: null,

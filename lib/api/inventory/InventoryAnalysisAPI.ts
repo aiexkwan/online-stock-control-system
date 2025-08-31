@@ -2,16 +2,14 @@
  * API client for inventory ordered analysis
  */
 
-import { createClient } from '@/app/utils/supabase/client';
-import { DatabaseRecord } from '@/types/database/tables';
+import { createClient } from '../../../app/utils/supabase/client';
 import type {
   InventoryOrderedAnalysisResponse,
   InventoryAnalysisParams,
   InventoryAnalysisFilters,
   InventoryAnalysisSortBy,
   InventoryAnalysisProduct,
-} from '@/lib/types/inventory-analysis.types';
-import type { InventoryOrderedAnalysisInput } from '@/types/generated/graphql';
+} from '../../types/inventory-analysis.types';
 
 export class InventoryAnalysisAPI {
   private static instance: InventoryAnalysisAPI;
@@ -19,7 +17,7 @@ export class InventoryAnalysisAPI {
 
   private constructor() {}
 
-  private getSupabase() {
+  private getSupabase(): ReturnType<typeof createClient> | null {
     if (!this.supabase && typeof window !== 'undefined') {
       this.supabase = createClient();
     }
@@ -40,10 +38,10 @@ export class InventoryAnalysisAPI {
     params?: InventoryAnalysisParams
   ): Promise<InventoryOrderedAnalysisResponse> {
     try {
-      // 使用GraphQL類型確保參數安全
+      // 確保參數安全的類型化對象
       const rpcParams: Record<string, unknown> = {
-        p_product_codes: params?.p_product_codes || null,
-        p_product_type: params?.p_product_type || undefined,
+        p_product_codes: params?.p_product_codes ?? null,
+        p_product_type: params?.p_product_type ?? null,
       };
 
       const supabase = this.getSupabase();
@@ -55,13 +53,18 @@ export class InventoryAnalysisAPI {
 
       if (error) {
         console.error('Error fetching inventory analysis:', error);
-        throw error;
+        throw new Error(`Inventory analysis failed: ${error.message}`);
       }
 
-      return data as unknown as InventoryOrderedAnalysisResponse;
-    } catch (error) {
-      console.error('Failed to fetch inventory ordered analysis:', error);
-      throw error;
+      if (!data) {
+        throw new Error('No data returned from inventory analysis');
+      }
+
+      return data as InventoryOrderedAnalysisResponse;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.error('Failed to fetch inventory ordered analysis:', errorMessage);
+      throw new Error(`Inventory analysis API error: ${errorMessage}`);
     }
   }
 
@@ -72,6 +75,10 @@ export class InventoryAnalysisAPI {
     products: InventoryAnalysisProduct[],
     filters: InventoryAnalysisFilters
   ): InventoryAnalysisProduct[] {
+    if (!products || products.length === 0) {
+      return [];
+    }
+
     let filtered = [...products];
 
     if (filters.showSufficientOnly) {
@@ -82,11 +89,11 @@ export class InventoryAnalysisAPI {
       filtered = filtered.filter(p => !p.is_sufficient);
     }
 
-    if (filters.minFulfillmentRate !== undefined) {
+    if (typeof filters.minFulfillmentRate === 'number') {
       filtered = filtered.filter(p => p.fulfillment_rate >= filters.minFulfillmentRate!);
     }
 
-    if (filters.maxFulfillmentRate !== undefined) {
+    if (typeof filters.maxFulfillmentRate === 'number') {
       filtered = filtered.filter(p => p.fulfillment_rate <= filters.maxFulfillmentRate!);
     }
 
@@ -107,27 +114,31 @@ export class InventoryAnalysisAPI {
     sortBy: InventoryAnalysisSortBy,
     ascending: boolean = true
   ): InventoryAnalysisProduct[] {
+    if (!products || products.length === 0) {
+      return [];
+    }
+
     const sorted = [...products];
 
     sorted.sort((a, b) => {
-      // Strategy 4: unknown + type narrowing
-      let aVal: string | number | boolean = a[sortBy];
-      let bVal: string | number | boolean = b[sortBy];
+      // Type-safe value extraction with proper key access
+      const aVal = a[sortBy as keyof InventoryAnalysisProduct];
+      const bVal = b[sortBy as keyof InventoryAnalysisProduct];
 
-      // Handle boolean values - convert to number for comparison
-      if (typeof aVal === 'boolean') {
-        const aNum = aVal ? 1 : 0;
-        const bNum = typeof bVal === 'boolean' ? (bVal ? 1 : 0) : 0;
-        return ascending ? aNum - bNum : bNum - aNum;
+      // Handle null/undefined values
+      if (aVal === null || aVal === undefined) {
+        if (bVal === null || bVal === undefined) return 0;
+        return ascending ? -1 : 1;
+      }
+      if (bVal === null || bVal === undefined) {
+        return ascending ? 1 : -1;
       }
 
-      // Handle string values
-      if (typeof aVal === 'string' && typeof bVal === 'string') {
-        const aStr = aVal.toLowerCase();
-        const bStr = bVal.toLowerCase();
-        if (aStr < bStr) return ascending ? -1 : 1;
-        if (aStr > bStr) return ascending ? 1 : -1;
-        return 0;
+      // Handle boolean values
+      if (typeof aVal === 'boolean' && typeof bVal === 'boolean') {
+        const aNum = aVal ? 1 : 0;
+        const bNum = bVal ? 1 : 0;
+        return ascending ? aNum - bNum : bNum - aNum;
       }
 
       // Handle number values
@@ -135,12 +146,19 @@ export class InventoryAnalysisAPI {
         return ascending ? aVal - bVal : bVal - aVal;
       }
 
-      // Fallback: convert to string
+      // Handle string values
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
+        const aStr = aVal.toLowerCase();
+        const bStr = bVal.toLowerCase();
+        const comparison = aStr.localeCompare(bStr);
+        return ascending ? comparison : -comparison;
+      }
+
+      // Fallback: convert to string for comparison
       const aStr = String(aVal).toLowerCase();
       const bStr = String(bVal).toLowerCase();
-      if (aStr < bStr) return ascending ? -1 : 1;
-      if (aStr > bStr) return ascending ? 1 : -1;
-      return 0;
+      const comparison = aStr.localeCompare(bStr);
+      return ascending ? comparison : -comparison;
     });
 
     return sorted;
@@ -150,9 +168,13 @@ export class InventoryAnalysisAPI {
    * Get unique product types from analysis
    */
   getUniqueProductTypes(products: InventoryAnalysisProduct[]): string[] {
+    if (!products || products.length === 0) {
+      return [];
+    }
+
     const types = new Set<string>();
     products.forEach(p => {
-      if (p.product_type) {
+      if (p.product_type && typeof p.product_type === 'string') {
         types.add(p.product_type);
       }
     });
@@ -162,21 +184,45 @@ export class InventoryAnalysisAPI {
   /**
    * Calculate critical metrics
    */
-  calculateCriticalMetrics(products: InventoryAnalysisProduct[]) {
+  calculateCriticalMetrics(products: InventoryAnalysisProduct[]): {
+    criticalCount: number;
+    warningCount: number;
+    totalShortage: number;
+    avgFulfillmentRate: number;
+    criticalProducts: InventoryAnalysisProduct[];
+    warningProducts: InventoryAnalysisProduct[];
+  } {
+    if (!products || products.length === 0) {
+      return {
+        criticalCount: 0,
+        warningCount: 0,
+        totalShortage: 0,
+        avgFulfillmentRate: 0,
+        criticalProducts: [],
+        warningProducts: [],
+      };
+    }
+
     const criticalProducts = products.filter(p => !p.is_sufficient);
     const warningProducts = products.filter(p => p.is_sufficient && p.fulfillment_rate < 150);
 
-    const totalShortage = criticalProducts.reduce((sum, p) => sum + Math.abs(p.remaining_stock), 0);
+    const totalShortage = criticalProducts.reduce((sum, p) => {
+      const shortage = Math.abs(p.remaining_stock);
+      return sum + (isNaN(shortage) ? 0 : shortage);
+    }, 0);
 
     const avgFulfillmentRate =
       products.length > 0
-        ? products.reduce((sum, p) => sum + p.fulfillment_rate, 0) / products.length
+        ? products.reduce((sum, p) => {
+            const rate = p.fulfillment_rate;
+            return sum + (isNaN(rate) ? 0 : rate);
+          }, 0) / products.length
         : 0;
 
     return {
       criticalCount: criticalProducts.length,
       warningCount: warningProducts.length,
-      totalShortage,
+      totalShortage: Math.round(totalShortage * 100) / 100,
       avgFulfillmentRate: Math.round(avgFulfillmentRate * 100) / 100,
       criticalProducts,
       warningProducts,
@@ -187,6 +233,10 @@ export class InventoryAnalysisAPI {
    * Export analysis to CSV
    */
   exportToCSV(products: InventoryAnalysisProduct[]): string {
+    if (!products || products.length === 0) {
+      return 'No data available for export';
+    }
+
     const headers = [
       'Product Code',
       'Description',
@@ -200,20 +250,38 @@ export class InventoryAnalysisAPI {
       'Last Updated',
     ].join(',');
 
-    const rows = products.map(p =>
-      [
-        p.product_code,
-        `"${p.product_description}"`,
-        p.product_type || '',
-        p.product_colour || '',
-        p.current_stock,
-        p.order_demand,
-        p.remaining_stock,
-        p.fulfillment_rate,
-        p.is_sufficient ? 'Sufficient' : 'Insufficient',
-        new Date(p.last_updated).toLocaleString(),
-      ].join(',')
-    );
+    const escapeCSVValue = (value: string | number | null | undefined): string => {
+      if (value === null || value === undefined) {
+        return '';
+      }
+      const stringValue = String(value);
+      // Escape quotes and wrap in quotes if contains comma, quote, or newline
+      if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+        return `"${stringValue.replace(/"/g, '""')}"`;
+      }
+      return stringValue;
+    };
+
+    const rows = products.map(p => {
+      try {
+        const lastUpdated = p.last_updated ? new Date(p.last_updated).toLocaleString() : 'N/A';
+        return [
+          escapeCSVValue(p.product_code),
+          escapeCSVValue(p.product_description),
+          escapeCSVValue(p.product_type),
+          escapeCSVValue(p.product_colour),
+          escapeCSVValue(p.current_stock),
+          escapeCSVValue(p.order_demand),
+          escapeCSVValue(p.remaining_stock),
+          escapeCSVValue(p.fulfillment_rate),
+          escapeCSVValue(p.is_sufficient ? 'Sufficient' : 'Insufficient'),
+          escapeCSVValue(lastUpdated),
+        ].join(',');
+      } catch (error) {
+        console.error('Error processing product for CSV:', p, error);
+        return escapeCSVValue(p.product_code) + ',Error processing product data';
+      }
+    });
 
     return [headers, ...rows].join('\n');
   }

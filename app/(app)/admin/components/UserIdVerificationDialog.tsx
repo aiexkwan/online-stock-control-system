@@ -18,7 +18,7 @@ import { createSecureLogger } from '@/lib/security/enhanced-logger-sanitizer';
 interface UserIdVerificationDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onVerified: (userId: string) => void;
+  onVerified: (_userId: string) => void;
   onCancel: () => void;
   title?: string;
   description?: string;
@@ -37,12 +37,12 @@ export const UserIdVerificationDialog: React.FC<UserIdVerificationDialogProps> =
   description = 'Please enter your User ID to continue.',
   isLoading = false,
 }) => {
-  const [userId, setUserId] = useState('');
-  const [error, setError] = useState<string | null>(null);
+  const [_userId, setUserId] = useState('');
+  const [_error, setError] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
   const userIdInputRef = useRef<HTMLInputElement>(null);
 
-  const { userId: currentUserId, verifyUserId, isLoading: userIdLoading } = getUserId();
+  const { _userId: currentUserId, verifyUserId, isLoading: userIdLoading } = getUserId();
 
   const handleCancel = useCallback(() => {
     onCancel();
@@ -58,12 +58,12 @@ export const UserIdVerificationDialog: React.FC<UserIdVerificationDialogProps> =
     }
 
     // 否則驗證手動輸入的user_id
-    if (!userId.trim()) {
+    if (!_userId.trim()) {
       setError('User ID is required');
       return;
     }
 
-    const userIdValue = userId.trim();
+    const userIdValue = _userId.trim();
     if (!/^\d+$/.test(userIdValue)) {
       setError('User ID must be numeric');
       return;
@@ -90,7 +90,7 @@ export const UserIdVerificationDialog: React.FC<UserIdVerificationDialogProps> =
     } finally {
       setIsValidating(false);
     }
-  }, [currentUserId, userId, onVerified, verifyUserId]);
+  }, [currentUserId, onVerified, verifyUserId, _userId]);
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -98,12 +98,12 @@ export const UserIdVerificationDialog: React.FC<UserIdVerificationDialogProps> =
       // 只允許數字輸入
       if (/^\d*$/.test(value)) {
         setUserId(value);
-        if (error) {
+        if (_error) {
           setError(null);
         }
       }
     },
-    [error]
+    [_error]
   );
 
   // 對話框開啟時聚焦輸入框並顯示當前user_id（如果有的話）
@@ -145,15 +145,15 @@ export const UserIdVerificationDialog: React.FC<UserIdVerificationDialogProps> =
               inputMode='numeric'
               pattern='[0-9]*'
               ref={userIdInputRef}
-              value={userId}
+              value={_userId}
               onChange={handleInputChange}
               placeholder='Enter your User ID'
               className={`border-gray-600 bg-gray-700 text-white placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500 ${
-                error ? 'border-red-500 focus:ring-red-500' : ''
+                _error ? 'border-red-500 focus:ring-red-500' : ''
               }`}
               disabled={isValidating || isLoading || userIdLoading}
             />
-            {error && <p className='text-sm text-red-400'>{error}</p>}
+            {_error && <p className='text-sm text-red-400'>{_error}</p>}
           </div>
         </div>
 
@@ -168,7 +168,7 @@ export const UserIdVerificationDialog: React.FC<UserIdVerificationDialogProps> =
           </Button>
           <Button
             onClick={handleVerify}
-            disabled={isValidating || isLoading || userIdLoading || !userId.trim()}
+            disabled={isValidating || isLoading || userIdLoading || !_userId.trim()}
             className='bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-500'
           >
             {isValidating ? (

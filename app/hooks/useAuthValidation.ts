@@ -80,16 +80,16 @@ export function useAuthValidation(): UseAuthValidationReturn {
   // Form validation
   const validateForm = useCallback(
     (formData: LoginFormData): boolean => {
-      const errors: ValidationFieldErrors = {};
+      const _errors: ValidationFieldErrors = {};
 
       const emailError = validateEmail(formData.email);
-      if (emailError) errors.email = emailError;
+      if (emailError) _errors.email = emailError;
 
       const passwordError = validatePassword(formData.password);
-      if (passwordError) errors.password = passwordError;
+      if (passwordError) _errors.password = passwordError;
 
-      setFieldErrors(errors);
-      return Object.keys(errors).length === 0;
+      setFieldErrors(_errors);
+      return Object.keys(_errors).length === 0;
     },
     [validateEmail, validatePassword]
   );

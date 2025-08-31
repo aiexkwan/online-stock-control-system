@@ -80,7 +80,7 @@ export async function uploadFile(formData: FormData) {
       .eq('email', user.email || '')
       .single();
 
-    const actualUploadBy = userDataByEmail?.id || uploadBy;
+    const actualUploadBy = userDataByEmail?.id ?? uploadBy ?? 1;
 
     // Create admin client for storage operations
     const supabaseAdmin = await createSupabaseAdmin();
@@ -154,9 +154,8 @@ export async function uploadFile(formData: FormData) {
     if (insertData) {
       await supabaseAdmin.from('record_history').insert({
         action: `Upload ${docType} file`,
-        remark: `Uploaded ${validatedData.fileName} to ${validatedData.folder}`,
-        who: actualUploadBy.toString(),
-        doc_url: urlData.publicUrl,
+        remark: `Uploaded ${validatedData.fileName} to ${validatedData.folder}. URL: ${urlData.publicUrl}`,
+        id: actualUploadBy,
       });
     }
 
@@ -167,7 +166,7 @@ export async function uploadFile(formData: FormData) {
       success: true,
       data: {
         id: insertData?.uuid,
-        path: data.path,
+        path: data?.path,
         url: urlData.publicUrl,
         fileName: validatedData.fileName,
         folder: validatedData.folder,
@@ -243,7 +242,7 @@ export async function deleteFile(fileId: string) {
     await supabase.from('record_history').insert({
       action: 'Delete file',
       remark: `Deleted ${safeString(fileData.doc_name)} from ${safeString(fileData.folder)}`,
-      who: safeString(fileData.upload_by),
+      id: fileData.upload_by,
     });
 
     // Revalidate paths

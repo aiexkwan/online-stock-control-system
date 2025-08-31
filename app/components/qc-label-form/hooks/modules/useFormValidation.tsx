@@ -5,7 +5,7 @@
 
 import { useMemo } from 'react';
 import type { FormData, ProductInfo } from '../../types';
-import { MIN_ACO_ORDER_REF_LENGTH } from '../../constants';
+import { _MIN_ACO_ORDER_REF_LENGTH as MIN_ACO_ORDER_REF_LENGTH } from '../../constants';
 
 interface UseFormValidationProps {
   formData: FormData;
@@ -17,9 +17,9 @@ interface UseFormValidationReturn {
   isAcoOrderFulfilled: boolean;
   isAcoOrderIncomplete: boolean;
   isAcoOrderExcess: boolean;
-  validateForm: () => { isValid: boolean; errors: Record<string, string> };
-  validateAcoOrderDetails: () => boolean;
-  validateBasicFields: () => { isValid: boolean; errors: Record<string, string> };
+  _validateForm: () => { isValid: boolean; _errors: Record<string, string> };
+  _validateAcoOrderDetails: () => boolean;
+  validateBasicFields: () => { isValid: boolean; _errors: Record<string, string> };
 }
 
 export const useFormValidation = ({
@@ -98,9 +98,9 @@ export const useFormValidation = ({
       const match = formData.acoRemain.match(/Order Remain Qty for .+: (\d+)/);
       if (match) {
         const acoRemainQty = parseInt(match[1], 10);
-        // 安全處理 quantity 和 count - 確保它們是字符串
-        const quantityStr = String(formData.quantity || '');
-        const countStr = String(formData.count || '');
+        // 安全處理 quantity 和 count - FormData 中已定義為 string 類型
+        const quantityStr = formData.quantity || '';
+        const countStr = formData.count || '';
         const quantityPerPallet = parseInt(quantityStr.trim(), 10);
         const palletCount = parseInt(countStr.trim(), 10);
 
@@ -113,7 +113,7 @@ export const useFormValidation = ({
   }, [productInfo?.type, formData.acoRemain, formData.quantity, formData.count]);
 
   // 驗證基本字段
-  const validateBasicFields = (): { isValid: boolean; errors: Record<string, string> } => {
+  const validateBasicFields = (): { isValid: boolean; _errors: Record<string, string> } => {
     const errors: Record<string, string> = {};
 
     // 驗證產品代碼
@@ -121,15 +121,15 @@ export const useFormValidation = ({
       errors.productCode = 'Product code is required';
     }
 
-    // 驗證數量 - 安全處理可能的 undefined 或 number 類型
-    const quantityStr = String(formData.quantity || '');
+    // 驗證數量 - FormData 中已定義為 string 類型
+    const quantityStr = formData.quantity || '';
     const quantity = parseInt(quantityStr, 10);
     if (!quantityStr.trim() || isNaN(quantity) || quantity <= 0) {
       errors.quantity = 'Valid quantity is required';
     }
 
-    // 驗證計數 - 安全處理可能的 undefined 或 number 類型
-    const countStr = String(formData.count || '');
+    // 驗證計數 - FormData 中已定義為 string 類型
+    const countStr = formData.count || '';
     const count = parseInt(countStr, 10);
     if (!countStr.trim() || isNaN(count) || count <= 0) {
       errors.count = 'Valid count is required';
@@ -137,12 +137,12 @@ export const useFormValidation = ({
 
     return {
       isValid: Object.keys(errors).length === 0,
-      errors,
+      _errors: errors,
     };
   };
 
   // 驗證 ACO 訂單詳情
-  const validateAcoOrderDetails = (): boolean => {
+  const _validateAcoOrderDetails = (): boolean => {
     if (productInfo?.type !== 'ACO' || !formData.acoNewRef) {
       return true;
     }
@@ -162,14 +162,14 @@ export const useFormValidation = ({
   };
 
   // 驗證整個表單
-  const validateForm = (): { isValid: boolean; errors: Record<string, string> } => {
+  const _validateForm = (): { isValid: boolean; _errors: Record<string, string> } => {
     const basicValidation = validateBasicFields();
 
     if (!basicValidation.isValid) {
       return basicValidation;
     }
 
-    const errors = { ...basicValidation.errors };
+    const errors = { ...basicValidation._errors };
 
     // ACO 特定驗證
     if (productInfo?.type === 'ACO') {
@@ -195,7 +195,7 @@ export const useFormValidation = ({
 
     return {
       isValid: Object.keys(errors).length === 0,
-      errors,
+      _errors: errors,
     };
   };
 
@@ -204,8 +204,8 @@ export const useFormValidation = ({
     isAcoOrderFulfilled,
     isAcoOrderIncomplete,
     isAcoOrderExcess,
-    validateForm,
-    validateAcoOrderDetails,
+    _validateForm,
+    _validateAcoOrderDetails,
     validateBasicFields,
   };
 };

@@ -56,12 +56,12 @@ export function useFocusManagement(
    * @returns 是否成功設置焦點
    */
   const setFocus = useCallback((element: HTMLElement | string): boolean => {
-    const result = globalFocusManager.setFocus(element, {
+    const _result = globalFocusManager.setFocus(element, {
       saveHistory: true,
       preventScroll: false,
     });
 
-    if (result) {
+    if (_result) {
       const targetElement =
         typeof element === 'string' ? (document.querySelector(element) as HTMLElement) : element;
 
@@ -84,7 +84,7 @@ export function useFocusManagement(
       }
     }
 
-    return result;
+    return _result;
   }, []);
 
   /**
@@ -92,14 +92,14 @@ export function useFocusManagement(
    * @returns 是否成功恢復焦點
    */
   const restoreFocus = useCallback((): boolean => {
-    const result = globalFocusManager.restoreFocus();
+    const _result = globalFocusManager.restoreFocus();
 
-    if (result) {
+    if (_result) {
       // 從歷史記錄中移除最後一個元素
       setFocusHistory(prev => prev.slice(0, -1));
     }
 
-    return result;
+    return _result;
   }, []);
 
   /**
@@ -359,7 +359,7 @@ export function useFocusAreas(
   }>
 ) {
   const [activeAreaId, setActiveAreaId] = useState<string | null>(null);
-  const { setFocus } = useFocusManagement();
+  const { setFocus: _setFocus } = useFocusManagement();
 
   /**
    * 移動到指定區域

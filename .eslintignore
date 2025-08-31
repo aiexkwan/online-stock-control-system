@@ -50,6 +50,11 @@ reports/
 
 # Ignore backup directories
 Backup/
+backup*/
+backup_*/
+
+# Ignore E2E test files
+e2e/
 
 # Ignore test setup files
 vitest.setup.ts
@@ -64,3 +69,6 @@ test-extraction-debug.js
 **/*.example.tsx
 **/*.example.js
 **/*.example.jsx
+
+# Ignore archon subdirectory with conflicting config
+archon/

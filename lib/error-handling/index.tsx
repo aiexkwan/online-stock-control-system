@@ -7,17 +7,29 @@
 
 'use client';
 
-import React from 'react';
+import * as React from 'react';
 
 // Core Types
-export type * from './types';
-import type { ErrorFallbackProps } from './types';
+export type {
+  ErrorSeverity,
+  ErrorRecoveryAction,
+  ErrorContext as ErrorContextType,
+  ErrorRecoveryStrategy,
+  ErrorReport,
+  ErrorState,
+  ErrorHandlerOptions,
+  ErrorBoundaryProps,
+  ErrorFallbackProps,
+  ErrorContextValue,
+  ErrorNotificationType,
+  ErrorNotificationConfig,
+} from './types';
 
 // Constants
 export * from './constants';
 
 // Context and Provider
-export { ErrorProvider, useError, ErrorContext } from './ErrorContext';
+export { ErrorProvider, useError, ErrorContext as ErrorContextProvider } from './ErrorContext';
 
 // Error Boundary Components
 export {
@@ -29,7 +41,8 @@ export {
 } from './components/ErrorBoundary';
 
 // Import for internal use in this file
-import { ErrorBoundary, CardErrorBoundary, PageErrorBoundary } from './components/ErrorBoundary';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import type { ErrorBoundaryProps, ErrorFallbackProps } from './types';
 
 // Error Fallback Components
 export {
@@ -99,12 +112,14 @@ export class ErrorHandlingUtils {
   ) {
     return function WrappedComponent(props: P) {
       // Always use ErrorBoundary and pass isolation level as prop
-      const boundaryProps = {
+      const boundaryProps: ErrorBoundaryProps = {
         context: {
           component: componentName,
           action: 'render',
         },
-        fallback: options?.fallback ? options.fallback as React.ComponentType<ErrorFallbackProps> : undefined,
+        fallback: options?.fallback
+          ? (options.fallback as unknown as React.ComponentType<ErrorFallbackProps>)
+          : undefined,
         isolationLevel: options?.isolationLevel || 'component',
         children: React.createElement(Component, props),
       };
@@ -223,12 +238,17 @@ export class ErrorHandlingUtils {
 }
 
 // Default Export - Main provider setup
-const { ErrorProvider: EP } = require('./ErrorContext');
-const { ErrorNotificationManager: ENM } = require('./components/ErrorNotificationManager');
+import { ErrorProvider as EP } from './ErrorContext';
+import { ErrorNotificationManager as ENM } from './components/ErrorNotificationManager';
 
 export default function ErrorHandlingProvider({
   children,
   ...props
 }: React.ComponentProps<typeof EP>) {
-  return React.createElement(EP, props, React.createElement(ENM), children);
+  return (
+    <EP {...props}>
+      <ENM key='error-notification' />
+      {children}
+    </EP>
+  );
 }

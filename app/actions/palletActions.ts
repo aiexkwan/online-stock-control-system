@@ -1,7 +1,5 @@
 'use server';
 
-import { z } from 'zod';
-import { createClient as createServerClient } from '@/app/utils/supabase/server';
 import { getErrorMessage } from '@/lib/types/error-handling';
 import {
   generatePalletNumbers as generatePalletNumbersClient,

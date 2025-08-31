@@ -3,7 +3,7 @@
  * 統一處理動態導入錯誤，特別是 originalFactory.call 相關問題
  */
 
-import React from 'react';
+import * as React from 'react';
 
 export interface DynamicImportOptions {
   retryCount?: number;
@@ -114,14 +114,14 @@ export function useSafeDynamicImport<T>(
     try {
       const result = await DynamicImportHandler.safeImport(importFn, {
         ...options,
-        onError: err => {
+        onError: (err: Error) => {
           setError(err);
           options.onError?.(err);
         },
       });
       setData(result);
-    } catch (err) {
-      setError(err as Error);
+    } catch (error) {
+      setError(error as Error);
     } finally {
       setLoading(false);
     }

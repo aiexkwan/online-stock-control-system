@@ -2,16 +2,17 @@
  * Transaction Report Data Source
  */
 
-import { ReportDataSource } from '../core/ReportConfig';
-import { createClient } from '@/app/utils/supabase/client';
-import { safeString } from '@/lib/types/type-guards';
+import { ReportDataSource, FilterValues } from '../core/ReportConfig';
+import { createClient } from '../../../utils/supabase/client';
+import { safeString } from '../../../../lib/types/type-guards';
+import { DatabaseRecord } from '../../../../types/database/tables';
 
 // 定義變換後的數據介面
 interface TransactionTransformedData {
-  transfer_date: unknown;
-  pallet_number: unknown;
-  product_code: unknown;
-  quantity: unknown;
+  transfer_date: string | null;
+  pallet_number: string | null;
+  product_code: string | null;
+  quantity: number;
   from_location: string;
   to_location: string;
   operator: string;
@@ -22,9 +23,9 @@ interface TransactionTransformedData {
 const transactionDataSource: ReportDataSource = {
   id: 'transaction-data',
 
-  async fetch(filters: Record<string, unknown>) {
+  async fetch(filters: FilterValues): Promise<DatabaseRecord[]> {
     const supabase = createClient();
-    const { startDate, endDate } = filters || ({} as Record<string, unknown>);
+    const { startDate, endDate } = filters;
 
     if (!startDate || !endDate) {
       throw new Error('Date range is required');
@@ -41,15 +42,15 @@ const transactionDataSource: ReportDataSource = {
       throw new Error(`Failed to fetch transaction data: ${error.message}`);
     }
 
-    return data || [];
+    return (data || []) as DatabaseRecord[];
   },
 
-  transform(data: Record<string, unknown>[]): TransactionTransformedData[] {
+  transform(data: DatabaseRecord[]): TransactionTransformedData[] {
     return data.map(item => {
       return {
-        transfer_date: item.tran_date,
-        pallet_number: item.plt_num,
-        product_code: item.plt_num, // 使用 pallet number 作為產品參考
+        transfer_date: safeString(item.tran_date) || null,
+        pallet_number: safeString(item.plt_num) || null,
+        product_code: safeString(item.plt_num) || null, // 使用 pallet number 作為產品參考
         quantity: 1, // 每次轉移計為1個單位
         from_location: safeString(item.f_loc, 'N/A'),
         to_location: safeString(item.t_loc, 'N/A'),

@@ -14,16 +14,11 @@ export enum UserRole {
 
 import {
   DatabaseValue,
-  SafeDatabaseValue,
   RelationResult,
   safeParseDatabaseValue,
   safeCastToDatabaseRecord,
   safeCastToEnhancedDatabaseRecord,
-  convertLegacyDatabaseRecord,
-  EnhancedDatabaseRecord as ZodEnhancedDatabaseRecord,
-  DatabaseRecord as ZodDatabaseRecord,
-  LegacyDatabaseRecord as ZodLegacyDatabaseRecord,
-} from '@/lib/validation/zod-schemas';
+} from '../../lib/validation/zod-schemas';
 
 // ===== 改進的通用記錄類型系統 =====
 
@@ -531,7 +526,7 @@ export function toEnhancedDatabaseRecord(data: unknown): EnhancedDatabaseRecord 
     return {};
   }
   const result = safeCastToEnhancedDatabaseRecord(data);
-  
+
   // 使用類型斷言來滿足 exactOptionalPropertyTypes
   return result as EnhancedDatabaseRecord;
 }

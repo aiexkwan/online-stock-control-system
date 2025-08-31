@@ -16,7 +16,7 @@ import {
   type SafeDetailData,
   type SafePageData,
   type SafeUserData,
-} from '@/lib/types/report-type-guards';
+} from '../../../../lib/types/report-type-guards';
 
 declare module 'jspdf' {
   interface jsPDF {

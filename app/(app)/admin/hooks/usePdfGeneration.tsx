@@ -4,26 +4,27 @@
  * Enhanced with unified printing service for better print queue management
  */
 
+import * as React from 'react';
 import { useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import { getErrorMessage } from '@/lib/types/error-handling';
-import { renderReactPDFToBlob } from '@/lib/services/unified-pdf-service';
+import { getErrorMessage } from '../../../../lib/types/error-handling';
+import { renderReactPDFToBlob } from '../../../../lib/services/unified-pdf-service';
 // Removed unused import: loadPDF
-import { PrintLabelPdf } from '@/components/print-label-pdf/PrintLabelPdf';
-import { prepareQcLabelData, mergeAndPrintPdfs, type QcInputData } from '@/lib/pdfUtils';
-import { uploadPdfToStorage, updatePalletPdfUrl } from '@/app/actions/qcActions';
-import { getOrdinalSuffix, getAcoPalletCount } from '@/app/utils/qcLabelHelpers';
-import { createClient } from '@/app/utils/supabase/client';
-import { getHardwareAbstractionLayer } from '@/lib/hardware/hardware-abstraction-layer';
+import { PrintLabelPdf } from '../../../../components/print-label-pdf/PrintLabelPdf';
+import { prepareQcLabelData, mergeAndPrintPdfs, type QcInputData } from '../../../../lib/pdfUtils';
+import { uploadPdfToStorage, updatePalletPdfUrl } from '../../../actions/qcActions';
+import { getOrdinalSuffix, getAcoPalletCount } from '../../../utils/qcLabelHelpers';
+import { createClient } from '../../../utils/supabase/client';
+import { getHardwareAbstractionLayer } from '../../../../lib/hardware/hardware-abstraction-layer';
 import {
   getUnifiedPrintingService,
   PrintType,
   PrintRequest,
   PaperSize,
   PrintPriority,
-} from '@/lib/printing';
-import type { ProductInfo } from '@/app/components/qc-label-form/types';
+} from '../../../../lib/printing';
+import type { ProductInfo } from '../../../components/qc-label-form/types';
 
 interface PdfGenerationOptions {
   productInfo: ProductInfo;
@@ -84,7 +85,7 @@ export const usePdfGeneration = (): UsePdfGenerationReturn => {
           usePrintingService.current = true;
           console.log('[PrintPDF] ✅ Unified printing service initialized successfully');
         })
-        .catch(err => {
+        .catch((err: unknown) => {
           console.warn(
             '[PrintPDF] ⚠️ Unified printing service initialization failed, falling back to HAL:',
             err
@@ -101,7 +102,7 @@ export const usePdfGeneration = (): UsePdfGenerationReturn => {
             console.warn('[PrintPDF] ⚠️ Both printing services unavailable, using legacy printing');
           }
         });
-    } catch (err) {
+    } catch (err: unknown) {
       console.warn('[PrintPDF] ⚠️ Printing services not available, using legacy printing:', err);
     }
   }, []);
@@ -135,7 +136,7 @@ export const usePdfGeneration = (): UsePdfGenerationReturn => {
         const pdfLabelProps = await prepareQcLabelData(qcInput);
 
         // 生成 PDF blob
-        const pdfElement = <PrintLabelPdf {...pdfLabelProps} />;
+        const pdfElement = React.createElement(PrintLabelPdf, pdfLabelProps);
         const pdfBlob = await renderReactPDFToBlob(pdfElement);
 
         if (!pdfBlob) {
@@ -255,7 +256,7 @@ export const usePdfGeneration = (): UsePdfGenerationReturn => {
         errors,
       };
     },
-    [generateSinglePdf, supabase]
+    [supabase, generateSinglePdf]
   );
 
   // Enhanced print PDFs with hardware service support
@@ -321,7 +322,7 @@ export const usePdfGeneration = (): UsePdfGenerationReturn => {
             console.log('[PrintPDF] Using enhanced hardware printing for multiple PDFs');
 
             // First merge PDFs using pdf-lib
-            const pdfLib = await import('@/lib/services/unified-pdf-service');
+            const pdfLib = await import('../../../../lib/services/unified-pdf-service');
             const { PDFDocument } = await pdfLib.getPDFLib();
             const mergedPdf = await PDFDocument.create();
 
@@ -416,7 +417,7 @@ export const usePdfGeneration = (): UsePdfGenerationReturn => {
             toast.success('QC label sent to print queue.');
           } else {
             // Multiple PDFs - merge first
-            const pdfLib = await import('@/lib/services/unified-pdf-service');
+            const pdfLib = await import('../../../../lib/services/unified-pdf-service');
             const { PDFDocument } = await pdfLib.getPDFLib();
             const mergedPdf = await PDFDocument.create();
 

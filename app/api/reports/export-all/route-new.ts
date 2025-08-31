@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase';
+import { createClient } from '@/app/utils/supabase/server';
 import { ApiResult, successResult, errorResult, handleAsync } from '@/lib/types/api';
 
 import {
@@ -22,7 +22,7 @@ interface ExportSummary {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const startTime = Date.now();
+  const _startTime = Date.now();
 
   try {
     const result = await handleAsync(async () => {

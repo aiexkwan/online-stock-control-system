@@ -4,6 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import * as crypto from 'crypto';
 
 interface RateLimitEntry {
   attempts: number;
@@ -13,11 +14,25 @@ interface RateLimitEntry {
   lockExpiry?: number;
 }
 
+interface RateLimitConfig {
+  maxAttempts: number;
+  windowMs: number;
+  lockoutMs: number;
+}
+
+interface RateLimitResult {
+  allowed: boolean;
+  retryAfter?: number;
+  message?: string;
+}
+
+type AuthEndpoint = 'login' | 'register' | 'passwordReset';
+
 // Store for tracking attempts (use Redis in production)
 const attemptStore = new Map<string, RateLimitEntry>();
 
 // Configuration
-const CONFIG = {
+const CONFIG: Record<AuthEndpoint, RateLimitConfig> = {
   login: {
     maxAttempts: 5,
     windowMs: 15 * 60 * 1000, // 15 minutes
@@ -45,7 +60,6 @@ function getClientId(request: NextRequest): string {
   const userAgent = request.headers.get('user-agent') || 'unknown';
 
   // Simple hash for privacy
-  const crypto = require('crypto');
   return crypto.createHash('sha256').update(`${ip}:${userAgent}`).digest('hex');
 }
 
@@ -55,7 +69,7 @@ function getClientId(request: NextRequest): string {
 function cleanupExpiredEntries(): void {
   const now = Date.now();
 
-  for (const [key, entry] of attemptStore.entries()) {
+  for (const [key, entry] of Array.from(attemptStore.entries())) {
     // Remove unlocked entries older than 1 hour
     if (!entry.locked && now - entry.lastAttempt > 60 * 60 * 1000) {
       attemptStore.delete(key);
@@ -72,8 +86,8 @@ function cleanupExpiredEntries(): void {
  */
 export async function checkAuthRateLimit(
   request: NextRequest,
-  endpoint: 'login' | 'register' | 'passwordReset'
-): Promise<{ allowed: boolean; retryAfter?: number; message?: string }> {
+  endpoint: AuthEndpoint
+): Promise<RateLimitResult> {
   const clientId = getClientId(request);
   const config = CONFIG[endpoint];
   const now = Date.now();
@@ -157,7 +171,7 @@ export function recordSuccessfulAuth(request: NextRequest): void {
  */
 export async function authRateLimitMiddleware(
   request: NextRequest,
-  endpoint: 'login' | 'register' | 'passwordReset',
+  endpoint: AuthEndpoint,
   handler: () => Promise<NextResponse>
 ): Promise<NextResponse> {
   const result = await checkAuthRateLimit(request, endpoint);
@@ -193,15 +207,14 @@ export async function authRateLimitMiddleware(
 /**
  * Get rate limit status for a client
  */
-export function getRateLimitStatus(
-  request: NextRequest,
-  endpoint: 'login' | 'register' | 'passwordReset'
-): {
+interface RateLimitStatus {
   attempts: number;
   maxAttempts: number;
   locked: boolean;
   lockExpiry?: Date;
-} {
+}
+
+export function getRateLimitStatus(request: NextRequest, endpoint: AuthEndpoint): RateLimitStatus {
   const clientId = getClientId(request);
   const config = CONFIG[endpoint];
   const entry = attemptStore.get(clientId);

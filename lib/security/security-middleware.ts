@@ -18,7 +18,10 @@ export async function securityMiddleware(request: NextRequest) {
       url: request.url,
       method: request.method,
       headers: Object.fromEntries(request.headers.entries()),
-      ip: (request as Request & { ip?: string }).ip || request.headers.get('x-forwarded-for') || 'unknown',
+      ip:
+        (request as Request & { ip?: string }).ip ||
+        request.headers.get('x-forwarded-for') ||
+        'unknown',
       userAgent: request.headers.get('user-agent') || 'unknown',
       path: new URL(request.url).pathname,
     };
@@ -30,7 +33,6 @@ export async function securityMiddleware(request: NextRequest) {
       '/change-password',
       '/new-password',
       '/api/health',
-      '/api/metrics',
       '/api/auth',
       '/_next/static',
       '/_next/image',
@@ -64,7 +66,10 @@ export async function securityMiddleware(request: NextRequest) {
         url: requestInfo.url,
         method: requestInfo.method,
         headers: requestInfo.headers,
-        body,
+        body:
+          body && typeof body === 'object' && body !== null
+            ? (body as Record<string, unknown>)
+            : undefined,
         query,
       });
     }
@@ -101,7 +106,8 @@ export async function securityMiddleware(request: NextRequest) {
     ];
 
     const shouldBlockRequest =
-      threats.some(t => criticalThreats.includes(t as SecurityEventType)) && process.env.NODE_ENV === 'production';
+      threats.some(t => criticalThreats.includes(t as SecurityEventType)) &&
+      process.env.NODE_ENV === 'production';
 
     if (shouldBlockRequest) {
       // Log blocked request
@@ -272,7 +278,11 @@ export function monitorError(error: Error, context?: Record<string, unknown>) {
 /**
  * Performance monitoring hook
  */
-export function monitorPerformance(metric: string, value: number, metadata?: Record<string, unknown>) {
+export function monitorPerformance(
+  metric: string,
+  value: number,
+  metadata?: Record<string, unknown>
+) {
   // Check if performance is anomalous
   const isAnomaly = securityMonitor.detectAnomaly(metric, value);
 

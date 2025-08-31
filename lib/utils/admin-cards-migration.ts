@@ -44,7 +44,7 @@ function isStringOrObject(value: unknown): value is string | LegacyMetric {
   return typeof value === 'string' || isLegacyMetric(value);
 }
 
-function _isStringArray(value: unknown): value is string[] {
+function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every(item => typeof item === 'string');
 }
 

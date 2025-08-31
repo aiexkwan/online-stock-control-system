@@ -6,16 +6,7 @@
  * are properly redacted before being logged.
  */
 
-import {
-  LogLevel,
-  LogEntry,
-  LogContext,
-  LogError,
-  SanitizedLogEntry,
-  SanitizationConfig,
-  LogSanitizer,
-  AnyLogData,
-} from '@/lib/types/security-monitoring';
+import { LogLevel, AnyLogData } from '../types/security-monitoring';
 
 // List of sensitive field names that should be redacted
 const SENSITIVE_FIELDS = [
@@ -114,7 +105,7 @@ export function sanitizeData(data: unknown, maxDepth: number = 10): unknown {
 
   try {
     return sanitizeRecursive(data, maxDepth);
-  } catch (error) {
+  } catch (_error) {
     // If sanitization fails, return a safe fallback
     return '[SANITIZATION_ERROR]';
   }
@@ -123,20 +114,29 @@ export function sanitizeData(data: unknown, maxDepth: number = 10): unknown {
 /**
  * Sanitizes an error object for logging
  * @param error - The error to sanitize
- * @returns Sanitized error object
+ * @returns Sanitized error object with standardized properties
  */
 export function sanitizeError(error: Error | unknown): Record<string, unknown> | null {
   if (!error) return null;
 
-  const sanitized: Record<string, unknown> = {
-    name: (error as Error)?.name || 'Error',
-    message: (error as Error)?.message || 'Unknown error',
+  // Type guard to check if error is an Error object
+  const isError = (err: unknown): err is Error => {
+    return (
+      err instanceof Error ||
+      (typeof err === 'object' && err !== null && 'name' in err && 'message' in err)
+    );
   };
 
-  if ((error as Error)?.stack) {
+  const errorObj = isError(error) ? error : null;
+
+  const sanitized: Record<string, unknown> = {
+    name: errorObj?.name || 'Error',
+    message: errorObj?.message || 'Unknown error',
+  };
+
+  if (errorObj?.stack) {
     // Redact any sensitive information from stack traces
-    const stack = (error as Error)?.stack;
-    sanitized.stack = stack
+    sanitized.stack = errorObj.stack
       .split('\n')
       .map((line: string) => {
         // Redact potential sensitive paths or values
@@ -159,21 +159,31 @@ export function sanitizeError(error: Error | unknown): Record<string, unknown> |
 }
 
 /**
+ * Interface for sanitized log entry structure
+ */
+interface SanitizedLogEntry {
+  level: LogLevel;
+  message: string;
+  timestamp: string;
+  data?: Record<string, unknown>;
+}
+
+/**
  * Creates a sanitized log entry
- * @param level - Log level (info, warn, error, debug)
+ * @param level - Log level (DEBUG, INFO, WARN, ERROR, FATAL)
  * @param message - Log message
- * @param data - Additional data to log
- * @returns Sanitized log entry
+ * @param data - Additional data to log (will be sanitized)
+ * @returns Sanitized log entry with consistent structure
  */
 export function createSanitizedLogEntry(
   level: LogLevel,
   message: string,
   data?: AnyLogData
-): { level: LogLevel; message: string; timestamp: string; data?: Record<string, unknown> } {
+): SanitizedLogEntry {
   return {
     level,
     message,
     timestamp: new Date().toISOString(),
-    data: data ? sanitizeData(data) as Record<string, unknown> : undefined,
+    data: data ? (sanitizeData(data) as Record<string, unknown>) : undefined,
   };
 }

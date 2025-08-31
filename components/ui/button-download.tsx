@@ -1,6 +1,6 @@
 'use client';
 
-import { Download, Loader2, CheckCircle } from 'lucide-react';
+import { Download, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -42,7 +42,7 @@ export default function DownloadButton({
       {downloadStatus === 'downloaded' && (
         <>
           <CheckCircle className='h-4 w-4' />
-          <span className='t'>Downloaded</span>
+          <span>Downloaded</span>
         </>
       )}
       {downloadStatus === 'complete' && <span className='text-primary'>Download</span>}

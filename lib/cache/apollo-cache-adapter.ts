@@ -5,7 +5,7 @@
  */
 
 import { makeVar, ReactiveVar } from '@apollo/client';
-import { CacheAdapter as BaseCacheAdapter, CacheStats, CacheMetrics } from './base-cache-adapter';
+import { CacheAdapter, CacheStats, CacheMetrics } from './base-cache-adapter';
 
 // Store reactive variables for different cache namespaces
 const cacheVars = new Map<string, ReactiveVar<StorageData>>();
@@ -29,7 +29,7 @@ interface StorageData {
   [key: string]: CachedItem<unknown>;
 }
 
-export class ApolloCacheAdapter implements BaseCacheAdapter {
+export class ApolloCacheAdapter implements CacheAdapter {
   private namespace: string;
   private defaultTTL: number;
   private persistToStorage: boolean;
@@ -82,26 +82,21 @@ export class ApolloCacheAdapter implements BaseCacheAdapter {
       this.metrics.hits++;
       this.updateMetrics(Date.now() - startTime);
       return item.value as T;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`[ApolloCacheAdapter] Error getting key ${key}:`, error);
       this.recordError(error);
       return null;
     }
   }
 
-  async set<T>(key: string, value: T, ttlSeconds?: number | CacheOptions): Promise<void> {
+  async set<T>(key: string, value: T, ttlSeconds?: number): Promise<void> {
     const startTime = Date.now();
     try {
       const cacheVar = cacheVars.get(this.namespace);
       if (!cacheVar) return;
 
-      // Handle both number and options object
-      let ttl: number;
-      if (typeof ttlSeconds === 'number') {
-        ttl = ttlSeconds;
-      } else {
-        ttl = ttlSeconds?.ttl || this.defaultTTL;
-      }
+      // Use ttlSeconds or default TTL
+      const ttl = ttlSeconds || this.defaultTTL;
 
       const expiry = ttl > 0 ? Date.now() + ttl * 1000 : null;
 
@@ -112,6 +107,7 @@ export class ApolloCacheAdapter implements BaseCacheAdapter {
           value,
           expiry,
           createdAt: Date.now(),
+          tags: undefined,
         },
       };
 
@@ -124,7 +120,43 @@ export class ApolloCacheAdapter implements BaseCacheAdapter {
       }
 
       this.updateMetrics(Date.now() - startTime);
-    } catch (error) {
+    } catch (error: unknown) {
+      console.error(`[ApolloCacheAdapter] Error setting key ${key}:`, error);
+      this.recordError(error);
+    }
+  }
+
+  // Optional overload method for extended options
+  async setWithOptions<T>(key: string, value: T, options?: CacheOptions): Promise<void> {
+    const startTime = Date.now();
+    try {
+      const cacheVar = cacheVars.get(this.namespace);
+      if (!cacheVar) return;
+
+      const ttl = options?.ttl || this.defaultTTL;
+      const expiry = ttl > 0 ? Date.now() + ttl * 1000 : null;
+
+      const cache = cacheVar();
+      const newCache: StorageData = {
+        ...cache,
+        [key]: {
+          value,
+          expiry,
+          createdAt: Date.now(),
+          tags: options?.tags,
+        },
+      };
+
+      // Update reactive variable
+      cacheVar(newCache);
+
+      // Persist to localStorage if enabled
+      if (this.persistToStorage) {
+        this.saveToStorage(newCache);
+      }
+
+      this.updateMetrics(Date.now() - startTime);
+    } catch (error: unknown) {
       console.error(`[ApolloCacheAdapter] Error setting key ${key}:`, error);
       this.recordError(error);
     }
@@ -152,7 +184,7 @@ export class ApolloCacheAdapter implements BaseCacheAdapter {
       }
 
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`[ApolloCacheAdapter] Error deleting key ${key}:`, error);
       this.recordError(error);
       return false;
@@ -187,7 +219,7 @@ export class ApolloCacheAdapter implements BaseCacheAdapter {
           this.saveToStorage(newCache);
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`[ApolloCacheAdapter] Error expiring key ${key}:`, error);
     }
   }
@@ -204,7 +236,7 @@ export class ApolloCacheAdapter implements BaseCacheAdapter {
           localStorage.removeItem(this.getStorageKey());
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[ApolloCacheAdapter] Error clearing cache:', error);
     }
   }
@@ -214,8 +246,8 @@ export class ApolloCacheAdapter implements BaseCacheAdapter {
     return results;
   }
 
-  async mset(items: Array<{ key: string; value: unknown; ttl?: number }>): Promise<void> {
-    await Promise.all(items.map(item => this.set(item.key, item.value, { ttl: item.ttl })));
+  async mset<T>(items: Array<{ key: string; value: T; ttl?: number }>): Promise<void> {
+    await Promise.all(items.map(item => this.set(item.key, item.value, item.ttl)));
   }
 
   async keys(pattern: string): Promise<string[]> {
@@ -229,7 +261,7 @@ export class ApolloCacheAdapter implements BaseCacheAdapter {
       // Simple pattern matching (supports * wildcard)
       const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
       return allKeys.filter(key => regex.test(key));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[ApolloCacheAdapter] Error getting keys:', error);
       return [];
     }
@@ -275,13 +307,13 @@ export class ApolloCacheAdapter implements BaseCacheAdapter {
       const stored = localStorage.getItem(this.getStorageKey());
       if (!stored) return {};
 
-      const data = JSON.parse(stored) as StorageData;
+      const _data = JSON.parse(stored) as StorageData;
 
       // Clean up expired items
       const now = Date.now();
       const cleaned: StorageData = {};
 
-      for (const [key, item] of Object.entries(data)) {
+      for (const [key, item] of Object.entries(_data)) {
         const { expiry } = item as CachedItem<unknown>;
         if (!expiry || now <= expiry) {
           cleaned[key] = item;
@@ -289,7 +321,7 @@ export class ApolloCacheAdapter implements BaseCacheAdapter {
       }
 
       return cleaned;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[ApolloCacheAdapter] Error loading from storage:', error);
       return {};
     }
@@ -302,7 +334,7 @@ export class ApolloCacheAdapter implements BaseCacheAdapter {
 
     try {
       localStorage.setItem(this.getStorageKey(), JSON.stringify(data));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[ApolloCacheAdapter] Error saving to storage:', error);
     }
   }
@@ -317,7 +349,7 @@ export class ApolloCacheAdapter implements BaseCacheAdapter {
       const keys = await this.keys(pattern);
       await Promise.all(keys.map(key => this.delete(key)));
       return keys.length;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[ApolloCacheAdapter] Error invalidating pattern:', error);
       return 0;
     }
@@ -330,7 +362,7 @@ export class ApolloCacheAdapter implements BaseCacheAdapter {
 
       const cache = cacheVar();
       return Object.keys(cache).length;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[ApolloCacheAdapter] Error getting size:', error);
       return 0;
     }
@@ -340,7 +372,7 @@ export class ApolloCacheAdapter implements BaseCacheAdapter {
     const size = await this.getSize();
     const hitRate =
       this.metrics.hits + this.metrics.misses > 0
-        ? this.metrics.hits / (this.metrics.hits + this.metrics.misses)
+        ? (this.metrics.hits / (this.metrics.hits + this.metrics.misses)) * 100
         : 0;
 
     return {
@@ -382,7 +414,7 @@ export class ApolloCacheAdapter implements BaseCacheAdapter {
     const lockValue = Math.random().toString(36).substring(7);
     const fullKey = `lock:${lockKey}`;
 
-    const existing = await this.get(fullKey);
+    const existing = await this.get<string>(fullKey);
     if (existing) return null;
 
     await this.set(fullKey, lockValue, ttlSeconds);
@@ -402,7 +434,7 @@ export class ApolloCacheAdapter implements BaseCacheAdapter {
   }
 
   // Update metrics
-  private updateMetrics(responseTime: number) {
+  private updateMetrics(responseTime: number): void {
     this.responseTimes.push(responseTime);
     if (this.responseTimes.length > 100) {
       this.responseTimes.shift();
@@ -412,7 +444,7 @@ export class ApolloCacheAdapter implements BaseCacheAdapter {
       this.responseTimes.reduce((a, b) => a + b, 0) / this.responseTimes.length;
   }
 
-  private recordError(error: unknown) {
+  private recordError(error: unknown): void {
     this.metrics.errors++;
     this.metrics.lastError = error instanceof Error ? error.message : String(error);
     this.metrics.lastErrorTime = new Date();

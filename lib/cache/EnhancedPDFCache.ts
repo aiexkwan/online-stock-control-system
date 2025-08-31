@@ -14,6 +14,12 @@ interface CacheEntry<T> {
   size: number;
 }
 
+interface CacheOptions {
+  maxSize?: number;
+  maxEntries?: number;
+  defaultTTL?: number;
+}
+
 interface CacheStats {
   totalHits: number;
   totalMisses: number;
@@ -23,9 +29,23 @@ interface CacheStats {
   avgAccessTime: number;
 }
 
+interface CacheEntryInfo {
+  key: string;
+  hits: number;
+  age: number;
+  size: number;
+}
+
+interface InternalStats {
+  hits: number;
+  misses: number;
+  totalAccessTime: number;
+  accessCount: number;
+}
+
 export class EnhancedPDFCache<T> {
   private cache: Map<string, CacheEntry<T>> = new Map();
-  private stats = {
+  private stats: InternalStats = {
     hits: 0,
     misses: 0,
     totalAccessTime: 0,
@@ -37,7 +57,28 @@ export class EnhancedPDFCache<T> {
   private readonly maxEntries: number; // Max number of entries
   private readonly defaultTTL: number; // Default TTL in milliseconds
 
-  constructor(options?: { maxSize?: number; maxEntries?: number; defaultTTL?: number }) {
+  /**
+   * Type guard to check if an object is a valid CacheEntry
+   */
+  private isValidCacheEntry(obj: unknown): obj is CacheEntry<T> {
+    return (
+      obj !== null &&
+      typeof obj === 'object' &&
+      'data' in obj &&
+      'timestamp' in obj &&
+      'hits' in obj &&
+      'lastAccessed' in obj &&
+      'hash' in obj &&
+      'size' in obj &&
+      typeof (obj as Record<string, unknown>).timestamp === 'number' &&
+      typeof (obj as Record<string, unknown>).hits === 'number' &&
+      typeof (obj as Record<string, unknown>).lastAccessed === 'number' &&
+      typeof (obj as Record<string, unknown>).hash === 'string' &&
+      typeof (obj as Record<string, unknown>).size === 'number'
+    );
+  }
+
+  constructor(options?: CacheOptions) {
     this.maxSize = options?.maxSize || 100 * 1024 * 1024; // 100MB default
     this.maxEntries = options?.maxEntries || 200; // 200 entries default
     this.defaultTTL = options?.defaultTTL || 60 * 60 * 1000; // 1 hour default
@@ -100,7 +141,7 @@ export class EnhancedPDFCache<T> {
     const hash = this.generateHash(content);
 
     // Search for entry with matching hash
-    for (const [key, entry] of this.cache.entries()) {
+    for (const [key, entry] of Array.from(this.cache.entries())) {
       if (entry.hash === hash) {
         return this.get(key);
       }
@@ -160,7 +201,7 @@ export class EnhancedPDFCache<T> {
     let lruKey: string | null = null;
     let lruTime = Date.now();
 
-    for (const [key, entry] of this.cache.entries()) {
+    for (const [key, entry] of Array.from(this.cache.entries())) {
       if (entry.lastAccessed < lruTime) {
         lruTime = entry.lastAccessed;
         lruKey = key;
@@ -177,7 +218,7 @@ export class EnhancedPDFCache<T> {
    */
   private getTotalSize(): number {
     let total = 0;
-    for (const entry of this.cache.values()) {
+    for (const entry of Array.from(this.cache.values())) {
       total += entry.size;
     }
     return total;
@@ -213,21 +254,11 @@ export class EnhancedPDFCache<T> {
   /**
    * Get detailed cache entries info
    */
-  getEntriesInfo(): Array<{
-    key: string;
-    hits: number;
-    age: number;
-    size: number;
-  }> {
+  getEntriesInfo(): CacheEntryInfo[] {
     const now = Date.now();
-    const entries: Array<{
-      key: string;
-      hits: number;
-      age: number;
-      size: number;
-    }> = [];
+    const entries: CacheEntryInfo[] = [];
 
-    for (const [key, entry] of this.cache.entries()) {
+    for (const [key, entry] of Array.from(this.cache.entries())) {
       entries.push({
         key,
         hits: entry.hits,
@@ -247,7 +278,7 @@ export class EnhancedPDFCache<T> {
     const now = Date.now();
     const expired: string[] = [];
 
-    for (const [key, entry] of this.cache.entries()) {
+    for (const [key, entry] of Array.from(this.cache.entries())) {
       if (now - entry.timestamp > this.defaultTTL) {
         expired.push(key);
       }
@@ -277,8 +308,21 @@ export class EnhancedPDFCache<T> {
   async warmCache(
     patterns: Array<{ key: string; data: T; content?: string | ArrayBuffer }>
   ): Promise<void> {
+    if (!Array.isArray(patterns)) {
+      throw new Error('Patterns must be an array');
+    }
+
     for (const pattern of patterns) {
-      this.set(pattern.key, pattern.data, pattern.content);
+      if (typeof pattern.key !== 'string') {
+        console.warn('Invalid pattern key, skipping:', pattern);
+        continue;
+      }
+
+      try {
+        this.set(pattern.key, pattern.data, pattern.content);
+      } catch (error) {
+        console.error(`Failed to warm cache for key ${pattern.key}:`, error);
+      }
     }
   }
 
@@ -299,19 +343,28 @@ export class EnhancedPDFCache<T> {
    */
   import(data: string): void {
     try {
-      const importData = JSON.parse(data);
+      const importData = JSON.parse(data) as {
+        entries: Array<[string, CacheEntry<T>]>;
+        stats?: typeof this.stats;
+        timestamp: number;
+      };
 
       // Clear existing cache
       this.cache.clear();
 
       // Import entries
-      for (const [key, entry] of importData.entries) {
-        this.cache.set(key, entry);
+      if (Array.isArray(importData.entries)) {
+        for (const [key, entry] of importData.entries) {
+          // Validate entry structure using type guard
+          if (typeof key === 'string' && this.isValidCacheEntry(entry)) {
+            this.cache.set(key, entry);
+          }
+        }
       }
 
       // Import stats
-      if (importData.stats) {
-        this.stats = importData.stats;
+      if (importData.stats && typeof importData.stats === 'object') {
+        this.stats = { ...this.stats, ...importData.stats };
       }
     } catch (error) {
       console.error('Failed to import cache:', error);
@@ -363,5 +416,5 @@ export const pdfAnalysisCache = new EnhancedPDFCache({
   defaultTTL: 2 * 60 * 60 * 1000, // 2 hours TTL
 });
 
-// Export type
-export type { CacheEntry, CacheStats };
+// Export types
+export type { CacheEntry, CacheStats, CacheEntryInfo, CacheOptions, InternalStats };

@@ -6,6 +6,13 @@ import { toast } from 'sonner';
 // Count state types
 export type CountState = 'form' | 'result' | 'input';
 
+// API Response interfaces
+export interface StockCountApiResponse {
+  success: boolean;
+  data: CountData;
+  error?: string;
+}
+
 // Count data interface
 export interface CountData {
   plt_num: string;
@@ -81,7 +88,7 @@ export function useStockCount(): UseStockCountReturn {
         body: JSON.stringify(requestBody),
       });
 
-      const result = await response.json();
+      const result = (await response.json()) as StockCountApiResponse;
 
       if (!result.success) {
         const errorMessage = result.error || 'Processing failed';
@@ -128,7 +135,7 @@ export function useStockCount(): UseStockCountReturn {
   const handleQuantitySubmit = useCallback(async () => {
     if (!countData || !countedQuantity) return;
 
-    const countedQty = parseInt(countedQuantity);
+    const countedQty = parseInt(countedQuantity, 10);
     if (isNaN(countedQty) || countedQty < 0) {
       const errorMessage = 'Please enter a valid quantity';
       setError(errorMessage);
@@ -150,7 +157,7 @@ export function useStockCount(): UseStockCountReturn {
         }),
       });
 
-      const result = await response.json();
+      const result = (await response.json()) as StockCountApiResponse;
 
       if (!result.success) {
         const errorMessage = result.error || 'Count submission failed';

@@ -5,7 +5,7 @@
 
 import DataLoader from 'dataloader';
 import { SupabaseClient } from '@supabase/supabase-js';
-import { createClient } from '@/app/utils/supabase/server';
+import { createClient } from '../../../app/utils/supabase/server';
 import type {
   Product,
   Supplier,
@@ -34,8 +34,7 @@ import type {
   TopProductsData,
   StockDistributionKey,
   StockDistributionData,
-  DatabaseEntity,
-} from '@/lib/types/dataloaders';
+} from '../../types/dataloaders';
 
 // Import Record History types
 import type { RecordHistoryKey, RecordHistoryData } from './record-history.dataloader';
@@ -133,7 +132,7 @@ export async function batchQuery<T extends Record<string, unknown> = Record<stri
   const { data, error } = await supabase
     .from(table)
     .select('*')
-    .in(column, [...keys] as unknown[]);
+    .in(column, Array.from(new Set(keys)) as unknown[]);
 
   if (error) {
     console.error(`[DataLoader] Error loading ${table}:`, error);
@@ -151,7 +150,7 @@ export async function batchQuery<T extends Record<string, unknown> = Record<stri
   );
 
   // Return in the same order as keys - ensure keys are strings for lookup
-  return keys.map(key => dataMap.get(String(key)) || null);
+  return keys.map(key => dataMap.get(String(key)) || null) as (T | null)[];
 }
 
 /**
@@ -251,7 +250,7 @@ export function createPalletBySeriesLoader(supabase: SupabaseClient): DataLoader
     const results = await batchQuery<Pallet>(supabase, 'record_palletinfo', 'series', keys);
     return results.map(result =>
       result === null ? new Error(`Pallet not found for series`) : result
-    ) as (Pallet | Error)[];
+    );
   });
 }
 
@@ -261,9 +260,7 @@ export function createPalletBySeriesLoader(supabase: SupabaseClient): DataLoader
 export function createUserByNameLoader(supabase: SupabaseClient): DataLoader<string, User> {
   return createBatchLoader<string, User>(async keys => {
     const results = await batchQuery<User>(supabase, 'data_id', 'name', keys);
-    return results.map(result =>
-      result === null ? new Error(`User not found by name`) : result
-    ) as (User | Error)[];
+    return results.map(result => (result === null ? new Error(`User not found by name`) : result));
   });
 }
 
@@ -299,13 +296,11 @@ export function createSimpleLoader<T extends Record<string, unknown> = Record<st
       );
       return results.map(result =>
         result === null ? new Error(`Not found in ${table}`) : (result as T)
-      ) as (T | Error)[];
+      );
     } else {
       // Use batch query for exact matches
       const results = await batchQuery<T>(supabase, table, keyColumn, keys);
-      return results.map(result =>
-        result === null ? new Error(`Not found in ${table}`) : result
-      ) as (T | Error)[];
+      return results.map(result => (result === null ? new Error(`Not found in ${table}`) : result));
     }
   });
 }
@@ -325,7 +320,7 @@ export function createRelatedLoader<T extends Record<string, unknown> = Record<s
     let query = supabase
       .from(table)
       .select('*')
-      .in(foreignKeyColumn, [...keys] as unknown[]);
+      .in(foreignKeyColumn, Array.from(new Set(keys)) as unknown[]);
 
     if (orderBy) {
       query = query.order(orderBy.column, { ascending: orderBy.ascending ?? true });
@@ -374,12 +369,12 @@ export function createAggregateLoader<K extends string | number | symbol = strin
 
     if (error) {
       console.error('[DataLoader] Error loading aggregate data:', error);
-      return keys.map(() => null as T | Error);
+      return keys.map(() => error);
     }
 
     // Handle both Map and array of tuples
     const dataMap = data instanceof Map ? data : new Map(data);
-    return keys.map(key => dataMap.get(key) || null) as (T | Error)[];
+    return keys.map(key => dataMap.get(key) || null) as (T | null)[];
   });
 }
 
@@ -474,8 +469,9 @@ export async function createDataLoaderContext(): Promise<DataLoaderContext> {
         StockDistributionData
       >,
       // Record History DataLoader
-      recordHistory: new DataLoader<RecordHistoryKey, RecordHistoryData>(
+      recordHistory: createBatchLoader<RecordHistoryKey, RecordHistoryData>(
         async (keys: readonly RecordHistoryKey[]) => {
+          const { createRecordHistoryDataLoader } = await import('./record-history.dataloader');
           const loader = createRecordHistoryDataLoader(supabase);
           const stringKeys = keys.map(key => JSON.stringify(key));
           const results = await loader.recordHistoryLoader.loadMany(stringKeys);

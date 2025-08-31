@@ -10,10 +10,10 @@
 import React, { useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { AlertTriangle, AlertCircle, Info, CheckCircle, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '../../../components/ui/button';
+// import { Alert, AlertDescription  } // Unused from '@/components/ui/alert';
 import { useError } from '../ErrorContext';
-import type { ErrorReport, ErrorSeverity, ErrorNotificationType } from '../types';
+import type { ErrorReport } from '../types';
 
 // Notification Configuration
 const NOTIFICATION_CONFIG = {
@@ -145,11 +145,11 @@ function BannerNotification({
 
 // Main Error Notification Manager
 export function ErrorNotificationManager() {
-  const { errorState, resolveError, clearAllErrors } = useError();
+  const { errorState, resolveError } = useError();
 
   // Get unresolved errors
   const unresolvedErrors = useMemo(() => {
-    return Array.from(errorState.errors.values()).filter(error => !error.resolved);
+    return Array.from(errorState.errors.values()).filter((error: ErrorReport) => !error.resolved);
   }, [errorState.errors]);
 
   // Track displayed notifications to avoid duplicates
@@ -158,7 +158,7 @@ export function ErrorNotificationManager() {
 
   // Handle toast notifications
   useEffect(() => {
-    unresolvedErrors.forEach(error => {
+    unresolvedErrors.forEach((error: ErrorReport) => {
       // Skip if already displayed
       if (displayedToasts.has(error.id)) return;
 
@@ -167,7 +167,7 @@ export function ErrorNotificationManager() {
       // Show toast for non-banner notifications
       if (error.severity !== 'critical') {
         const toastId = toast.custom(
-          t => (
+          (t: any) => (
             <ToastErrorContent
               error={error}
               onRetry={() => {
@@ -207,7 +207,7 @@ export function ErrorNotificationManager() {
 
   // Handle banner for critical errors
   useEffect(() => {
-    const criticalErrors = unresolvedErrors.filter(e => e.severity === 'critical');
+    const criticalErrors = unresolvedErrors.filter((e: ErrorReport) => e.severity === 'critical');
     setShowBanner(criticalErrors.length > 0);
   }, [unresolvedErrors]);
 
@@ -273,8 +273,8 @@ export function ErrorNotificationManager() {
     setShowBanner(false);
     // Resolve all critical errors
     unresolvedErrors
-      .filter(e => e.severity === 'critical')
-      .forEach(error => resolveError(error.id));
+      .filter((e: ErrorReport) => e.severity === 'critical')
+      .forEach((error: ErrorReport) => resolveError(error.id));
   }, [unresolvedErrors, resolveError]);
 
   return (
@@ -282,7 +282,7 @@ export function ErrorNotificationManager() {
       {/* Banner for critical errors */}
       {showBanner && (
         <BannerNotification
-          errors={unresolvedErrors.filter(e => e.severity === 'critical')}
+          errors={unresolvedErrors.filter((e: ErrorReport) => e.severity === 'critical')}
           onDismiss={handleDismissBanner}
           onRetryAll={handleRetryAll}
         />

@@ -9,9 +9,9 @@
 
 import React, { useMemo, memo, useCallback } from 'react';
 import { AlertTriangle, RefreshCw, Home, AlertCircle, Info, CheckCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '../../../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
+import { Alert, AlertDescription } from '../../../components/ui/alert';
 import type { ErrorFallbackProps, ErrorSeverity } from '../types';
 
 // Base Error Fallback Component
@@ -19,7 +19,7 @@ export const ErrorFallback = memo(function ErrorFallback({
   error,
   errorReport,
   retry,
-  reset,
+  reset: reset,
   recoveryActions = ['retry'],
   customActions = [],
 }: ErrorFallbackProps) {
@@ -165,7 +165,7 @@ export const ErrorFallback = memo(function ErrorFallback({
 
 // Compact Error Fallback for small components
 export const CompactErrorFallback = memo(function CompactErrorFallback({
-  error,
+  error: _error,
   errorReport,
   retry,
 }: Pick<ErrorFallbackProps, 'error' | 'errorReport' | 'retry'>) {
@@ -197,10 +197,10 @@ export const CompactErrorFallback = memo(function CompactErrorFallback({
 
 // Card-specific Error Fallback
 export const CardErrorFallback = memo(function CardErrorFallback({
-  error,
-  errorReport,
+  error: _error,
+  errorReport: _errorReport,
   retry,
-  cardName,
+  cardName: _cardName,
 }: ErrorFallbackProps & { cardName?: string }) {
   return (
     <Card className='h-full border-red-800/50 bg-red-950/20'>
@@ -212,13 +212,13 @@ export const CardErrorFallback = memo(function CardErrorFallback({
       </CardHeader>
       <CardContent className='space-y-3'>
         <p className='text-xs text-gray-400'>
-          {cardName ? `${cardName} card` : 'This card'} encountered an error
+          {_cardName ? `${_cardName} card` : 'This card'} encountered an error
         </p>
 
-        {errorReport?.userMessage && (
+        {_errorReport?.userMessage && (
           <Alert className='border-red-800/50 bg-red-950/20'>
             <AlertDescription className='text-xs text-red-300'>
-              {errorReport.userMessage}
+              {_errorReport.userMessage}
             </AlertDescription>
           </Alert>
         )}
@@ -239,10 +239,10 @@ export const CardErrorFallback = memo(function CardErrorFallback({
 
 // Page-level Error Fallback
 export const PageErrorFallback = memo(function PageErrorFallback({
-  error,
+  error: _error,
   errorReport,
   retry,
-  reset,
+  reset: reset,
 }: ErrorFallbackProps) {
   const severity = errorReport?.severity || 'high';
 
@@ -270,7 +270,7 @@ export const PageErrorFallback = memo(function PageErrorFallback({
                 Error Details
               </summary>
               <pre className='mt-2 max-h-40 overflow-auto rounded bg-gray-900/50 p-3 text-xs text-gray-400'>
-                {error.stack}
+                {_error.stack}
               </pre>
             </details>
           )}

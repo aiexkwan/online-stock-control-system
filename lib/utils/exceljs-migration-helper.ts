@@ -13,6 +13,19 @@ export interface ColumnConfig {
   style?: Partial<Style>;
 }
 
+export interface MergeConfig {
+  s: { r: number; c: number };
+  e: { r: number; c: number };
+}
+
+export interface HeaderStyleOptions {
+  fontSize?: number;
+  bold?: boolean;
+  bgColor?: string;
+  textColor?: string;
+  height?: number;
+}
+
 /**
  * 將數據陣列轉換為 ExcelJS 工作表
  */
@@ -29,7 +42,7 @@ export async function jsonToWorksheet(
     worksheet.columns = columns.map(col => ({
       header: col.header,
       key: col.key,
-      width: col.width || 15,
+      width: col.width ?? 15,
     }));
 
     // 應用列樣式
@@ -37,7 +50,9 @@ export async function jsonToWorksheet(
       if (col.style) {
         const column = worksheet.getColumn(index + 1);
         column.eachCell({ includeEmpty: false }, cell => {
-          Object.assign(cell, col.style);
+          if (col.style) {
+            Object.assign(cell, col.style);
+          }
         });
       }
     });
@@ -66,16 +81,7 @@ export async function jsonToWorksheet(
 /**
  * 設置標題樣式
  */
-export function setHeaderStyle(
-  worksheet: Worksheet,
-  options: {
-    fontSize?: number;
-    bold?: boolean;
-    bgColor?: string;
-    textColor?: string;
-    height?: number;
-  } = {}
-): void {
+export function setHeaderStyle(worksheet: Worksheet, options: HeaderStyleOptions = {}): void {
   const headerRow = worksheet.getRow(1);
 
   const fontConfig: {
@@ -83,14 +89,14 @@ export function setHeaderStyle(
     bold: boolean;
     color?: { argb: string };
   } = {
-    size: options.fontSize || 12,
+    size: options.fontSize ?? 12,
     bold: options.bold !== false,
   };
-  
+
   if (options.textColor) {
     fontConfig.color = { argb: options.textColor };
   }
-  
+
   headerRow.font = fontConfig;
 
   headerRow.alignment = {
@@ -159,20 +165,18 @@ export function autoFitColumns(
   maxWidth: number = 50
 ): void {
   worksheet.columns.forEach(column => {
-    if (!column) return;
+    if (!column || !column.eachCell) return;
 
     let maxLength = 0;
 
-    if (column?.eachCell) {
-      column.eachCell({ includeEmpty: false }, cell => {
-        const columnLength = cell.value ? cell.value.toString().length : 0;
-        if (columnLength > maxLength) {
-          maxLength = columnLength;
-        }
-      });
+    column.eachCell({ includeEmpty: false }, cell => {
+      const columnLength = cell.value ? String(cell.value).length : 0;
+      if (columnLength > maxLength) {
+        maxLength = columnLength;
+      }
+    });
 
-      column.width = Math.max(minWidth, Math.min(maxLength + 2, maxWidth));
-    }
+    column.width = Math.max(minWidth, Math.min(maxLength + 2, maxWidth));
   });
 }
 
@@ -196,7 +200,7 @@ export const NumberFormats = {
   CURRENCY: '$#,##0.00',
   DATE: 'yyyy-mm-dd',
   DATETIME: 'yyyy-mm-dd hh:mm:ss',
-};
+} as const;
 
 /**
  * 創建帶樣式嘅報表
@@ -250,10 +254,7 @@ export function convertColumnWidth(xlsxWidth: number): number {
 /**
  * 處理合併儲存格配置
  */
-export function applyMerges(
-  worksheet: Worksheet,
-  merges: Array<{ s: { r: number; c: number }; e: { r: number; c: number } }>
-): void {
+export function applyMerges(worksheet: Worksheet, merges: MergeConfig[]): void {
   merges.forEach(merge => {
     worksheet.mergeCells(
       merge.s.r + 1, // ExcelJS 使用 1-based 索引

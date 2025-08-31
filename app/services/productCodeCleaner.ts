@@ -16,7 +16,7 @@ export class ProductCodeCleaner {
     // 常見錯誤模式修正
     const corrections: Record<string, string> = {
       // MHL系列修正
-      MHL101: 'MHL10', // MHL10 + 1 (pack size)
+      MHL101: 'MHL10', // MHL10 + 1 (pack _size)
       MHL101M: 'MHL10', // MHL10 + 1 + M (from M12 in description)
       MHL151: 'MHL15',
       MHL151G: 'MHL15G',

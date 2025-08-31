@@ -3,14 +3,7 @@
  * Optimized caching strategies with field policies and type policies
  */
 
-import {
-  InMemoryCache,
-  TypePolicies,
-  FieldPolicy,
-  gql,
-  ApolloClient,
-  Reference,
-} from '@apollo/client';
+import { InMemoryCache, TypePolicies, gql, ApolloClient, Reference } from '@apollo/client';
 import { relayStylePagination } from '@apollo/client/utilities';
 
 // Type definitions for cache data structures
@@ -24,7 +17,7 @@ interface CacheObject {
   [key: string]: unknown;
 }
 
-interface CacheReference {
+interface CacheReference extends Reference {
   __typename?: string;
   __ref: string;
   id?: string;
@@ -55,7 +48,11 @@ const stockHistoryCacheConfig = {
         // Product-based pallet history with intelligent caching
         palletHistoryByProduct: {
           keyArgs: ['productCode', 'filter', 'sort'],
-          merge(existing, incoming, { args, toReference, readField }) {
+          merge(
+            existing: any,
+            incoming: any,
+            { args, toReference: _toReference, readField: _readField }
+          ) {
             // Handle pagination merge
             if (!existing) return incoming;
 
@@ -73,7 +70,7 @@ const stockHistoryCacheConfig = {
             // For fresh queries, replace existing
             return incoming;
           },
-          read(existing, { args, toReference, readField }) {
+          read(existing: any, { args, toReference: _toReference, readField }) {
             if (!existing) return existing;
 
             // Apply client-side filtering if needed
@@ -88,13 +85,13 @@ const stockHistoryCacheConfig = {
               records = records.filter((record: unknown) => {
                 const ref = record as Reference | CacheObject;
                 if ('__ref' in ref && typeof ref.__ref === 'string') {
-                  const timestamp = readField('timestamp', ref as Reference) || '';
-                  return new Date(timestamp as string) >= startDate;
+                  const timestamp = (readField('timestamp', ref as Reference) as string) || '';
+                  return new Date(timestamp) >= startDate;
                 }
                 // Handle non-reference objects
                 if (ref && typeof ref === 'object') {
-                  const timestamp = readField('timestamp', ref as Reference) || '';
-                  return new Date(timestamp as string) >= startDate;
+                  const timestamp = (readField('timestamp', ref as Reference) as string) || '';
+                  return new Date(timestamp) >= startDate;
                 }
                 return true;
               });
@@ -105,13 +102,13 @@ const stockHistoryCacheConfig = {
               records = records.filter((record: unknown) => {
                 const ref = record as Reference | CacheObject;
                 if ('__ref' in ref && typeof ref.__ref === 'string') {
-                  const timestamp = readField('timestamp', ref as Reference) || '';
-                  return new Date(timestamp as string) <= endDate;
+                  const timestamp = (readField('timestamp', ref as Reference) as string) || '';
+                  return new Date(timestamp) <= endDate;
                 }
                 // Handle non-reference objects
                 if (ref && typeof ref === 'object') {
-                  const timestamp = readField('timestamp', ref as Reference) || '';
-                  return new Date(timestamp as string) <= endDate;
+                  const timestamp = (readField('timestamp', ref as Reference) as string) || '';
+                  return new Date(timestamp) <= endDate;
                 }
                 return true;
               });
@@ -134,7 +131,7 @@ const stockHistoryCacheConfig = {
         // Transfer time flow with time-based caching
         transferTimeFlow: {
           keyArgs: ['filter.dateRange'],
-          merge(existing, incoming, { args }) {
+          merge(existing: any, incoming: any, { args: _args }) {
             // For transfer flow, always prefer fresh data due to real-time nature
             return incoming;
           },
@@ -159,7 +156,7 @@ const stockHistoryCacheConfig = {
       fields: {
         // Computed fields that can be derived client-side
         actionType: {
-          read(existing, { readField }) {
+          read(existing: any, { readField }) {
             if (existing) return existing;
 
             const action = readField('action') as string;
@@ -179,7 +176,7 @@ const stockHistoryCacheConfig = {
         },
 
         actionCategory: {
-          read(existing, { readField }) {
+          read(existing: any, { readField }) {
             if (existing) return existing;
 
             const fromLocation = readField('fromLocation') as string | undefined;
@@ -201,7 +198,7 @@ const stockHistoryCacheConfig = {
 
         // Aggregations can be computed client-side from records
         aggregations: {
-          read(existing, { readField }) {
+          read(existing: any, { readField }) {
             if (existing) return existing;
 
             const records = (readField('records') as unknown[]) || [];
@@ -393,8 +390,8 @@ export const invalidateStockHistoryCache = (
  * Preload cache with initial data
  */
 export const preloadStockHistoryCache = (
-  cache: InMemoryCache,
-  initialData: {
+  _cache: InMemoryCache,
+  _initialData: {
     recentProducts?: string[];
     recentPallets?: string[];
   }

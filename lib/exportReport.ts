@@ -1,7 +1,7 @@
 import { saveAs } from 'file-saver';
 import { format as formatDateFns } from 'date-fns'; // 重新命名以避免與可能的內部 format 衝突
 import { toast } from 'sonner';
-import { DatabaseRecord } from '@/types/database/tables';
+// import { DatabaseRecord } from '@/types/database/tables'; // Unused
 import {
   AcoProductData,
   GrnReportPageData,
@@ -12,14 +12,15 @@ import {
 const MAX_PRODUCT_BLOCKS = 4;
 
 // Helper function to convert column letter to number (A=1, B=2, ...)
-function columnLetterToNumber(letter: string): number {
-  let column = 0;
-  const length = letter.length;
-  for (let i = 0; i < length; i++) {
-    column += (letter.charCodeAt(i) - 64) * Math.pow(26, length - i - 1);
-  }
-  return column;
-}
+// This function is currently unused but kept for potential future use
+// function columnLetterToNumber(letter: string): number {
+//   let column = 0;
+//   const length = letter.length;
+//   for (let i = 0; i < length; i++) {
+//     column += (letter.charCodeAt(i) - 64) * Math.pow(26, length - i - 1);
+//   }
+//   return column;
+// }
 
 export async function exportAcoReport(reportData: AcoProductData[], orderRef: string) {
   if (!reportData || reportData.length === 0) {
@@ -1203,8 +1204,8 @@ export async function buildTransactionReport(reportData?: TransactionReportData)
         actualFromLocation = 'Pipe Extrusion';
       }
 
-      const transferKey = `${transfer.product_code}|${transfer.operator_name}|${actualFromLocation}|${transfer.to_location}`;
-      const employeeProductKey = `${transfer.operator_name}|${transfer.product_code}`; // 🆕 員工+產品代碼組合
+      const transferKey = `${transfer.product_code}|${transfer.operatorname}|${actualFromLocation}|${transfer.to_location}`;
+      const employeeProductKey = `${transfer.operatorname}|${transfer.product_code}`; // 🆕 員工+產品代碼組合
 
       // 計算板數（按轉移路線分組）
       groupedTransfers.set(transferKey, (groupedTransfers.get(transferKey) || 0) + 1);
@@ -1230,8 +1231,8 @@ export async function buildTransactionReport(reportData?: TransactionReportData)
         actualFromLocation = 'Pipe Extrusion';
       }
 
-      const transferKey = `${transfer.product_code}|${transfer.operator_name}|${actualFromLocation}|${transfer.to_location}`;
-      const employeeProductKey = `${transfer.operator_name}|${transfer.product_code}`;
+      const transferKey = `${transfer.product_code}|${transfer.operatorname}|${actualFromLocation}|${transfer.to_location}`;
+      const employeeProductKey = `${transfer.operatorname}|${transfer.product_code}`;
 
       if (!uniqueTransfers.has(transferKey)) {
         uniqueTransfers.set(transferKey, {
@@ -1244,7 +1245,7 @@ export async function buildTransactionReport(reportData?: TransactionReportData)
       }
     });
 
-    Array.from(uniqueTransfers.values()).forEach((transfer, index) => {
+    Array.from(uniqueTransfers.values()).forEach((transfer, _index) => {
       if (currentRow > maxRows) return; // 防止超出表格範圍
 
       const row = worksheet.getRow(currentRow);
@@ -1283,7 +1284,7 @@ export async function buildTransactionReport(reportData?: TransactionReportData)
       // AF 欄位留空（Pallet Reference No）
 
       // 🆕 修改 AH 欄：顯示操作員姓名和 clock number，格式為 "Alex[換行]（5997）"
-      const operatorDisplayText = `${transfer.operator_name}\n（${transfer.operator_id}）`;
+      const operatorDisplayText = `${transfer.operatorname}\n（${transfer.operator_id}）`;
       row.getCell('AH').value = operatorDisplayText; // Operator Name + Clock Number
       row.getCell('AH').font = { size: 12 };
       row.getCell('AH').alignment = {

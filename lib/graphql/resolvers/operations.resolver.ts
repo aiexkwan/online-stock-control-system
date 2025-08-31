@@ -5,15 +5,44 @@
 import { IResolvers } from '@graphql-tools/utils';
 import { GraphQLContext } from './index';
 
+// Type definitions for resolver arguments
+interface UnifiedOperationsArgs {
+  warehouse?: string;
+  dateRange?: string;
+}
+
+interface WorkLevelArgs {
+  userId: string;
+  date: Date;
+}
+
+interface WorkLevelsArgs {
+  dateRange?: {
+    start: string;
+    end: string;
+  };
+  userIds?: string[];
+}
+
+interface CreateTransferArgs {
+  input: {
+    pltNum: string;
+    toLocation: string;
+    quantity: number;
+    reason?: string;
+    priority?: string;
+  };
+}
+
 export const operationsResolvers: IResolvers = {
   Transfer: {
-    pallet: async (parent, _args, context: GraphQLContext) => {
+    pallet: async (parent: any, _args: unknown, context: GraphQLContext) => {
       const palletNumber = parent.plt_num || parent.pltNum;
       if (!palletNumber) return null;
       return context.loaders.pallet.load(palletNumber);
     },
 
-    operator: async (parent, _args, context: GraphQLContext) => {
+    operator: async (parent: any, _args: unknown, context: GraphQLContext) => {
       // 對應實際的 operator_id 欄位
       const operatorId = parent.operator_id || parent.operatorId;
       if (!operatorId) return null;
@@ -26,20 +55,24 @@ export const operationsResolvers: IResolvers = {
   },
 
   Order: {
-    customer: async (parent, _args, context: GraphQLContext) => {
+    customer: async (parent: any, _args: unknown, context: GraphQLContext) => {
       if (!parent.customer_code && !parent.customerCode) return null;
       return context.loaders.customer.load(parent.customer_code || parent.customerCode);
     },
   },
 
   WorkLevel: {
-    user: async (parent, _args, context: GraphQLContext) => {
+    user: async (parent: any, _args: unknown, context: GraphQLContext) => {
       return context.loaders.user.load(parent.user_id || parent.userId);
     },
   },
 
   Query: {
-    unifiedOperations: async (_parent, args, context: GraphQLContext) => {
+    unifiedOperations: async (
+      _parent: unknown,
+      args: UnifiedOperationsArgs,
+      context: GraphQLContext
+    ) => {
       const { warehouse, dateRange } = args;
 
       if (!context.loaders.unifiedOperations) {
@@ -51,11 +84,11 @@ export const operationsResolvers: IResolvers = {
         warehouse,
         startDate: parsedDateRange?.start || new Date().toISOString(),
         endDate: parsedDateRange?.end || new Date().toISOString(),
-        dateRange,
+        dateRange: dateRange || null,
       });
     },
 
-    workLevel: async (_parent, args, context: GraphQLContext) => {
+    workLevel: async (_parent: unknown, args: WorkLevelArgs, context: GraphQLContext) => {
       const { userId, date } = args;
 
       if (!context.loaders.workLevel) {
@@ -71,7 +104,7 @@ export const operationsResolvers: IResolvers = {
       });
     },
 
-    workLevels: async (_parent, args, context: GraphQLContext) => {
+    workLevels: async (_parent: unknown, args: WorkLevelsArgs, context: GraphQLContext) => {
       const { dateRange, userIds } = args;
 
       if (!context.loaders.workLevel) {
@@ -113,7 +146,7 @@ export const operationsResolvers: IResolvers = {
   },
 
   Mutation: {
-    createTransfer: async (_parent, args, context: GraphQLContext) => {
+    createTransfer: async (_parent: unknown, args: CreateTransferArgs, context: GraphQLContext) => {
       const { input } = args;
 
       // Would implement actual transfer creation

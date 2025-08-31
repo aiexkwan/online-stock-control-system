@@ -8,7 +8,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, memo } from 'react';
-import { RefreshCw, AlertTriangle, CheckCircle, Clock, Zap } from 'lucide-react';
+import { CheckCircle, RefreshCw, Zap, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardContent } from '@/components/ui/card';
@@ -17,7 +17,7 @@ import type { ErrorRecoveryStrategy, ErrorReport } from '../types';
 
 // Auto Recovery Component
 export const AutoRecovery = memo(function AutoRecovery({
-  error,
+  error: _error,
   strategy,
   onRecovery,
   onFailed,
@@ -50,7 +50,7 @@ export const AutoRecovery = memo(function AutoRecovery({
 
       return () => clearInterval(interval);
     }
-    
+
     // Return undefined for the else path
     return undefined;
   }, [isRetrying, autoRetry, retryCount]);
@@ -61,7 +61,7 @@ export const AutoRecovery = memo(function AutoRecovery({
       const attemptRetry = async () => {
         try {
           await retry(onRecovery, autoRetry.maxAttempts, autoRetry.delayMs);
-        } catch (error) {
+        } catch {
           onFailed();
         }
       };
@@ -116,7 +116,7 @@ export const AutoRecovery = memo(function AutoRecovery({
 
 // Manual Recovery Component
 export const ManualRecovery = memo(function ManualRecovery({
-  error,
+  error: _error,
   strategy,
   onRecovery,
 }: {
@@ -295,7 +295,7 @@ export const ErrorRecoveryPanel = memo(function ErrorRecoveryPanel({
   const [recoverySuccess, setRecoverySuccess] = useState(false);
 
   const handleRecovery = useCallback(
-    (action?: string) => {
+    (_action?: string) => {
       setRecoveryAttempted(true);
 
       // Simulate recovery success

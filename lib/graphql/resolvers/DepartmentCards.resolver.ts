@@ -5,15 +5,14 @@
  */
 
 import DataLoader from 'dataloader';
-import { SupabaseClient } from '@supabase/supabase-js';
-import { createClient } from '@/app/utils/supabase/server';
-import { Database } from '@/types/database/supabase';
+import { createClient } from '../../../app/utils/supabase/server';
+import type { Database } from '../../../types/database/supabase';
 
 // Temporary type definitions until GraphQL codegen is fixed
 type DepartmentType = 'INJECTION' | 'PIPE' | 'WAREHOUSE';
 
-// Define Supabase client type
-type SupabaseClientType = SupabaseClient<Database>;
+// Define Supabase client type from createClient return type
+type SupabaseClientType = Awaited<ReturnType<typeof createClient>>;
 
 // Define GraphQL Context type
 interface GraphQLContext {
@@ -85,7 +84,7 @@ interface OrderDetail {
   loadedBy: string;
 }
 
-interface DepartmentData {
+interface _DepartmentData {
   stats: DepartmentStats;
   topStocks: StockItem[];
   materialStocks: StockItem[];
@@ -266,9 +265,18 @@ class UnifiedDataLoaders {
       }
 
       if (historyData) {
-        for (const item of historyData as DatabaseRecord[]) {
+        for (const item of historyData as OrderHistoryQueryResult[]) {
           const details = orderDetailsMap.get(item.order_ref) || [];
-          details.push(item);
+          // Convert the query result to DatabaseRecord format
+          const dbRecord: DatabaseRecord = {
+            order_ref: item.order_ref,
+            pallet_num: item.pallet_num,
+            product_code: item.product_code,
+            action_by:
+              typeof item.action_by === 'string' ? parseInt(item.action_by, 10) : item.action_by,
+            action_time: item.action_time,
+          };
+          details.push(dbRecord);
           orderDetailsMap.set(item.order_ref, details);
         }
       }
@@ -385,7 +393,7 @@ export const unifiedDepartmentResolver = {
   Query: {
     // Injection Department Data
     departmentInjectionData: async (_: unknown, __: unknown, context: unknown) => {
-      const ctx = context as GraphQLContext;
+      const _ctx = context as GraphQLContext;
       try {
         const supabase = await createClient();
         const loaders = new UnifiedDataLoaders(supabase);
@@ -481,7 +489,7 @@ export const unifiedDepartmentResolver = {
 
     // Pipe Department Data
     departmentPipeData: async (_: unknown, __: unknown, context: unknown) => {
-      const ctx = context as GraphQLContext;
+      const _ctx = context as GraphQLContext;
       try {
         const supabase = await createClient();
         const loaders = new UnifiedDataLoaders(supabase);
@@ -575,7 +583,7 @@ export const unifiedDepartmentResolver = {
 
     // Warehouse Department Data
     departmentWarehouseData: async (_: unknown, __: unknown, context: unknown) => {
-      const ctx = context as GraphQLContext;
+      const _ctx = context as GraphQLContext;
       try {
         const supabase = await createClient();
         const loaders = new UnifiedDataLoaders(supabase);
@@ -687,6 +695,15 @@ interface DatabaseRecord {
   action_time: string;
 }
 
+// Type for actual database query results
+interface OrderHistoryQueryResult {
+  order_ref: string;
+  pallet_num: string;
+  product_code: string;
+  action_by: string | number;
+  action_time: string;
+}
+
 async function fetchStats(
   supabase: SupabaseClientType,
   config: DepartmentConfig
@@ -776,9 +793,8 @@ async function fetchStats(
     }
 
     // Get product types for filtering
-    const productCodes = [
-      ...new Set(allRecords.map(r => r.product_code as string).filter(Boolean)),
-    ];
+    const productCodesSet = new Set(allRecords.map(r => r.product_code as string).filter(Boolean));
+    const productCodes = Array.from(productCodesSet);
     const { data: productData } = await supabase
       .from('data_code')
       .select('code, type')
@@ -791,7 +807,7 @@ async function fetchStats(
     // Apply department filter
     const filteredRecords = allRecords.filter(r => {
       const productType = productTypeMap.get(r.product_code as string);
-      return productType && config.productFilter(productType);
+      return productType ? config.productFilter(productType as string) : false;
     });
 
     // Count by time period
@@ -861,6 +877,7 @@ async function fetchTopStocks(
       stockData &&
       typeof info === 'object' &&
       'type' in info &&
+      typeof info.type === 'string' &&
       config.productFilter(info.type)
     ) {
       stockItems.push({
@@ -966,13 +983,12 @@ async function fetchRecentActivities(
   if (error || !historyData) return [];
 
   // Get staff names
-  const staffIds = [
-    ...new Set(
-      historyData
-        .map((h: Record<string, unknown>) => h.id as number)
-        .filter((id): id is number => id !== null)
-    ),
-  ];
+  const staffIdsSet = new Set(
+    historyData
+      .map((h: Record<string, unknown>) => h.id as number)
+      .filter((id): id is number => id !== null)
+  );
+  const staffIds = Array.from(staffIdsSet);
   const staffNames = await loaders.staffLoader.loadMany(staffIds);
   const staffMap = new Map(staffIds.map((id, index) => [id, staffNames[index] as string]));
 

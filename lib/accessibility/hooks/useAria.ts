@@ -400,7 +400,8 @@ export function useAriaDescriptions(
   useEffect(() => {
     const currentDescriptions = descriptionsRef.current;
 
-    descriptions.forEach(({ id, content, persistent: _persistent = true }) => { // Renamed unused param
+    descriptions.forEach(({ id, content, persistent: _persistent = true }) => {
+      // Renamed unused param
       if (currentDescriptions.has(id)) return;
 
       const element = document.createElement('div');

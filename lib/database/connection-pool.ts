@@ -4,9 +4,9 @@
  * and automatic failover handling for operational excellence
  */
 
-import { createClient } from '@supabase/supabase-js';
+// import { createClient } from '@supabase/supabase-js'; // Unused in favor of server client
 import type { NextRequest, NextResponse } from 'next/server';
-import { createClient as createServerClient } from '@/app/utils/supabase/server';
+import { createClient as createServerClient } from '../../app/utils/supabase/server';
 
 // Connection Pool Configuration for Production
 interface ConnectionPoolConfig {
@@ -153,12 +153,12 @@ class DatabaseConnectionManager {
   /**
    * Batch execute multiple queries efficiently
    */
-  async executeBatch<T>(
+  async executeBatch(
     queries: Array<{
-      fn: (client: Awaited<ReturnType<typeof createServerClient>>) => Promise<T>;
+      fn: (client: Awaited<ReturnType<typeof createServerClient>>) => Promise<any>;
       name?: string;
     }>
-  ): Promise<T[]> {
+  ): Promise<any[]> {
     // Execute all queries in parallel, each with their own connection
     const promises = queries.map(query => this.executeQuery(query.fn, query.name));
 
@@ -171,7 +171,7 @@ class DatabaseConnectionManager {
   private async performHealthCheck(): Promise<boolean> {
     try {
       const client = await this.getOptimizedClient();
-      const { data, error } = await client.from('data_code').select('count').limit(1);
+      const { data: _data, error } = await client.from('data_code').select('count').limit(1);
 
       if (error) {
         throw error;
@@ -241,15 +241,7 @@ export class DepartPipeCardQueryOptimizer {
    */
   async getPipeProductionStats(timeRange: '1d' | '7d' | '14d' = '14d') {
     return this.connectionManager.executeQuery(async client => {
-      const timeFilter = {
-        '1d': 'generate_time >= CURRENT_DATE',
-        '7d': "generate_time >= (CURRENT_DATE - INTERVAL '7 days')",
-        '14d': "generate_time >= (CURRENT_DATE - INTERVAL '14 days')",
-      }[timeRange];
-
-      const { data, error } = await client.rpc('get_pipe_production_stats_optimized', {
-        time_filter: timeFilter,
-      });
+      const { data, error } = await client.rpc('get_pipe_production_stats_optimized');
 
       if (error) throw error;
       return data;
@@ -262,8 +254,8 @@ export class DepartPipeCardQueryOptimizer {
   async getTopPipeStocks(limit: number = 10) {
     return this.connectionManager.executeQuery(async client => {
       // Use RPC function for aggregated query as client doesn't support .group()
-      const { data, error } = await client.rpc('get_top_pipe_stocks', {
-        row_limit: limit,
+      const { data, error } = await client.rpc('get_top_pipe_stocks_optimized', {
+        stock_limit: limit,
       });
 
       if (error) throw error;

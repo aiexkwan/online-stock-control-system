@@ -70,14 +70,14 @@ export interface VoidPalletActions {
   removeBatchItem: (id: string) => void;
   selectAllBatchItems: (selected: boolean) => void;
   focusSearchInput: () => void;
-  executeVoidPallet: (params: VoidParams) => Promise<VoidResult>;
+  executeVoidPallet: (_params: VoidParams) => Promise<VoidResult>;
 }
 
 // Hook props interface
 export interface UseVoidPalletProps {
   searchInputRef?: React.RefObject<SearchInputRef>;
-  onVoidComplete?: (palletId: string, result: VoidResult) => void;
-  onVoidError?: (error: Error) => void;
+  onVoidComplete?: (palletId: string, _result: VoidResult) => void;
+  onVoidError?: (_error: Error) => void;
 }
 
 // Hook return interface
@@ -104,7 +104,7 @@ export const useVoidPallet = ({
   const [showAlreadyVoidedDialog, setShowAlreadyVoidedDialog] = useState(false);
   const [alreadyVoidedPalletNum, setAlreadyVoidedPalletNum] = useState('');
   const [batchItems, setBatchItems] = useState<BatchItem[]>([]);
-  const [_isLoading, _setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   // Helper function to get inventory column mapping
   const getInventoryColumn = useCallback((location: string | null | undefined): string => {
@@ -451,7 +451,7 @@ export const useVoidPallet = ({
           plt_num: foundPallet.plt_num,
           reason: voidReason,
           damage_qty: voidReason === 'Damaged' ? foundPallet.product_qty : 0,
-          time: new Date().toISOString(),
+          _time: new Date().toISOString(),
         });
 
         // 5. Update record_aco if ACO order exists
@@ -549,7 +549,8 @@ export const useVoidPallet = ({
             } else {
               failedCount++;
             }
-          } catch {
+          } catch (error) {
+            console.error('Batch void error for item:', item.id, error);
             failedCount++;
           }
         }
@@ -654,7 +655,7 @@ export const useVoidPallet = ({
     showAlreadyVoidedDialog,
     alreadyVoidedPalletNum,
     batchItems,
-    isLoading: _isLoading,
+    isLoading,
   };
 
   // Actions object

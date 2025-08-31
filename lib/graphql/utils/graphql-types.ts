@@ -4,7 +4,7 @@
  */
 
 // 導入GraphQL生成的類型
-import type { Maybe, InputMaybe } from '@/types/generated/graphql';
+import type { Maybe, InputMaybe } from '../../../types/generated/graphql';
 
 /**
  * 安全轉換Maybe<string>到string

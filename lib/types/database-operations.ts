@@ -7,7 +7,7 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@/types/database/supabase';
+import type { Database } from '../../types/database/supabase';
 
 // =============================================================================
 // 資料庫查詢相關類型 / Database Query Related Types

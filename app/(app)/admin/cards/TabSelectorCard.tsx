@@ -72,7 +72,6 @@ export const TabSelectorCard: React.FC = () => {
   const [isLoadingUser, setIsLoadingUser] = useState(true);
 
   // Operation selected item
-  const [_selectedOperation, setSelectedOperation] = useState<string>('');
   const [selectedOperationCard, setSelectedOperationCard] = useState<string>('');
 
   // Fetch user info on mount
@@ -106,8 +105,8 @@ export const TabSelectorCard: React.FC = () => {
             iconUrl: data.icon_url,
           });
         }
-      } catch (error) {
-        console.error('Error fetching user info:', error);
+      } catch (fetchError) {
+        console.error('Error fetching user info:', fetchError);
       } finally {
         setIsLoadingUser(false);
       }
@@ -137,7 +136,6 @@ export const TabSelectorCard: React.FC = () => {
 
   // Operation selection handler
   const handleOperationSelect = useCallback((operationId: string) => {
-    setSelectedOperation(operationId);
     // Set corresponding card for right side display
     switch (operationId) {
       case 'qc-label':
@@ -334,7 +332,7 @@ export const TabSelectorCard: React.FC = () => {
                                       >
                                         {card.displayName}
                                       </div>
-                                      {/* Hide card name, category label, and card type as per requirements */}
+                                      {/* Hide card _name, category label, and card type as per requirements */}
                                     </div>
                                   </motion.button>
                                 );

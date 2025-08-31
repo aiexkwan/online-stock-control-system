@@ -4,8 +4,8 @@ import { useState, useCallback, useEffect, useMemo } from 'react';
 
 // Storage keys - prefixed to avoid conflicts
 const STORAGE_KEYS = {
-  LOGIN_FORM: 'pennine_login_form_data',
-  REGISTER_FORM: 'pennine_register_form_data',
+  LOGIN_FORM: 'pennine_login_formdata',
+  REGISTER_FORM: 'pennine_register_formdata',
   UI_STATE: 'pennine_login_ui_state',
   LAST_EMAIL: 'pennine_last_login_email', // For convenience, non-sensitive
 } as const;

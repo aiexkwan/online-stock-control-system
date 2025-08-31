@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Search, QrCode, X, Loader2 } from 'lucide-react';
-import { DatabaseRecord } from '@/types/database/tables';
+import { Search, QrCode, X } from 'lucide-react';
+import { DatabaseRecord, toDatabaseRecord } from '@/types/database/tables';
 import { SimpleQRScanner } from '../qr-scanner/simple-qr-scanner';
 import { Button } from './button';
 import { Input } from './input';
@@ -13,6 +13,29 @@ interface Product {
   quantity: number;
   location: string;
 }
+
+// 類型安全的轉換函數
+const createProductDatabaseRecord = (product: Product): DatabaseRecord => {
+  return toDatabaseRecord({
+    type: 'product',
+    id: product.id,
+    name: product.name,
+    sku: product.sku,
+    quantity: product.quantity,
+    location: product.location,
+  });
+};
+
+const createPalletDatabaseRecord = (
+  value: string,
+  searchType: 'series' | 'pallet_num'
+): DatabaseRecord => {
+  return toDatabaseRecord({
+    type: 'pallet',
+    value: value,
+    searchType: searchType,
+  });
+};
 
 interface SearchResult {
   id: string;
@@ -100,9 +123,6 @@ export const UnifiedSearch = React.forwardRef<HTMLInputElement, UnifiedSearchPro
 
     const inputRef = useRef<HTMLInputElement>(null);
     const resultsRef = useRef<HTMLDivElement>(null);
-    const isMobile =
-      typeof window !== 'undefined' &&
-      /Mobi|Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 
     // Sync external value - but prevent infinite loops
     useEffect(() => {
@@ -127,7 +147,6 @@ export const UnifiedSearch = React.forwardRef<HTMLInputElement, UnifiedSearchPro
       }
 
       const results: SearchResult[] = [];
-      const query = searchQuery; // 保持原始大小寫，避免搜尋失敗
       const queryLower = searchQuery.toLowerCase(); // 僅用於產品搜尋的大小寫不敏感比較
 
       // Product search - only show dropdown for product search
@@ -144,7 +163,7 @@ export const UnifiedSearch = React.forwardRef<HTMLInputElement, UnifiedSearchPro
             title: product.name,
             subtitle: `SKU: ${product.sku}`,
             metadata: `Stock: ${product.quantity} | Location: ${product.location}`,
-            data: [{ type: 'product', ...product } as DatabaseRecord],
+            data: [createProductDatabaseRecord(product)],
           }));
 
         results.push(...productResults);
@@ -236,13 +255,7 @@ export const UnifiedSearch = React.forwardRef<HTMLInputElement, UnifiedSearchPro
           title: searchQuery,
           subtitle: 'Pallet Search',
           metadata: `Auto Search on Blur (${finalSearchType})`,
-          data: [
-            {
-              type: 'pallet',
-              value: searchQuery,
-              searchType: finalSearchType, // Pass detected search type
-            } as DatabaseRecord,
-          ],
+          data: [createPalletDatabaseRecord(searchQuery, finalSearchType)],
         };
         onSelect?.(palletResult);
       }
@@ -285,13 +298,7 @@ export const UnifiedSearch = React.forwardRef<HTMLInputElement, UnifiedSearchPro
               title: searchQuery,
               subtitle: 'Pallet Search',
               metadata: `Enter Key Search (${finalSearchType})`,
-              data: [
-                {
-                  type: 'pallet',
-                  value: searchQuery,
-                  searchType: finalSearchType, // Pass detected search type
-                } as DatabaseRecord,
-              ],
+              data: [createPalletDatabaseRecord(searchQuery, finalSearchType)],
             };
             onSelect?.(palletResult);
           }
@@ -364,13 +371,7 @@ export const UnifiedSearch = React.forwardRef<HTMLInputElement, UnifiedSearchPro
             title: scannedValue,
             subtitle: 'QR Scan Result',
             metadata: `Pallet Search (${finalSearchType})`,
-            data: [
-              {
-                type: 'pallet',
-                value: scannedValue,
-                searchType: finalSearchType, // Pass detected search type
-              } as DatabaseRecord,
-            ],
+            data: [createPalletDatabaseRecord(scannedValue, finalSearchType)],
           };
           onSelect?.(palletResult);
         }
@@ -422,15 +423,13 @@ export const UnifiedSearch = React.forwardRef<HTMLInputElement, UnifiedSearchPro
 
           <Input
             ref={node => {
-              // 合併內部 ref 和外部 ref
+              // 安全的 ref 處理
               if (typeof ref === 'function') {
                 ref(node);
-              } else if (ref && 'current' in ref) {
-                (ref as React.MutableRefObject<HTMLInputElement | null>).current = node;
+              } else if (ref) {
+                ref.current = node;
               }
-              if (inputRef && inputRef.current !== node) {
-                (inputRef as React.MutableRefObject<HTMLInputElement | null>).current = node;
-              }
+              inputRef.current = node;
             }}
             type='text'
             value={searchQuery}

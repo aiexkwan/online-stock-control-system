@@ -11,7 +11,7 @@ import {
   isValidSupplierInfo,
   isValidRpcSearchSupplierResponse,
   isValidRpcSupplierMutationResponse,
-} from '@/lib/validation/zod-schemas';
+} from '../validation/zod-schemas';
 
 // ========== 基本供應商類型 ==========
 

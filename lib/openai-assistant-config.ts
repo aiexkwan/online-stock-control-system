@@ -17,7 +17,7 @@ export const MODEL_CONFIG = {
  * Get the appropriate tools configuration
  * 使用 code_interpreter（適用於 gpt-4o）
  */
-function getToolsConfig() {
+function _getToolsConfig() {
   // gpt-4o 使用 code_interpreter tool，避免 vector store 問題
   return [{ type: 'code_interpreter' as const }];
 }

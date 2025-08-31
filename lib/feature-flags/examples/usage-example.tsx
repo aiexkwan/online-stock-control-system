@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { isDevelopment, isNotProduction } from '@/lib/utils/env';
+import { isDevelopment } from '@/lib/utils/env';
 import {
   FeatureFlag,
   FeatureVariant,

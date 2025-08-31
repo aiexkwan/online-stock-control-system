@@ -9,15 +9,15 @@ import { ReportRegistry } from '../core/ReportRegistry';
 import { ReportFormat, FilterValues } from '../core/ReportConfig';
 
 interface UseReportGenerationOptions {
-  onSuccess?: (blob: Blob, filename: string) => void;
-  onError?: (error: Error) => void;
+  onSuccess?: (blob: Blob, _filename: string) => void;
+  onError?: (_error: Error) => void;
   autoDownload?: boolean;
 }
 
 export function useReportGeneration(reportId: string, options: UseReportGenerationOptions = {}) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
 
   const { onSuccess, onError, autoDownload = true } = options;
 
@@ -36,7 +36,7 @@ export function useReportGeneration(reportId: string, options: UseReportGenerati
 
         // 創建報表引擎
         const engine = new ReportEngine(
-          registeredReport.config,
+          registeredReport._config,
           registeredReport.dataSources,
           registeredReport.generators
         );
@@ -49,30 +49,30 @@ export function useReportGeneration(reportId: string, options: UseReportGenerati
         // 生成檔案名
         const now = new Date();
         const timestamp = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const filename = `${reportId}_${timestamp}.${format === 'excel' ? 'xlsx' : format}`;
+        const _filename = `${reportId}_${timestamp}.${format === 'excel' ? 'xlsx' : format}`;
 
         // 自動下載
         if (autoDownload) {
-          downloadBlob(blob, filename);
+          downloadBlob(blob, _filename);
         }
 
         setProgress(100);
 
         // 回調
         if (onSuccess) {
-          onSuccess(blob, filename);
+          onSuccess(blob, _filename);
         }
 
-        return { blob, filename };
-      } catch (err) {
-        const error = err instanceof Error ? err : new Error('Unknown error');
-        setError(error);
+        return { blob, _filename };
+      } catch (_err) {
+        const _error = _err instanceof Error ? _err : new Error('Unknown error');
+        setError(_error);
 
         if (onError) {
-          onError(error);
+          onError(_error);
         }
 
-        throw error;
+        throw _error;
       } finally {
         setIsGenerating(false);
         // 延遲重置進度
@@ -86,18 +86,18 @@ export function useReportGeneration(reportId: string, options: UseReportGenerati
     generateReport,
     isGenerating,
     progress,
-    error,
+    _error,
   };
 }
 
 /**
  * 下載 Blob 檔案
  */
-function downloadBlob(blob: Blob, filename: string): void {
+function downloadBlob(blob: Blob, _filename: string): void {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = filename;
+  link.download = _filename;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

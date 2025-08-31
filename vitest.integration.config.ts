@@ -42,7 +42,7 @@ export default defineConfig({
         'coverage/**',
         'dist/**',
         '**/*.d.ts',
-        'test{,s}/**',
+        'test{ s}/**',
         'test{,-*}.{js,cjs,mjs,ts,tsx,jsx}',
         '**/*{.,-}test.{js,cjs,mjs,ts,tsx,jsx}',
         '**/*{.,-}spec.{js,cjs,mjs,ts,tsx,jsx}',

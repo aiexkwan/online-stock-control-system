@@ -81,50 +81,53 @@ const DynamicCardLoader: React.FC<{
         switch (cardId) {
           case 'StockLevelListAndChartCard':
             const stockModule = await import('../cards/StockLevelListAndChartCard');
-            const stockComponent = (
-              stockModule as {
-                StockLevelListAndChartCard?: React.ComponentType<unknown>;
-                default?: React.ComponentType<unknown>;
-              }
-            ).StockLevelListAndChartCard ||
-            (
-              stockModule as {
-                StockLevelListAndChartCard?: React.ComponentType<unknown>;
-                default?: React.ComponentType<unknown>;
-              }
-            ).default;
+            const stockComponent =
+              (
+                stockModule as {
+                  StockLevelListAndChartCard?: React.ComponentType<unknown>;
+                  default?: React.ComponentType<unknown>;
+                }
+              ).StockLevelListAndChartCard ||
+              (
+                stockModule as {
+                  StockLevelListAndChartCard?: React.ComponentType<unknown>;
+                  default?: React.ComponentType<unknown>;
+                }
+              ).default;
             cardModule = stockComponent ? { default: stockComponent } : {};
             break;
           case 'StockHistoryCard':
             const stockHistoryModule = await import('../cards/StockHistoryCard');
-            const stockHistoryComponent = (
-              stockHistoryModule as {
-                default?: React.ComponentType<unknown>;
-                StockHistoryCard?: React.ComponentType<unknown>;
-              }
-            ).default ||
-            (
-              stockHistoryModule as {
-                default?: React.ComponentType<unknown>;
-                StockHistoryCard?: React.ComponentType<unknown>;
-              }
-            ).StockHistoryCard;
+            const stockHistoryComponent =
+              (
+                stockHistoryModule as {
+                  default?: React.ComponentType<unknown>;
+                  StockHistoryCard?: React.ComponentType<unknown>;
+                }
+              ).default ||
+              (
+                stockHistoryModule as {
+                  default?: React.ComponentType<unknown>;
+                  StockHistoryCard?: React.ComponentType<unknown>;
+                }
+              ).StockHistoryCard;
             cardModule = stockHistoryComponent ? { default: stockHistoryComponent } : {};
             break;
           case 'WorkLevelCard':
             const workLevelModule = await import('../cards/WorkLevelCard');
-            const workLevelComponent = (
-              workLevelModule as {
-                default?: React.ComponentType<unknown>;
-                WorkLevelCard?: React.ComponentType<unknown>;
-              }
-            ).default ||
-            (
-              workLevelModule as {
-                default?: React.ComponentType<unknown>;
-                WorkLevelCard?: React.ComponentType<unknown>;
-              }
-            ).WorkLevelCard;
+            const workLevelComponent =
+              (
+                workLevelModule as {
+                  default?: React.ComponentType<unknown>;
+                  WorkLevelCard?: React.ComponentType<unknown>;
+                }
+              ).default ||
+              (
+                workLevelModule as {
+                  default?: React.ComponentType<unknown>;
+                  WorkLevelCard?: React.ComponentType<unknown>;
+                }
+              ).WorkLevelCard;
             cardModule = workLevelComponent ? { default: workLevelComponent } : {};
             break;
           case 'VerticalTimelineCard':
@@ -201,7 +204,7 @@ const DynamicCardLoader: React.FC<{
           const Component = cardModule.default || (cardName && cardModule[cardName]) || null;
 
           if (Component && typeof Component === 'function') {
-            setCardComponent(() => Component as React.ComponentType<unknown>);
+            setCardComponent(() => Component as React.ComponentType<CardProps>);
           } else {
             throw new Error(`Invalid component module for ${cardId}`);
           }
@@ -583,8 +586,8 @@ export default AnalysisCardSelector;
  *
  * <AnalysisCardSelector
  *   selectedCard={selectedCard}
- *   onCardError={(cardId, error) => {
- *     console.error(`Card ${cardId} failed:`, error);
+ *   onCardError={(cardId, _error) => {
+ *     console.error(`Card ${cardId} failed:`, _error);
  *   }}
  * />
  * ```

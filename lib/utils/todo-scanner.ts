@@ -10,6 +10,15 @@ import { glob } from 'glob';
 // TODO 標記正則表達式
 const TODO_PATTERN = /@types-migration:todo\((phase\d)\)\s*\[P(\d)\]\s*(.*?)(?:\s*-\s*(.*))?$/;
 
+// 正則表達式匹配結果類型
+type TodoPatternMatch = [
+  string, // 完整匹配
+  string, // phase
+  string, // priority
+  string, // description
+  string?, // metadata (可選)
+];
+
 // TODO 項目接口
 export interface TodoItem {
   file: string;
@@ -38,7 +47,7 @@ export function scanFile(filePath: string): TodoItem[] {
   const lines = content.split('\n');
 
   lines.forEach((line, index) => {
-    const match = line.match(TODO_PATTERN);
+    const match = line.match(TODO_PATTERN) as TodoPatternMatch | null;
     if (match) {
       // 跳過示例代碼（在 TODO_EXAMPLES 對象中的標記）
       const isExample =
@@ -52,9 +61,9 @@ export function scanFile(filePath: string): TodoItem[] {
         todos.push({
           file: filePath,
           line: index + 1,
-          phase: match[1] || '',
-          priority: match[2] ? parseInt(match[2]) : 0,
-          description: match[3]?.trim() || '',
+          phase: match[1] ?? '',
+          priority: match[2] ? parseInt(match[2], 10) : 0,
+          description: match[3]?.trim() ?? '',
           metadata: match[4]?.trim(),
           content: line.trim(),
         });
@@ -75,7 +84,7 @@ export async function scanProject(
   const todos: TodoItem[] = [];
 
   for (const pattern of patterns) {
-    const files = await glob(pattern, {
+    const files: string[] = await glob(pattern, {
       cwd: rootPath,
       ignore: ['**/node_modules/**', '**/dist/**', '**/.next/**', '**/*.test.*', '**/*.spec.*'],
     });
@@ -103,15 +112,15 @@ export function generateStats(todos: TodoItem[]): TodoStats {
 
   todos.forEach(todo => {
     // 按階段統計
-    stats.byPhase[todo.phase] = (stats.byPhase[todo.phase] || 0) + 1;
+    stats.byPhase[todo.phase] = (stats.byPhase[todo.phase] ?? 0) + 1;
 
     // 按優先級統計
     const priorityKey = `P${todo.priority}`;
-    stats.byPriority[priorityKey] = (stats.byPriority[priorityKey] || 0) + 1;
+    stats.byPriority[priorityKey] = (stats.byPriority[priorityKey] ?? 0) + 1;
 
     // 按文件統計
     const relativeFile = todo.file.replace(process.cwd(), '');
-    stats.byFile[relativeFile] = (stats.byFile[relativeFile] || 0) + 1;
+    stats.byFile[relativeFile] = (stats.byFile[relativeFile] ?? 0) + 1;
   });
 
   return stats;
@@ -148,10 +157,7 @@ export function generateMarkdownReport(todos: TodoItem[], stats: TodoStats): str
     if (!groupedByPriority[todo.priority]) {
       groupedByPriority[todo.priority] = [];
     }
-    const priorityArray = groupedByPriority[todo.priority];
-    if (priorityArray) {
-      priorityArray.push(todo);
-    }
+    groupedByPriority[todo.priority]!.push(todo);
   });
 
   // 按優先級從高到低排序
@@ -164,7 +170,7 @@ export function generateMarkdownReport(todos: TodoItem[], stats: TodoStats): str
 
     const todosForPriority = groupedByPriority[priority];
     if (!todosForPriority) return;
-    
+
     todosForPriority.forEach(todo => {
       const relativeFile = todo.file.replace(process.cwd(), '');
       report.push(`- [ ] **${relativeFile}:${todo.line}**`);
@@ -189,7 +195,7 @@ function getPriorityDescription(priority: number): string {
     2: 'Medium - 下期考慮',
     3: 'Low - 長期優化',
   };
-  return descriptions[priority] || 'Unknown';
+  return descriptions[priority] ?? 'Unknown';
 }
 
 /**
@@ -211,7 +217,7 @@ export const TODO_EXAMPLES = {
   phase2High: '// @types-migration:todo(phase2) [P1] 添加 zod validation - Owner: @backend-team',
   phase3Medium: '// @types-migration:todo(phase3) [P2] 遷移到新類型系統 - Blocked by: API 重構',
   phase4Low: '// @types-migration:todo(phase4) [P3] 優化類型定義 - 長期改進',
-};
+} as const;
 
 /**
  * 主執行函數
@@ -256,6 +262,9 @@ async function main() {
 }
 
 // 如果直接執行此文件，運行主函數
-if (require.main === module) {
-  main();
+if (typeof require !== 'undefined' && require.main === module) {
+  main().catch(error => {
+    console.error('執行失敗:', error);
+    process.exit(1);
+  });
 }

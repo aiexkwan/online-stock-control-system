@@ -2,7 +2,34 @@
 
 import { useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getUserRole } from './useAuth';
+import type { UserRole } from '../../lib/types/auth';
+
+// 基於電郵的角色映射 - 遵循 YAGNI 原則簡化
+const getUserRole = (email: string): UserRole => {
+  const department =
+    email === 'production@pennineindustries.com'
+      ? 'Pipeline'
+      : email === 'warehouse@pennineindustries.com'
+        ? 'Warehouse'
+        : email === 'pipeline@pennineindustries.com'
+          ? 'Pipeline'
+          : 'System';
+
+  const position =
+    email.includes('@pennineindustries.com') &&
+    (email.includes('production') || email.includes('warehouse'))
+      ? 'User'
+      : 'Admin';
+
+  return {
+    type: position === 'Admin' ? 'admin' : 'user',
+    department,
+    position,
+    allowedPaths: [],
+    defaultPath: '/admin/analytics',
+    navigationRestricted: false,
+  };
+};
 
 export interface AuthRedirectActions {
   getUserRedirectPath: (email: string) => Promise<string>;

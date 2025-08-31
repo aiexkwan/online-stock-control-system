@@ -3,10 +3,7 @@
 import * as crypto from 'crypto';
 import { createClient as createAdminSupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/app/utils/supabase/server';
-import { DatabaseRecord } from '@/types/database/tables';
-import type { Database } from '@/types/database/supabase';
 import { getErrorMessage } from '@/lib/types/error-handling';
-// Removed EnhancedOrderExtractionService import - now using API Route to avoid Server Components compatibility issues
 import { sendOrderCreatedEmail } from '../services/emailService';
 import acoProductService from '../services/acoProductService';
 
@@ -93,6 +90,20 @@ interface OrderInsertRecord {
   customer_ref?: string;
 }
 
+// EmailService 要求的資料格式
+interface EmailRequestBody {
+  orderData: Array<{
+    order_ref: number;
+    product_code: string;
+    product_desc: string;
+    product_qty: number;
+  }>;
+  pdfAttachment: {
+    filename: string;
+    content: string; // base64 encoded
+  };
+}
+
 // 生成文件哈希值
 function generateFileHash(buffer: ArrayBuffer): string {
   const hashBuffer = Buffer.from(buffer);
@@ -123,7 +134,12 @@ function setCachedResult(fileHash: string, data: OrderAnalysisResult): void {
 async function recordOrderUploadHistory(orderRef: string, uploadedBy: string): Promise<void> {
   try {
     const supabase = await createClient();
-    const userId = parseInt(uploadedBy);
+    const userId = parseInt(uploadedBy, 10);
+
+    if (isNaN(userId)) {
+      console.error('[recordOrderUploadHistory] Invalid uploadedBy value:', uploadedBy);
+      return;
+    }
 
     const { error } = await supabase.from('record_history').insert({
       time: new Date().toISOString(),
@@ -180,11 +196,8 @@ async function storeEnhancedOrderData(
     return record;
   });
 
-  // 插入所有記錄 - 轉換為 Supabase 預期的類型
-  const { data, error } = await supabase
-    .from('data_order')
-    .insert(orderRecords as unknown as Record<string, unknown>[])
-    .select();
+  // 插入所有記錄 - 使用正確的類型轉換
+  const { data, error } = await supabase.from('data_order').insert(orderRecords).select();
 
   if (error) {
     console.error('[storeEnhancedOrderData] Database insert failed:', error);
@@ -281,7 +294,7 @@ async function uploadToStorageAsync(
         .getPublicUrl(`orderpdf/${fileData.name}`);
 
       // 驗證必要資料
-      const parsedUploadedBy = parseInt(uploadedBy);
+      const parsedUploadedBy = parseInt(uploadedBy, 10);
       if (isNaN(parsedUploadedBy)) {
         console.error('[uploadToStorageAsync] Invalid uploadedBy value:', uploadedBy);
         return null;
@@ -392,7 +405,7 @@ async function sendEmailNotification(
   try {
     console.log('[sendEmailNotification] Starting email notification process');
 
-    const emailRequestBody = {
+    const emailRequestBody: EmailRequestBody = {
       orderData: orderData.products.map(product => ({
         order_ref: parseInt(orderData.order_ref),
         product_code: product.product_code,
@@ -412,7 +425,16 @@ async function sendEmailNotification(
       attachmentSizeBytes: fileData.buffer.byteLength,
     });
 
-    const emailResponse = await sendOrderCreatedEmail(emailRequestBody);
+    // 轉換為 EmailService 預期的格式
+    const emailServiceRequest = {
+      orderData: emailRequestBody.orderData,
+      pdfAttachment: {
+        _filename: emailRequestBody.pdfAttachment.filename,
+        content: emailRequestBody.pdfAttachment.content,
+      },
+    };
+
+    const emailResponse = await sendOrderCreatedEmail(emailServiceRequest);
 
     console.log('[sendEmailNotification] Email service response:', {
       success: emailResponse.success,
@@ -502,7 +524,7 @@ export async function analyzeOrderPDF(
     let extractedText: string = '';
 
     // 調用內部 API - 修復 URL 構建邏輯
-    function getApiBaseUrl(): string {
+    const getApiBaseUrl = (): string => {
       // 優先使用 VERCEL_URL (生產環境)
       if (process.env.VERCEL_URL) {
         const url = process.env.VERCEL_URL;
@@ -516,7 +538,7 @@ export async function analyzeOrderPDF(
 
       // 本地開發
       return 'http://localhost:3000';
-    }
+    };
 
     const baseUrl = getApiBaseUrl();
     const apiUrl = `${baseUrl}/api/pdf-extract`;
@@ -537,7 +559,7 @@ export async function analyzeOrderPDF(
         console.log('[analyzeOrderPDF] Making API request to:', apiUrl);
 
         // 添加 Vercel bypass token 如果存在
-        const headers: HeadersInit = {
+        const headers: Record<string, string> = {
           'x-internal-request': 'true', // 標記為內部請求
         };
 
@@ -733,13 +755,20 @@ export async function getCurrentUserId(): Promise<number | null> {
       error: authError,
     } = await supabase.auth.getUser();
 
-    if (authError || !user) return null;
+    if (authError || !user?.email) {
+      return null;
+    }
 
-    const { data: userDataByEmail } = await supabase
+    const { data: userDataByEmail, error } = await supabase
       .from('data_id')
       .select('id')
-      .eq('email', user.email || '')
+      .eq('email', user.email)
       .single();
+
+    if (error) {
+      console.error('[getCurrentUserId] Error:', error);
+      return null;
+    }
 
     return userDataByEmail?.id || null;
   } catch (error) {

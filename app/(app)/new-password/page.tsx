@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { resetPasswordAction } from './actions'; // Import the actual Server Action
 
 // Placeholder removed, using imported Server Action now
-// async function resetPasswordAction(userId: string, newPassword: string): Promise<{ success: boolean; error?: string }> { ... }
+// async function resetPasswordAction(_userId: string, newPassword: string): Promise<{ success: boolean; error?: string }> { ... }
 
 function NewPasswordContent() {
   const router = useRouter();

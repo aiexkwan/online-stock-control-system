@@ -1,7 +1,21 @@
-import { createClient } from './supabase'; // MODIFIED: Import createClient
-import { generatePalletPdfFileName } from './pdfUtils'; // Import the new naming function
+import { createClient } from '@supabase/supabase-js'; // Import createClient
 
 export const STORAGE_BUCKET = 'pallet-label-pdf';
+
+/**
+ * Generates a PDF filename based on the pallet number.
+ * Example: if palletNum is "080808/14", returns "080808_14.pdf".
+ * @param palletNum - The pallet number string.
+ * @returns The formatted PDF filename.
+ */
+function generatePalletPdfFileName(palletNum: string): string {
+  if (!palletNum || palletNum.trim() === '') {
+    throw new Error('Pallet number cannot be empty for PDF naming.');
+  }
+  // Replace all occurrences of '/' with '_'
+  const safePalletNum = palletNum.replace(/\//g, '_');
+  return `${safePalletNum}.pdf`;
+}
 
 /**
  * Sets up the Supabase storage client.
@@ -29,7 +43,11 @@ export async function uploadPdf(
   _ignoredFileName: string, // Intentionally ignored for Supabase path naming
   pdfBlob: Blob
 ): Promise<string> {
-  const supabase = createClient(); // ADDED: Create supabase instance here
+  // Create supabase instance with environment variables
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
   if (!palletNum) {
     console.error('[uploadPdf] Pallet number is required but was not provided.');
     throw new Error('Pallet number is required for uploading PDF.');
@@ -93,12 +111,12 @@ export async function uploadPdf(
 
     console.log('[uploadPdf] Public URL:', publicUrlData.publicUrl);
     return publicUrlData.publicUrl;
-  } catch (err) {
-    console.error('[uploadPdf] Error in uploadPdf:', (err as Error).message, err);
+  } catch (error) {
+    console.error('[uploadPdf] Error in uploadPdf:', (error as Error).message, error);
     // Ensure we throw an actual Error object
-    if (err instanceof Error) {
-      throw err;
+    if (error instanceof Error) {
+      throw error;
     }
-    throw new Error(`uploadPdf failed: ${String(err)}`);
+    throw new Error(`uploadPdf failed: ${String(error)}`);
   }
 }

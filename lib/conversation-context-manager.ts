@@ -1,4 +1,4 @@
-import { DatabaseRecord } from '@/types/database/tables';
+import { DatabaseRecord as _DatabaseRecord } from '@/types/database/tables';
 
 // 多輪對話上下文管理系統
 

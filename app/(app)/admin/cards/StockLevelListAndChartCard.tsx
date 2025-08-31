@@ -26,12 +26,7 @@ import {
   Legend,
 } from 'recharts';
 import { format } from 'date-fns';
-import {
-  Package,
-  AlertCircle,
-  BarChart3,
-  List,
-} from 'lucide-react';
+import { Package, AlertCircle, BarChart3, List } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Select,

@@ -4,39 +4,34 @@
     // 生產環境優化配置 - 專注於編譯速度
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    
+
     // 移除開發時的調試信息以加速編譯
     "removeComments": true,
     "sourceMap": false,
     "declaration": false,
-    
+
     // 進一步的編譯性能優化
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
-    
+
     // 針對構建的特定設定
     "incremental": false, // 構建時不需要增量信息
     "tsBuildInfoFile": null
   },
-  "include": [
-    "next-env.d.ts",
-    "**/*.ts", 
-    "**/*.tsx",
-    ".next/types/**/*.ts"
-  ],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": [
     "node_modules",
     "**/__tests__/**",
     "**/test.spec.ts",
     "**/test/**",
-    "**/tests/**", 
+    "**/tests/**",
     "backend/**",
     "supabase/**",
     "scripts/**",
     "e2e/**",
     "**/*.test.ts",
     "**/*.test.tsx",
-    "**/*.spec.ts", 
+    "**/*.spec.ts",
     "**/*.spec.tsx",
     "**/*.stories.ts",
     "**/*.stories.tsx",
@@ -44,7 +39,7 @@
     "**/*.config.js",
     "**/*.config.mjs",
     "playwright*.ts",
-    "vitest*.ts", 
+    "vitest*.ts",
     "jest*.ts",
     ".next/**",
     "dist/**",

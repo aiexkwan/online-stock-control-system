@@ -4,31 +4,95 @@
 
 import { IResolvers } from '@graphql-tools/utils';
 import { GraphQLContext } from './index';
+import type {
+  Inventory,
+  Pallet,
+  Product,
+  QueryPalletArgs,
+  QueryInventoriesArgs,
+  QueryInventoryArgs,
+  QueryStockLevelsArgs,
+  InventoryFilterInput,
+  PaginationInput,
+  StockLevelFilterInput,
+  StockLevel,
+  PageInfo,
+} from '../../../types/generated/graphql';
+
+// Custom connection type for inventories response
+interface InventoryConnection {
+  edges: Array<{
+    node: Inventory;
+    cursor: string;
+  }>;
+  pageInfo: PageInfo;
+  totalCount: number;
+}
+
+// Database record types for parent objects
+interface InventoryRecord {
+  uuid: string;
+  product_code: string;
+  productCode?: string;
+  [key: string]: any;
+}
+
+interface PalletRecord {
+  uuid: string;
+  plt_num: string;
+  product_code: string;
+  productCode?: string;
+  product_qty?: number;
+  quantity?: number;
+  [key: string]: any;
+}
 
 export const inventoryResolvers: IResolvers = {
   Inventory: {
-    product: async (parent, _args, context: GraphQLContext) => {
+    product: async (
+      parent: InventoryRecord,
+      _args: {},
+      context: GraphQLContext
+    ): Promise<Product | null> => {
       const productCode = parent.product_code || parent.productCode;
       if (!productCode) return null;
-      return context.loaders.product.load(productCode);
+      try {
+        return await context.loaders.product.load(productCode);
+      } catch (error) {
+        console.error(`Error loading product ${productCode}:`, error);
+        return null;
+      }
     },
   },
 
   Pallet: {
-    product: async (parent, _args, context: GraphQLContext) => {
+    product: async (
+      parent: PalletRecord,
+      _args: {},
+      context: GraphQLContext
+    ): Promise<Product | null> => {
       const productCode = parent.product_code || parent.productCode;
       if (!productCode) return null;
-      return context.loaders.product.load(productCode);
+      try {
+        return await context.loaders.product.load(productCode);
+      } catch (error) {
+        console.error(`Error loading product ${productCode}:`, error);
+        return null;
+      }
     },
 
-    quantity: parent => {
+    quantity: (parent: PalletRecord): number => {
       // Map database field 'product_qty' to GraphQL field 'quantity'
       return parent.product_qty || parent.quantity || 0;
     },
   },
 
   Query: {
-    pallet: async (_parent, args, context: GraphQLContext) => {
+    pallet: async (
+      _parent: any,
+      args: QueryPalletArgs,
+      context: GraphQLContext
+    ): Promise<Pallet | null> => {
       const { pltNum } = args;
       if (!pltNum) {
         throw new Error('Pallet number is required');
@@ -39,15 +103,20 @@ export const inventoryResolvers: IResolvers = {
         return pallet;
       } catch (error) {
         console.error(`Error loading pallet ${pltNum}:`, error);
-        throw new Error(
-          `Failed to load pallet: ${error instanceof Error ? error.message : 'Unknown error'}`
-        );
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw new Error(`Failed to load pallet: ${errorMessage}`);
       }
     },
 
-    inventories: async (_parent, args, context: GraphQLContext) => {
+    inventories: async (
+      _parent: any,
+      args: QueryInventoriesArgs,
+      context: GraphQLContext
+    ): Promise<InventoryConnection> => {
       // Implementation for inventories query from schema
-      const { first = 20, after } = args;
+      const { pagination, filter } = args;
+      const first = pagination?.first || 20;
+      const after = pagination?.after;
       const { supabase } = context;
 
       try {
@@ -57,6 +126,19 @@ export const inventoryResolvers: IResolvers = {
           .order('product_code')
           .limit(first);
 
+        // Apply filters if provided
+        if (filter?.productCode) {
+          query = query.eq('product_code', filter.productCode);
+        }
+
+        if (filter?.minQuantity) {
+          query = query.gte('total_quantity', filter.minQuantity);
+        }
+
+        if (filter?.maxQuantity) {
+          query = query.lte('total_quantity', filter.maxQuantity);
+        }
+
         if (after) {
           query = query.gt('uuid', after);
         }
@@ -64,102 +146,103 @@ export const inventoryResolvers: IResolvers = {
         const { data, error } = await query;
 
         if (error) {
+          console.error('Error fetching inventories:', error);
           throw new Error(`Failed to fetch inventories: ${error.message}`);
         }
 
+        const inventoryData = data || [];
+
         return {
-          edges: (data || []).map(item => ({
-            node: item,
-            cursor: item.uuid.toString(),
+          edges: inventoryData.map((item: any) => ({
+            node: item as Inventory,
+            cursor: String(item.uuid),
           })),
           pageInfo: {
-            hasNextPage: data && data.length === first,
+            hasNextPage: inventoryData.length === first,
             hasPreviousPage: !!after,
-            startCursor: data && data.length > 0 ? data[0].uuid.toString() : null,
-            endCursor: data && data.length > 0 ? data[data.length - 1].uuid.toString() : null,
+            startCursor: inventoryData.length > 0 ? String(inventoryData[0].uuid) : null,
+            endCursor:
+              inventoryData.length > 0
+                ? String(inventoryData[inventoryData.length - 1].uuid)
+                : null,
+            currentPage: after ? 2 : 1, // Simplified page calculation
+            totalCount: inventoryData.length,
+            totalPages: Math.ceil(inventoryData.length / first),
           },
-          totalCount: data?.length || 0,
+          totalCount: inventoryData.length,
         };
       } catch (error) {
         console.error('Error fetching inventories:', error);
-        throw new Error('Failed to fetch inventories');
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw new Error(`Failed to fetch inventories: ${errorMessage}`);
       }
     },
 
-    inventory: async (_parent, args, context: GraphQLContext) => {
+    inventory: async (
+      _parent: any,
+      args: QueryInventoryArgs,
+      context: GraphQLContext
+    ): Promise<Inventory | null> => {
       // Implementation for inventory query from schema
-      const { id } = args;
+      const { productCode } = args;
       const { supabase } = context;
 
       try {
         const { data, error } = await supabase
           .from('record_inventory')
           .select('*')
-          .eq('uuid', id)
+          .eq('product_code', productCode)
           .single();
 
         if (error) {
           throw new Error(`Failed to fetch inventory: ${error.message}`);
         }
 
-        return data;
+        return data as Inventory;
       } catch (error) {
         console.error('Error fetching inventory:', error);
-        throw new Error('Failed to fetch inventory');
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw new Error(`Failed to fetch inventory: ${errorMessage}`);
       }
     },
 
-    stockLevels: async (_parent, args, context: GraphQLContext) => {
+    stockLevels: async (
+      _parent: any,
+      args: QueryStockLevelsArgs,
+      context: GraphQLContext
+    ): Promise<StockLevel[]> => {
       // Implementation for stockLevels query from schema
-      const { filter, pagination } = args;
+      const { dateRange, warehouse } = args;
       const { supabase } = context;
 
       try {
-        let query;
+        let query = supabase.from('stock_level').select('*');
 
         // Apply filters if provided
-        if (filter?.productType) {
-          // Join with data_code table to filter by type
-          query = supabase
-            .from('stock_level')
-            .select(
-              `
-              *,
-              data_code!inner(type)
-            `
-            )
-            .eq('data_code.type', filter.productType);
-        } else {
-          query = supabase.from('stock_level').select('*');
+        if (warehouse) {
+          query = query.eq('warehouse', warehouse);
         }
 
-        if (filter?.minLevel) {
-          query = query.gte('stock_level', filter.minLevel);
+        if (dateRange?.start) {
+          query = query.gte('created_at', dateRange.start);
         }
 
-        if (filter?.maxLevel) {
-          query = query.lte('stock_level', filter.maxLevel);
-        }
-
-        // Apply pagination
-        if (pagination?.limit) {
-          query = query.limit(pagination.limit);
-        }
-
-        if (pagination?.offset) {
-          query = query.range(pagination.offset, pagination.offset + (pagination.limit || 50) - 1);
+        if (dateRange?.end) {
+          query = query.lte('created_at', dateRange.end);
         }
 
         const { data, error } = await query;
 
         if (error) {
+          console.error('Error fetching stock levels:', error);
           throw new Error(`Failed to fetch stock levels: ${error.message}`);
         }
 
-        return data || [];
+        return (data || []) as StockLevel[];
       } catch (error) {
         console.error('Error fetching stock levels:', error);
-        throw new Error('Failed to fetch stock levels');
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        throw new Error(`Failed to fetch stock levels: ${errorMessage}`);
       }
     },
   },

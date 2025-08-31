@@ -25,13 +25,19 @@
  * @author ProductCodeValidator System
  */
 
-import { createClient as createServerClient } from '@/app/utils/supabase/server';
-import { calculateStringSimilarity } from '@/lib/utils/string-similarity';
-import { createLogger, sanitizeLogData, dbLogger, systemLogger } from '@/lib/logger';
-import type { Database } from '@/types/database/supabase';
+import { createClient as createServerClient } from '../utils/supabase/server';
+import { calculateStringSimilarity } from '../../lib/utils/string-similarity';
+import { createLogger, sanitizeLogData, dbLogger, systemLogger } from '../../lib/logger';
+import type { Database } from '../../types/database/supabase';
 
 // 類型定義
 interface ProductCode {
+  code: string;
+  description: string;
+}
+
+// 資料庫查詢結果類型
+interface DatabaseProductCode {
   code: string;
   description: string;
 }
@@ -120,7 +126,7 @@ class ProductCodeValidator {
   private lastFullCacheRefresh = 0;
 
   // 配置參數
-  private readonly config: BatchProcessingConfig = {
+  private readonly _config: BatchProcessingConfig = {
     maxBatchSize: 100,
     similarityThreshold: 0.85,
     cacheExpireTime: 5 * 60 * 1000, // 5 minutes in milliseconds
@@ -131,10 +137,10 @@ class ProductCodeValidator {
   private constructor() {
     this.logger.info(
       {
-        maxBatchSize: this.config.maxBatchSize,
-        similarityThreshold: this.config.similarityThreshold,
-        cacheExpireTime: this.config.cacheExpireTime,
-        maxCacheSize: this.config.maxCacheSize,
+        maxBatchSize: this._config.maxBatchSize,
+        similarityThreshold: this._config.similarityThreshold,
+        cacheExpireTime: this._config.cacheExpireTime,
+        maxCacheSize: this._config.maxCacheSize,
       },
       'ProductCodeValidator initialized with config'
     );
@@ -154,23 +160,36 @@ class ProductCodeValidator {
    * 驗證並豐富化產品代碼列表
    * @param codes 待驗證的產品代碼數組
    * @returns 驗證結果包含豐富化信息和統計摘要
+   * @throws {Error} 當輸入無效或批次大小超出限制時
    */
-  public async validateAndEnrichCodes(codes: string[]): Promise<ValidationResult> {
-    const startTime = Date.now();
+  public async validateAndEnrichCodes(codes: readonly string[]): Promise<ValidationResult> {
+    const _startTime = Date.now();
 
     try {
-      // 輸入驗證
-      if (!Array.isArray(codes) || codes.length === 0) {
-        throw new Error('Invalid input: codes must be a non-empty array');
+      // 嚴格輸入驗證
+      if (!Array.isArray(codes)) {
+        throw new TypeError('Invalid input: codes must be an array');
       }
 
-      if (codes.length > this.config.maxBatchSize) {
-        throw new Error(`Batch size exceeds limit: ${codes.length} > ${this.config.maxBatchSize}`);
+      if (codes.length === 0) {
+        throw new Error('Invalid input: codes array cannot be empty');
+      }
+
+      // 驗證每個代碼項目都是字串
+      const invalidIndex = codes.findIndex(code => typeof code !== 'string');
+      if (invalidIndex !== -1) {
+        throw new TypeError(
+          `Invalid input: code at index ${invalidIndex} must be a string, got ${typeof codes[invalidIndex]}`
+        );
+      }
+
+      if (codes.length > this._config.maxBatchSize) {
+        throw new Error(`Batch size exceeds limit: ${codes.length} > ${this._config.maxBatchSize}`);
       }
 
       this.logger.info(
         {
-          batchSize: codes.length,
+          _batchSize: codes.length,
           sampleCodes: codes.slice(0, 3), // 只記錄前3個作為樣本
         },
         'Starting batch validation'
@@ -183,7 +202,7 @@ class ProductCodeValidator {
       const stats = { valid: 0, corrected: 0, invalid: 0 };
 
       // 處理每個批次
-      const batches = this.chunkArray(codes, this.config.maxBatchSize);
+      const batches = this.chunkArray(codes, this._config.maxBatchSize);
 
       for (const batch of batches) {
         const batchResults = await this.processBatch(batch);
@@ -197,7 +216,7 @@ class ProductCodeValidator {
         });
       }
 
-      const processingTime = Date.now() - startTime;
+      const processingTime = Date.now() - _startTime;
 
       this.logger.info(
         {
@@ -217,7 +236,7 @@ class ProductCodeValidator {
           {
             targetMs: 100,
             actualMs: processingTime,
-            batchSize: codes.length,
+            _batchSize: codes.length,
           },
           'Batch processing exceeded target time'
         );
@@ -231,11 +250,11 @@ class ProductCodeValidator {
         },
       };
     } catch (error) {
-      const processingTime = Date.now() - startTime;
+      const processingTime = Date.now() - _startTime;
       this.logger.error(
         {
-          error: error instanceof Error ? error.message : 'Unknown error',
-          batchSize: codes?.length || 0,
+          _error: error instanceof Error ? error.message : 'Unknown error',
+          _batchSize: codes?.length || 0,
           processingTimeMs: processingTime,
           stack: error instanceof Error ? error.stack : undefined,
         },
@@ -327,7 +346,7 @@ class ProductCodeValidator {
    */
   private async ensureProductCodesLoaded(): Promise<void> {
     const now = Date.now();
-    const shouldRefresh = now - this.lastFullCacheRefresh > this.config.cacheExpireTime;
+    const shouldRefresh = now - this.lastFullCacheRefresh > this._config.cacheExpireTime;
 
     if (this.allProductCodes.length === 0 || shouldRefresh) {
       await this.refreshCache();
@@ -338,7 +357,7 @@ class ProductCodeValidator {
    * 刷新快取，從資料庫載入所有產品代碼
    */
   public async refreshCache(): Promise<void> {
-    const startTime = Date.now();
+    const _startTime = Date.now();
 
     try {
       this.logger.info('Starting cache refresh');
@@ -367,13 +386,25 @@ class ProductCodeValidator {
           break;
         }
 
-        // 數據清理和轉換
+        // 數據清理和轉換，使用嚴格的類型檢查
         const cleanedData: ProductCode[] = data
-          .filter(item => item.code && item.description)
-          .map(item => ({
-            code: this.normalizeProductCode(item.code),
-            description: item.description.trim(),
-          }));
+          .filter(
+            (item): item is DatabaseProductCode =>
+              typeof item === 'object' &&
+              item !== null &&
+              'code' in item &&
+              'description' in item &&
+              typeof item.code === 'string' &&
+              typeof item.description === 'string' &&
+              item.code.trim() !== '' &&
+              item.description.trim() !== ''
+          )
+          .map(
+            (item: DatabaseProductCode): ProductCode => ({
+              code: this.normalizeProductCode(item.code),
+              description: item.description.trim(),
+            })
+          );
 
         allData = allData.concat(cleanedData);
 
@@ -391,7 +422,7 @@ class ProductCodeValidator {
       this.lastFullCacheRefresh = Date.now();
       this.cache.clear(); // 清空舊快取
 
-      const loadTime = Date.now() - startTime;
+      const loadTime = Date.now() - _startTime;
 
       this.logger.info(
         {
@@ -414,11 +445,11 @@ class ProductCodeValidator {
         );
       }
     } catch (error) {
-      const loadTime = Date.now() - startTime;
+      const loadTime = Date.now() - _startTime;
 
       this.logger.error(
         {
-          error: error instanceof Error ? error.message : 'Unknown error',
+          _error: error instanceof Error ? error.message : 'Unknown error',
           loadTimeMs: loadTime,
           currentCacheSize: this.allProductCodes.length,
           stack: error instanceof Error ? error.stack : undefined,
@@ -452,7 +483,7 @@ class ProductCodeValidator {
     for (const product of this.allProductCodes) {
       const similarity = this.calculateSimilarity(invalidCode, product.code);
 
-      if (similarity >= this.config.similarityThreshold) {
+      if (similarity >= this._config.similarityThreshold) {
         similarities.push({ product, similarity });
       }
     }
@@ -482,14 +513,14 @@ class ProductCodeValidator {
   /**
    * 數組分塊處理
    */
-  public chunkArray<T>(array: T[], size: number): T[][] {
-    if (size <= 0) {
+  public chunkArray<T>(array: T[], _size: number): T[][] {
+    if (_size <= 0) {
       throw new Error('Chunk size must be greater than 0');
     }
 
     const chunks: T[][] = [];
-    for (let i = 0; i < array.length; i += size) {
-      chunks.push(array.slice(i, i + size));
+    for (let i = 0; i < array.length; i += _size) {
+      chunks.push(array.slice(i, i + _size));
     }
     return chunks;
   }
@@ -512,7 +543,7 @@ class ProductCodeValidator {
   private getCachedResult(code: string): ProductCode | null {
     const cached = this.cache.get(code);
 
-    if (cached && Date.now() - cached.timestamp < this.config.cacheExpireTime) {
+    if (cached && Date.now() - cached.timestamp < this._config.cacheExpireTime) {
       return cached.data;
     }
 
@@ -553,22 +584,27 @@ class ProductCodeValidator {
 
   /**
    * 降級策略：返回預設結果
+   * @param codes 原始產品代碼數組 (可能包含undefined/null)
+   * @returns 安全的降級ValidationResult
    */
-  private getFallbackResult(codes: string[]): ValidationResult {
+  private getFallbackResult(codes: readonly string[]): ValidationResult {
     this.logger.warn('Using fallback result due to system failure');
 
+    // 確保所有代碼都是安全的字符串
+    const safeCodes = Array.isArray(codes) ? codes : [];
+
     return {
-      enrichedOrders: codes.map(code => ({
-        product_code: code || '',
+      enrichedOrders: safeCodes.map((code): ValidationResult['enrichedOrders'][0] => ({
+        product_code: typeof code === 'string' ? code : '',
         product_desc: 'System unavailable - please retry',
         is_valid: false,
         was_corrected: false,
       })),
       summary: {
-        total: codes.length,
+        total: safeCodes.length,
         valid: 0,
         corrected: 0,
-        invalid: codes.length,
+        invalid: safeCodes.length,
       },
     };
   }
@@ -585,7 +621,7 @@ class ProductCodeValidator {
   } {
     return {
       cacheSize: this.cache.size(),
-      maxCacheSize: this.config.maxCacheSize,
+      maxCacheSize: this._config.maxCacheSize,
       totalProductCodes: this.allProductCodes.length,
       lastRefresh: this.lastFullCacheRefresh,
     };
@@ -603,6 +639,7 @@ class ProductCodeValidator {
 
   /**
    * 健康檢查
+   * @returns 系統健康狀態和詳細信息
    */
   public async healthCheck(): Promise<{
     status: 'healthy' | 'degraded' | 'unhealthy';
@@ -640,7 +677,7 @@ class ProductCodeValidator {
 
       return { status: 'healthy', details };
     } catch (error) {
-      details.error = error instanceof Error ? error.message : 'Unknown error';
+      details._error = error instanceof Error ? error.message : 'Unknown error';
       return { status: 'unhealthy', details };
     }
   }
@@ -649,5 +686,23 @@ class ProductCodeValidator {
 // 導出單例實例
 export default ProductCodeValidator.getInstance();
 
-// 導出類型定義
-export type { ValidationResult, ProductCode, BatchProcessingConfig };
+// 導出類型定義 - 企業級類型安全
+export type {
+  ValidationResult,
+  ProductCode,
+  DatabaseProductCode,
+  BatchProcessingConfig,
+  CacheEntry,
+};
+
+// 導出類型守衛工具函數
+export const isValidProductCode = (obj: unknown): obj is ProductCode => {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    'code' in obj &&
+    'description' in obj &&
+    typeof (obj as ProductCode).code === 'string' &&
+    typeof (obj as ProductCode).description === 'string'
+  );
+};

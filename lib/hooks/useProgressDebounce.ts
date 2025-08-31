@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useRef, useMemo, useEffect } from 'react';
-import { debounceWithCancel } from '@/app/utils/debounce';
+import { debounceWithCancel } from '../../app/utils/debounce';
 import { useResourceCleanup } from './useResourceCleanup';
 
 export interface ProgressUpdate {

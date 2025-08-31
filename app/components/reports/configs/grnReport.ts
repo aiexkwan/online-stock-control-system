@@ -6,7 +6,7 @@ import { ReportConfig } from '../core/ReportConfig';
 
 export const grnReportConfig: ReportConfig = {
   id: 'grn-report',
-  name: 'GRN Report',
+  _name: 'GRN Report',
   description: 'Export GRN reports',
   category: 'inventory',
   formats: ['excel'],
@@ -39,7 +39,7 @@ export const grnReportConfig: ReportConfig = {
       required: true,
       dataSource: {
         type: 'rpc',
-        name: 'getUniqueGrnRefs',
+        _name: 'getUniqueGrnRefs',
       },
     },
   ],

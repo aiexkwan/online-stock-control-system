@@ -5,7 +5,7 @@
 
 'use client';
 
-import React from 'react';
+import * as React from 'react';
 import {
   Dialog,
   DialogContent,
@@ -13,10 +13,10 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+} from '../../../../components/ui/dialog';
+import { Button } from '../../../../components/ui/button';
 import { FileText, Download } from 'lucide-react';
-import { dialogStyles, iconColors } from '@/app/utils/dialogStyles';
+import { dialogStyles, iconColors } from '../../../utils/dialogStyles';
 
 interface UnifiedReportDialogProps {
   isOpen: boolean;

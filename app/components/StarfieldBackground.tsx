@@ -53,10 +53,10 @@ interface StarfieldBackgroundProps {
   backgroundOnly?: boolean;
 }
 
-export const StarfieldBackground: React.FC<StarfieldBackgroundProps> = ({ 
-  children, 
+export const StarfieldBackground: React.FC<StarfieldBackgroundProps> = ({
+  children,
   className = '',
-  backgroundOnly = false 
+  backgroundOnly = false,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();

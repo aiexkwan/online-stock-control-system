@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-// import { ApolloError } from '@apollo/client'; // Removed - not used
+// import { _ApolloError } from '@apollo/client'; // Removed - not used
 import { SpecialCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
 import { cardTextStyles } from '@/lib/card-system/theme';
 import { cn } from '@/lib/utils';
@@ -23,7 +23,7 @@ export interface QCLabelCardProps {
 }
 
 export const QCLabelCard: React.FC<QCLabelCardProps> = ({ className }) => {
-  const { } = useAuth(); // Removed unused destructured variables
+  // Removed unused useAuth destructuring
 
   // UserIdVerificationDialog 狀態
   const [showUserIdDialog, setShowUserIdDialog] = useState(false);

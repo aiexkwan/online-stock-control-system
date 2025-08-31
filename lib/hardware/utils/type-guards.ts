@@ -90,16 +90,19 @@ export function isJobCompletedData(data: unknown): data is JobCompletedData {
 }
 
 export interface ScanResultData {
-  scanData: string;
-  format: string;
+  data: string;
+  format: 'qr' | 'barcode' | 'datamatrix';
+  timestamp: string;
   confidence?: number;
 }
 
 export function isScanResultData(data: unknown): data is ScanResultData {
   return (
     isPrintJobData(data) &&
-    typeof (data as Record<string, unknown>).scanData === 'string' &&
-    typeof (data as Record<string, unknown>).format === 'string'
+    typeof (data as Record<string, unknown>).data === 'string' &&
+    typeof (data as Record<string, unknown>).format === 'string' &&
+    typeof (data as Record<string, unknown>).timestamp === 'string' &&
+    ['qr', 'barcode', 'datamatrix'].includes((data as Record<string, unknown>).format as string)
   );
 }
 

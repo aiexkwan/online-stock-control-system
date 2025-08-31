@@ -18,7 +18,7 @@ export const PrintProgressBar: React.FC<PrintProgressBarProps> = React.memo(
 
     const progressPercentage = (current / total) * 100;
 
-    const getStatusIcon = (s: ProgressStatus, index: number) => {
+    const getStatusIcon = (s: ProgressStatus, index: number): string | number => {
       switch (s) {
         case 'Success':
           return '✓';
@@ -31,7 +31,7 @@ export const PrintProgressBar: React.FC<PrintProgressBarProps> = React.memo(
       }
     };
 
-    const getStatusColor = (s: ProgressStatus) => {
+    const getStatusColor = (s: ProgressStatus): string => {
       switch (s) {
         case 'Success':
           return 'bg-green-500 text-white';
@@ -66,7 +66,7 @@ export const PrintProgressBar: React.FC<PrintProgressBarProps> = React.memo(
           {status.map((s, i) => (
             <div
               key={i}
-              className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all duration-200 ${getStatusColor(s)} ${s === 'Processing' ? 'animate-pulse' : ''} `}
+              className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold transition-all duration-200 ${getStatusColor(s)} ${s === 'Processing' ? 'animate-pulse' : ''}`}
               title={`Pallet ${i + 1}: ${s}`}
             >
               {getStatusIcon(s, i)}

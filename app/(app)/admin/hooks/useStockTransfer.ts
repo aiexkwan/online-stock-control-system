@@ -149,22 +149,23 @@ export const useStockTransfer = ({
 
   // 組件卸載時的強化版清理函式
   useEffect(() => {
+    const currentTimeouts = timeoutsRef.current;
+    const currentAbortController = abortControllerRef.current;
+
     return () => {
       mountedRef.current = false;
 
       // 清理所有 AbortController
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-        abortControllerRef.current = null;
+      if (currentAbortController) {
+        currentAbortController.abort();
       }
 
       // 清理所有追蹤的定時器
-      const timeouts = timeoutsRef.current;
-      if (timeouts) {
-        timeouts.forEach(timeoutId => {
+      if (currentTimeouts) {
+        currentTimeouts.forEach(timeoutId => {
           clearTimeout(timeoutId);
         });
-        timeouts.clear();
+        currentTimeouts.clear();
       }
     };
   }, []);
@@ -393,7 +394,7 @@ export const useStockTransfer = ({
         setClockError('No user data received');
       }
       return false;
-    } catch {
+    } catch (error) {
       if (mountedRef.current) {
         setClockError('Validation error occurred');
       }

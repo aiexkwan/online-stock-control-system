@@ -140,18 +140,18 @@ export const ProductCodeInput: React.FC<ProductCodeInputProps> = ({
           onQuantityChange(productData.standard_qty);
         }
       }
-    } catch (error: unknown) {
+    } catch (searchError: unknown) {
       // 如果是取消請求，不處理
-      if ((error as Error).name === 'AbortError' || abortController.signal.aborted) {
+      if ((searchError as Error).name === 'AbortError' || abortController.signal.aborted) {
         (process.env.NODE_ENV as string) !== 'production' &&
           console.log('[ProductCodeInput] Search cancelled or aborted');
         return;
       }
 
-      console.error('[ProductCodeInput] Search error:', error);
+      console.error('[ProductCodeInput] Search error:', searchError);
       onProductInfoChange(null);
 
-      if (getErrorMessage(error)?.includes('aborted')) {
+      if (getErrorMessage(searchError)?.includes('aborted')) {
         // 被取消的請求，不顯示錯誤
         return;
       } else {

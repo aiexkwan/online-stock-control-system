@@ -3,7 +3,15 @@
  * Report types configuration for download center
  */
 
-export const REPORT_TYPES = [
+export interface ReportType {
+  id: string;
+  name: string;
+  description: string;
+  component: string;
+  available: boolean;
+}
+
+export const REPORT_TYPES: ReportType[] = [
   {
     id: 'stock-take',
     name: 'Stock Take Report',

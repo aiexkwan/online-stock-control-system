@@ -33,7 +33,7 @@ export interface NumericInputProps
  *   min={1}
  *   max={999}
  *   suffix="pcs"
- *   error={errors.quantity}
+ *   _error ={errors.quantity}
  * />
  * ```
  */

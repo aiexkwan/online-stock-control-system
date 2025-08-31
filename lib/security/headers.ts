@@ -3,27 +3,75 @@
  * Implements defense-in-depth security strategy
  */
 
-export const securityHeaders = [
+/**
+ * Interface for security header configuration
+ */
+export interface SecurityHeader {
+  readonly key: string;
+  readonly value: string;
+}
+
+/**
+ * Type for Content Security Policy directives
+ */
+type CSPDirective = string;
+
+/**
+ * Type for Permissions Policy features
+ */
+type PermissionsPolicyFeature = string;
+
+/**
+ * Configuration for rate limiting
+ */
+export interface RateLimitConfig {
+  readonly maxLoginAttempts: number;
+  readonly lockoutDuration: number;
+  readonly maxPasswordResetAttempts: number;
+  readonly maxRegistrationAttempts: number;
+}
+
+/**
+ * Configuration for session management
+ */
+export interface SessionConfig {
+  readonly sessionTimeout: number;
+  readonly refreshInterval: number;
+  readonly enableRotation: boolean;
+  readonly cookieOptions: {
+    readonly httpOnly: boolean;
+    readonly secure: boolean;
+    readonly sameSite: 'strict' | 'lax' | 'none';
+    readonly path: string;
+  };
+}
+
+/**
+ * Security headers array with strict typing
+ */
+export const securityHeaders: readonly SecurityHeader[] = [
   // Content Security Policy (CSP)
   {
     key: 'Content-Security-Policy',
-    value: [
-      "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://cdn.jsdelivr.net",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "img-src 'self' data: blob: https://*.supabase.co",
-      "font-src 'self' https://fonts.gstatic.com",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openai.com",
-      "media-src 'self'",
-      "object-src 'none'",
-      "child-src 'self'",
-      "frame-src 'self'",
-      "worker-src 'self' blob:",
-      "form-action 'self'",
-      "base-uri 'self'",
-      "manifest-src 'self'",
-      'upgrade-insecure-requests',
-    ].join('; '),
+    value: (
+      [
+        "default-src 'self'",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://cdn.jsdelivr.net",
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "img-src 'self' data: blob: https://*.supabase.co",
+        "font-src 'self' https://fonts.gstatic.com",
+        "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openai.com",
+        "media-src 'self'",
+        "object-src 'none'",
+        "child-src 'self'",
+        "frame-src 'self'",
+        "worker-src 'self' blob:",
+        "form-action 'self'",
+        "base-uri 'self'",
+        "manifest-src 'self'",
+        'upgrade-insecure-requests',
+      ] as const satisfies readonly CSPDirective[]
+    ).join('; '),
   },
   // Prevent clickjacking attacks
   {
@@ -48,16 +96,18 @@ export const securityHeaders = [
   // Permissions Policy (formerly Feature Policy)
   {
     key: 'Permissions-Policy',
-    value: [
-      'camera=()',
-      'microphone=()',
-      'geolocation=()',
-      'payment=()',
-      'usb=()',
-      'magnetometer=()',
-      'gyroscope=()',
-      'accelerometer=()',
-    ].join(', '),
+    value: (
+      [
+        'camera=()',
+        'microphone=()',
+        'geolocation=()',
+        'payment=()',
+        'usb=()',
+        'magnetometer=()',
+        'gyroscope=()',
+        'accelerometer=()',
+      ] as const satisfies readonly PermissionsPolicyFeature[]
+    ).join(', '),
   },
   // XSS Protection (for older browsers)
   {
@@ -74,32 +124,36 @@ export const securityHeaders = [
 /**
  * Get security headers for specific environments
  * @param isDevelopment - Whether running in development mode
- * @returns Array of security headers
+ * @returns Array of security headers with proper typing
  */
-export function getSecurityHeaders(isDevelopment: boolean = false) {
+export function getSecurityHeaders(isDevelopment: boolean = false): readonly SecurityHeader[] {
   if (isDevelopment) {
     // Relax CSP for development
-    const headers = [...securityHeaders];
-    const cspIndex = headers.findIndex(h => h.key === 'Content-Security-Policy');
+    const headers: SecurityHeader[] = [...securityHeaders];
+    const cspIndex = headers.findIndex(
+      (h): h is SecurityHeader => h.key === 'Content-Security-Policy'
+    );
     if (cspIndex !== -1) {
       headers[cspIndex] = {
         key: 'Content-Security-Policy',
-        value: [
-          "default-src 'self'",
-          "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://cdn.jsdelivr.net",
-          "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-          "img-src 'self' data: blob: https://*.supabase.co http://localhost:*",
-          "font-src 'self' https://fonts.gstatic.com",
-          "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openai.com ws://localhost:* http://localhost:*",
-          "media-src 'self'",
-          "object-src 'none'",
-          "child-src 'self'",
-          "frame-src 'self'",
-          "worker-src 'self' blob:",
-          "form-action 'self'",
-          "base-uri 'self'",
-          "manifest-src 'self'",
-        ].join('; '),
+        value: (
+          [
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://cdn.jsdelivr.net",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+            "img-src 'self' data: blob: https://*.supabase.co http://localhost:*",
+            "font-src 'self' https://fonts.gstatic.com",
+            "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openai.com ws://localhost:* http://localhost:*",
+            "media-src 'self'",
+            "object-src 'none'",
+            "child-src 'self'",
+            "frame-src 'self'",
+            "worker-src 'self' blob:",
+            "form-action 'self'",
+            "base-uri 'self'",
+            "manifest-src 'self'",
+          ] as const satisfies readonly CSPDirective[]
+        ).join('; '),
       };
     }
     return headers;
@@ -108,38 +162,54 @@ export function getSecurityHeaders(isDevelopment: boolean = false) {
 }
 
 /**
- * CSRF token generation and validation
+ * CSRF token generation and validation with enhanced type safety
  */
 export class CSRFProtection {
-  private static readonly TOKEN_LENGTH = 32;
-  private static readonly TOKEN_HEADER = 'X-CSRF-Token';
-  private static readonly TOKEN_COOKIE = 'csrf-token';
+  private static readonly TOKEN_LENGTH = 32 as const;
+  private static readonly TOKEN_HEADER = 'X-CSRF-Token' as const;
+  private static readonly TOKEN_COOKIE = 'csrf-token' as const;
 
   /**
    * Generate a cryptographically secure CSRF token
-   * @returns CSRF token
+   * @returns Promise resolving to CSRF token
    */
-  static generateToken(): string {
+  static async generateToken(): Promise<string> {
     if (typeof window === 'undefined') {
-      // Server-side: use Node.js crypto
-      const crypto = require('crypto');
-      return crypto.randomBytes(this.TOKEN_LENGTH).toString('hex');
+      // Server-side: use Node.js crypto with dynamic import
+      try {
+        const { randomBytes } = await import('crypto');
+        return randomBytes(this.TOKEN_LENGTH).toString('hex');
+      } catch (error) {
+        throw new Error(
+          `Failed to generate CSRF token: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
+      }
     } else {
       // Client-side: use Web Crypto API
+      if (!globalThis.crypto?.getRandomValues) {
+        throw new Error('Web Crypto API not available in this environment');
+      }
+
       const array = new Uint8Array(this.TOKEN_LENGTH);
-      crypto.getRandomValues(array);
-      return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+      globalThis.crypto.getRandomValues(array);
+      return Array.from(array, (byte: number): string => byte.toString(16).padStart(2, '0')).join(
+        ''
+      );
     }
   }
 
   /**
-   * Validate CSRF token from request
-   * @param requestToken - Token from request header
-   * @param sessionToken - Token from session/cookie
+   * Validate CSRF token from request with timing-safe comparison
+   * @param requestToken - Token from request header (nullable)
+   * @param sessionToken - Token from session/cookie (nullable)
    * @returns boolean indicating if tokens match
    */
-  static validateToken(requestToken: string | null, sessionToken: string | null): boolean {
-    if (!requestToken || !sessionToken) {
+  static validateToken(
+    requestToken: string | null | undefined,
+    sessionToken: string | null | undefined
+  ): boolean {
+    // Type guard for token validation
+    if (!this.isValidTokenString(requestToken) || !this.isValidTokenString(sessionToken)) {
       return false;
     }
 
@@ -157,10 +227,19 @@ export class CSRFProtection {
   }
 
   /**
+   * Type guard to check if a value is a valid token string
+   * @param token - Token to validate
+   * @returns boolean indicating if token is valid
+   */
+  private static isValidTokenString(token: unknown): token is string {
+    return typeof token === 'string' && token.length > 0;
+  }
+
+  /**
    * Get CSRF token header name
    * @returns Header name for CSRF token
    */
-  static getTokenHeader(): string {
+  static getTokenHeader(): typeof CSRFProtection.TOKEN_HEADER {
     return this.TOKEN_HEADER;
   }
 
@@ -168,15 +247,15 @@ export class CSRFProtection {
    * Get CSRF token cookie name
    * @returns Cookie name for CSRF token
    */
-  static getTokenCookie(): string {
+  static getTokenCookie(): typeof CSRFProtection.TOKEN_COOKIE {
     return this.TOKEN_COOKIE;
   }
 }
 
 /**
- * Rate limiting configuration
+ * Rate limiting configuration with strict typing
  */
-export const rateLimitConfig = {
+export const rateLimitConfig: RateLimitConfig = {
   // Maximum login attempts per IP per hour
   maxLoginAttempts: 5,
   // Lock duration in minutes after max attempts
@@ -185,12 +264,12 @@ export const rateLimitConfig = {
   maxPasswordResetAttempts: 3,
   // Registration attempts per IP per day
   maxRegistrationAttempts: 3,
-};
+} as const;
 
 /**
- * Session security configuration
+ * Session security configuration with strict typing
  */
-export const sessionConfig = {
+export const sessionConfig: SessionConfig = {
   // Session timeout in milliseconds (2 hours)
   sessionTimeout: 2 * 60 * 60 * 1000,
   // Session refresh interval (30 minutes)
@@ -204,4 +283,4 @@ export const sessionConfig = {
     sameSite: 'strict' as const,
     path: '/',
   },
-};
+} as const;

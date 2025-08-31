@@ -9,10 +9,10 @@ import * as React from 'react';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { X } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '../../../../lib/utils';
 // Temporarily using deprecated design tokens - TODO: Migrate to card-system
-import { designTokens } from '@/lib/design-system-deprecated/tokens';
-import { useMediaQuery } from '@/lib/hooks/use-media-query';
+// import { designTokens } from '@/lib/design-system-deprecated/tokens';
+import { useMediaQuery } from '../../../../lib/hooks/use-media-query';
 
 // Dialog 動畫變體
 const dialogAnimationVariants = cva('fixed inset-0 z-50 flex items-center justify-center', {
@@ -58,36 +58,40 @@ const dialogContentVariants = cva(
   }
 );
 
+// Types for props (定義在前面避免循環引用)
+type DialogVariant = 'default' | 'notification' | 'confirmation' | 'form' | 'fullscreen';
+type DialogSize = 'sm' | 'md' | 'lg' | 'xl' | 'full';
+type DialogSeverity = 'info' | 'success' | 'warning' | 'error';
+type DialogAnimation = 'fade' | 'slide' | 'scale' | 'none';
+
 // Dialog Context
 interface DialogContextValue {
-  variant?: DialogContentProps['variant'];
-  size?: DialogContentProps['size'];
-  severity?: 'info' | 'success' | 'warning' | 'error';
+  variant?: DialogVariant;
+  size?: DialogSize;
+  severity?: DialogSeverity;
 }
 
 const DialogContext = React.createContext<DialogContextValue>({});
 
 // Dialog Root
 export interface DialogProps extends DialogPrimitive.DialogProps {
-  variant?: DialogContentProps['variant'];
-  size?: DialogContentProps['size'];
-  severity?: 'info' | 'success' | 'warning' | 'error';
+  variant?: DialogVariant;
+  size?: DialogSize;
+  severity?: DialogSeverity;
 }
 
-export const Dialog = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Root>, DialogProps>(
-  ({ children, variant, size, severity, ...props }, ref) => {
-    const contextValue = React.useMemo(
-      () => ({ variant, size, severity }),
-      [variant, size, severity]
-    );
+export const Dialog: React.FC<DialogProps> = ({ children, variant, size, severity, ...props }) => {
+  const contextValue = React.useMemo(
+    () => ({ variant, size, severity }),
+    [variant, size, severity]
+  );
 
-    return (
-      <DialogContext.Provider value={contextValue}>
-        <DialogPrimitive.Root {...props}>{children}</DialogPrimitive.Root>
-      </DialogContext.Provider>
-    );
-  }
-);
+  return (
+    <DialogContext.Provider value={contextValue}>
+      <DialogPrimitive.Root {...props}>{children}</DialogPrimitive.Root>
+    </DialogContext.Provider>
+  );
+};
 
 Dialog.displayName = 'Dialog';
 
@@ -123,7 +127,7 @@ DialogOverlay.displayName = 'DialogOverlay';
 export interface DialogContentProps
   extends React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>,
     VariantProps<typeof dialogContentVariants> {
-  animation?: 'fade' | 'slide' | 'scale' | 'none';
+  animation?: DialogAnimation;
   showAnimatedBorder?: boolean;
   showCloseButton?: boolean;
   mobileFullscreen?: boolean;
@@ -226,7 +230,7 @@ export const DialogTitle = React.forwardRef<
   const { severity } = React.useContext(DialogContext);
 
   // 語義化顏色
-  const severityColors = {
+  const severityColors: Record<DialogSeverity, string> = {
     info: 'text-blue-500',
     success: 'text-green-500',
     warning: 'text-yellow-500',

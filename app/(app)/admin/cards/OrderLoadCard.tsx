@@ -10,7 +10,7 @@ import {
   DevicePhoneMobileIcon,
   ComputerDesktopIcon,
 } from '@heroicons/react/24/outline';
-// import { toast } from 'sonner'; // Removed - not used
+// import { _toast } from 'sonner'; // Removed - not used
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -23,7 +23,8 @@ import { cn } from '@/lib/utils';
 import BatchLoadPanel from '@/app/(app)/order-loading/components/BatchLoadPanel';
 import { LoadingProgressChart } from '@/app/(app)/order-loading/components/LoadingProgressChart';
 import MobileOrderLoading from '@/app/(app)/order-loading/components/MobileOrderLoading';
-import { SoundSettingsToggle } from '@/app/(app)/order-loading/components/SoundSettingsToggle';
+// Sound settings functionality has been removed from useOrderLoad
+// import { SoundSettingsToggle } from '@/app/(app)/order-loading/components/SoundSettingsToggle';
 import { useOrderLoad } from '../hooks/useOrderLoad';
 
 export interface OrderLoadCardProps {
@@ -122,9 +123,8 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
                   </h2>
                   <p className={cardTextStyles.labelSmall}>Mobile optimized interface</p>
                 </div>
-                <div className='flex items-center space-x-2'>
-                  <SoundSettingsToggle />
-                </div>
+                {/* Sound settings removed - functionality integrated into useOrderLoad */}
+                <div className='flex items-center space-x-2'>{/* <SoundSettingsToggle /> */}</div>
               </div>
             </div>
 
@@ -148,8 +148,12 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
                 searchValue={searchValue}
                 isSearching={isSearching}
                 onSearchChange={setSearchValue}
-                onSearchSelect={handleSearchSelect}
-                recentLoads={recentLoads}
+                onSearchSelect={(result: any) => {
+                  // 類型適配：MobileOrderLoading 和 useOrderLoad 有不同的 SearchResult 定義
+                  // 使用 any 來避免類型衝突，因為實際上兩個接口是兼容的
+                  handleSearchSelect(result);
+                }}
+                recentLoads={recentLoads as Record<string, unknown>[]}
                 onUndoClick={handleUndoClick}
                 idInputRef={idInputRef}
                 searchInputRef={searchInputRef}
@@ -181,9 +185,8 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
                 </h2>
                 <p className='text-sm text-slate-400'>Manage order loading operations</p>
               </div>
-              <div className='flex items-center space-x-2'>
-                <SoundSettingsToggle />
-              </div>
+              {/* Sound settings removed - functionality integrated into useOrderLoad */}
+              <div className='flex items-center space-x-2'>{/* <SoundSettingsToggle /> */}</div>
             </div>
           </div>
 
@@ -473,11 +476,9 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
                       </CardHeader>
                       <CardContent className='space-y-2'>
                         {recentLoads.slice(0, 8).map((load, index) => {
-                          const uuid = typeof load.uuid === 'string' ? load.uuid : `load-${index}`;
-                          const palletNum =
-                            typeof load.pallet_num === 'string' ? load.pallet_num : 'Unknown';
-                          const quantity =
-                            typeof load.quantity === 'number' ? load.quantity : 'N/A';
+                          const uuid = load.uuid || `load-${index}`;
+                          const palletNum = load.pallet_num || 'Unknown';
+                          const quantity = load.quantity || 0;
 
                           return (
                             <div
@@ -494,10 +495,10 @@ export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
                                 size='sm'
                                 onClick={() =>
                                   handleUndoClick({
-                                    ...load,
                                     pallet_num: palletNum,
-                                    product_code: String(load.product_code || ''),
-                                    quantity: Number(load.quantity || 0),
+                                    product_code: load.product_code,
+                                    quantity: quantity,
+                                    action_time: load.action_time,
                                   })
                                 }
                                 className='h-6 w-6 p-0 text-red-400 hover:text-red-300'

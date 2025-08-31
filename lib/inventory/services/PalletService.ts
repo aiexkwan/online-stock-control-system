@@ -207,7 +207,7 @@ export class PalletService implements IPalletService {
         .single();
 
       return !error && !!data;
-    } catch (error) {
+    } catch (_error) {
       return false;
     }
   }
@@ -288,8 +288,8 @@ export class PalletService implements IPalletService {
       // Convert DB column to standard location if needed
       const standardLocation = LocationMapper.fromDbColumn(data.loc as DatabaseLocationColumn);
       return standardLocation;
-    } catch (error) {
-      console.error('[PalletService] Get current location error:', error);
+    } catch (_error) {
+      console.error('[PalletService] Get current location error:', _error);
       return null;
     }
   }
@@ -359,7 +359,7 @@ export class PalletService implements IPalletService {
           record.action.toLowerCase().includes('void') ||
           record.action.toLowerCase().includes('damage')
       );
-    } catch (error) {
+    } catch (_error) {
       return false;
     }
   }

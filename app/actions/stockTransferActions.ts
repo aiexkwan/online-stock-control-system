@@ -6,8 +6,6 @@ import { createClient } from '@/app/utils/supabase/server';
 import { detectSearchType } from '@/app/utils/palletSearchUtils';
 import { getUserIdFromEmail } from '@/lib/utils/getUserId';
 import { systemLogger } from '@/lib/logger';
-import { databaseHealthService } from '@/lib/services/database-health-service';
-import { enhancedErrorService } from '@/lib/services/enhanced-error-service';
 import type { SupabaseClient } from '@/types/database/supabase';
 
 // UI Types for optimistic updates
@@ -127,7 +125,7 @@ async function validateDatabaseSchema(supabase: SupabaseClient): Promise<SchemaV
       const result = await supabase.rpc('get_table_columns', { table_name: 'record_inventory' });
       inventoryColumns = result.data;
       columnError = result.error;
-    } catch (err) {
+    } catch {
       columnError = true;
     }
 
@@ -339,7 +337,9 @@ export async function searchPalletOptimized(
         },
         searchType,
         metadata: {
-          isFromMv: result.is_from_mv,
+          isFromMv:
+            (result as unknown as SearchPalletRPCResult & { is_from_mv?: boolean }).is_from_mv ||
+            false,
           queryTime: Math.round(queryTime),
         },
       };
@@ -395,7 +395,7 @@ export async function searchPalletOptimized(
       };
     }
 
-    // If V2 has other errors, throw
+    // If V2 has other _errors, throw
     if (v2Error) {
       throw v2Error;
     }
@@ -467,45 +467,6 @@ export async function transferPallet(
           userName = userData.name || user.email;
         }
       }
-    }
-
-    // Use new health check service
-    const transferReadiness = await databaseHealthService.canPerformTransfer();
-    if (!transferReadiness.allowed) {
-      const enhancedError = enhancedErrorService.handleTransferError(
-        transferReadiness.reason || 'System not ready for transfers',
-        {
-          palletNumber,
-          toLocation,
-          userId: userId.toString(),
-        }
-      );
-
-      systemLogger.error(
-        {
-          errorId: enhancedError.id,
-          palletNumber,
-          reason: transferReadiness.reason,
-        },
-        'Transfer blocked by health check'
-      );
-
-      return {
-        success: false,
-        message: enhancedError.userMessage,
-        error: enhancedError.id,
-      };
-    }
-
-    // Log degraded mode warning
-    if (transferReadiness.degradedMode) {
-      systemLogger.warn(
-        {
-          palletNumber,
-          reason: transferReadiness.reason,
-        },
-        'Transfer proceeding in degraded mode'
-      );
     }
 
     // Use RPC function for atomic transfer with error handling

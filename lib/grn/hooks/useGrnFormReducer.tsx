@@ -1,12 +1,8 @@
 'use client';
 
 import { useReducer, useCallback, useMemo } from 'react';
-import {
-  LABEL_MODES,
-  type PalletTypeKey,
-  type PackageTypeKey,
-  type LabelMode,
-} from '@/app/constants/grnConstants';
+import { LABEL_MODES } from '@/app/constants/grnConstants';
+import type { PalletTypeKey, PackageTypeKey, LabelMode } from '@/lib/types/grn';
 
 // 定義表單狀態類型 - 新增 index signature 以符合 Record<string, unknown> 類型
 export interface GrnFormState {

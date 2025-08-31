@@ -1,0 +1,135 @@
+/**
+ * Search helpers utility functions
+ * Common search functions used across admin cards
+ */
+
+import { _createClient } from '@/app/utils/supabase/client';
+
+/**
+ * Interface for pallet search result
+ */
+export interface PalletSearchResult extends Record<string, unknown> {
+  plt_num: string;
+  product_code: string;
+  product_qty: number;
+  plt_remark?: string | null;
+  generate_time?: string | null;
+  location?: string | null;
+}
+
+/**
+ * Interface for product search result
+ */
+export interface ProductSearchResult extends Record<string, unknown> {
+  product_code: string;
+  product_name: string;
+  product_description?: string | null;
+  category?: string | null;
+}
+
+/**
+ * Interface for supplier search result
+ */
+export interface SupplierSearchResult extends Record<string, unknown> {
+  supplier_code: string;
+  supplier_name: string;
+  contact?: string | null;
+  address?: string | null;
+}
+
+/**
+ * Search for pallet by ID or QR code
+ * @param value - Pallet ID or QR code to search
+ * @returns Pallet information or null if not found
+ */
+export const searchPallet = async (value: string): Promise<PalletSearchResult | null> => {
+  try {
+    const _supabase = createClient();
+    let plt_num = value;
+
+    // Check if it's a QR Code (series format)
+    if (value.includes('-') && value.length > 10) {
+      // Search series field
+      const { _data: seriesData, _error: seriesError } = await supabase
+        .from('record_palletinfo')
+        .select('plt_num')
+        .eq('series', value)
+        .maybeSingle();
+
+      if (seriesError || !seriesData) {
+        return null;
+      }
+      plt_num = seriesData.plt_num;
+    }
+
+    // Search in record_palletinfo table
+    const { _data: palletData, _error } = await supabase
+      .from('record_palletinfo')
+      .select('plt_num, product_code, product_qty, plt_remark, generate_time')
+      .eq('plt_num', plt_num)
+      .maybeSingle();
+
+    if (_error || !palletData) {
+      return null;
+    }
+
+    return palletData;
+  } catch (_error) {
+    console.error('Error searching pallet:', _error);
+    return null;
+  }
+};
+
+/**
+ * Search for product by code or name
+ * @param query - Product code or name to search
+ * @returns Array of matching products
+ */
+export const searchProduct = async (query: string): Promise<ProductSearchResult[]> => {
+  try {
+    const _supabase = createClient();
+
+    const { _data, _error } = await supabase
+      .from('data_product')
+      .select('product_code, product_name, product_description, category')
+      .or(`product_code.ilike.%${query}%,product_name.ilike.%${query}%`)
+      .limit(10);
+
+    if (_error) {
+      console.error('Error searching products:', _error);
+      return [];
+    }
+
+    return (_data as ProductSearchResult[]) || [];
+  } catch (_error) {
+    console.error('Error searching products:', _error);
+    return [];
+  }
+};
+
+/**
+ * Search for supplier by code or name
+ * @param query - Supplier code or name to search
+ * @returns Array of matching suppliers
+ */
+export const searchSupplier = async (query: string): Promise<SupplierSearchResult[]> => {
+  try {
+    const _supabase = createClient();
+
+    const { _data, _error } = await supabase
+      .from('data_supplier')
+      .select('supplier_code, supplier_name')
+      .or(`supplier_code.ilike.%${query}%,supplier_name.ilike.%${query}%`)
+      .limit(10);
+
+    if (_error) {
+      console.error('Error searching suppliers:', _error);
+      return [];
+    }
+
+    return (_data as SupplierSearchResult[]) || [];
+  } catch (_error) {
+    console.error('Error searching suppliers:', _error);
+    return [];
+  }
+};

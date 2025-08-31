@@ -1,0 +1,182 @@
+app/(auth)/main-login/components/compound/utils.ts(30,3): error TS2416: Property 'get' in type 'CompoundComponentRegistry' is not assignable to the same property in base type 'ComponentRegistry'.
+  Type '<P = Record<string, unknown>>(name: string) => RegisteredComponent<P>' is not assignable to type '(name: string) => ComponentType<any>'.
+    Type 'RegisteredComponent<Record<string, unknown>>' is not assignable to type 'ComponentType<any>'.
+archon/archon-ui-main/src/App.tsx(2,66): error TS2307: Cannot find module 'react-router-dom' or its corresponding type declarations.
+archon/archon-ui-main/src/components/code/CodeViewerModal.tsx(16,19): error TS2307: Cannot find module 'prismjs' or its corresponding type declarations.
+archon/archon-ui-main/src/components/knowledge-base/GroupCreationModal.tsx(119,46): error TS2322: Type '{ children: string; key: number; accentColor: string; }' is not assignable to type 'IntrinsicAttributes & BadgeProps'.
+  Property 'accentColor' does not exist on type 'IntrinsicAttributes & BadgeProps'.
+archon/archon-ui-main/src/components/knowledge-base/GroupCreationModal.tsx(124,34): error TS2322: Type '{ children: (string | number)[]; accentColor: string; }' is not assignable to type 'IntrinsicAttributes & BadgeProps'.
+  Property 'accentColor' does not exist on type 'IntrinsicAttributes & BadgeProps'.
+archon/archon-ui-main/src/components/knowledge-base/GroupedKnowledgeItemCard.tsx(238,43): error TS2339: Property 'code_examples_count' does not exist on type 'KnowledgeItemMetadata'.
+archon/archon-ui-main/src/components/knowledge-base/GroupedKnowledgeItemCard.tsx(244,50): error TS2339: Property 'code_examples_count' does not exist on type 'KnowledgeItemMetadata'.
+archon/archon-ui-main/src/components/knowledge-base/KnowledgeItemCard.tsx(219,43): error TS2339: Property 'code_examples_count' does not exist on type 'KnowledgeItemMetadata'.
+archon/archon-ui-main/src/components/knowledge-base/KnowledgeItemCard.tsx(319,17): error TS2322: Type '{ className: string; title: string; }' is not assignable to type 'IntrinsicAttributes & Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>'.
+  Property 'title' does not exist on type 'IntrinsicAttributes & Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>'.
+archon/archon-ui-main/src/components/layouts/MainLayout.tsx(2,42): error TS2307: Cannot find module 'react-router-dom' or its corresponding type declarations.
+archon/archon-ui-main/src/components/layouts/SideNavigation.tsx(2,35): error TS2307: Cannot find module 'react-router-dom' or its corresponding type declarations.
+archon/archon-ui-main/src/components/mcp/MCPClients.tsx(161,23): error TS2339: Property 'version' does not exist on type '{ url: string; }'.
+archon/archon-ui-main/src/components/mcp/MCPClients.tsx(162,22): error TS2339: Property 'region' does not exist on type '{ url: string; }'.
+archon/archon-ui-main/src/components/project-tasks/DataTab.tsx(3,192): error TS2307: Cannot find module '@xyflow/react' or its corresponding type declarations.
+archon/archon-ui-main/src/components/project-tasks/DocsTab.tsx(563,34): error TS2339: Property 'docs' does not exist on type '{ id: string; title: string; created_at?: string; updated_at?: string; }'.
+archon/archon-ui-main/src/components/project-tasks/DocsTab.tsx(569,54): error TS2339: Property 'docs' does not exist on type '{ id: string; title: string; created_at?: string; updated_at?: string; }'.
+archon/archon-ui-main/src/components/project-tasks/DocsTab.tsx(644,34): error TS2339: Property 'tags' does not exist on type 'ProjectDoc'.
+archon/archon-ui-main/src/components/project-tasks/DocsTab.tsx(645,36): error TS2339: Property 'author' does not exist on type 'ProjectDoc'.
+archon/archon-ui-main/src/components/project-tasks/DocsTab.tsx(942,17): error TS2322: Type 'ProjectDoc' is not assignable to type 'import("/Users/chun/Documents/PennineWMS/online-stock-control-system/archon/archon-ui-main/src/components/project-tasks/DocumentCard").ProjectDoc'.
+  Property 'content' is optional in type 'ProjectDoc' but required in type 'ProjectDoc'.
+archon/archon-ui-main/src/components/project-tasks/DocsTab.tsx(944,17): error TS2322: Type 'Dispatch<SetStateAction<ProjectDoc>>' is not assignable to type '(doc: ProjectDoc) => void'.
+  Types of parameters 'value' and 'doc' are incompatible.
+    Type 'ProjectDoc' is not assignable to type 'SetStateAction<ProjectDoc>'.
+      Type 'import("/Users/chun/Documents/PennineWMS/online-stock-control-system/archon/archon-ui-main/src/components/project-tasks/DocumentCard").ProjectDoc' is not assignable to type 'ProjectDoc'.
+        Property 'created_at' is optional in type 'ProjectDoc' but required in type 'ProjectDoc'.
+archon/archon-ui-main/src/components/project-tasks/DraggableTaskCard.tsx(2,34): error TS2307: Cannot find module 'react-dnd' or its corresponding type declarations.
+archon/archon-ui-main/src/components/project-tasks/FeaturesTab.tsx(18,8): error TS2307: Cannot find module '@xyflow/react' or its corresponding type declarations.
+archon/archon-ui-main/src/components/project-tasks/MilkdownEditor.tsx(2,37): error TS2307: Cannot find module '@milkdown/crepe' or its corresponding type declarations.
+archon/archon-ui-main/src/components/project-tasks/MilkdownEditor.tsx(49,54): error TS2339: Property 'document_type' does not exist on type '{ id: string; title: string; content?: any; created_at: string; updated_at: string; }'.
+archon/archon-ui-main/src/components/project-tasks/MilkdownEditor.tsx(66,21): error TS2339: Property 'description' does not exist on type 'object'.
+archon/archon-ui-main/src/components/project-tasks/MilkdownEditor.tsx(67,34): error TS2339: Property 'description' does not exist on type 'object'.
+archon/archon-ui-main/src/components/project-tasks/TaskBoardView.tsx(2,34): error TS2307: Cannot find module 'react-dnd' or its corresponding type declarations.
+archon/archon-ui-main/src/components/project-tasks/TasksTab.tsx(3,29): error TS2307: Cannot find module 'react-dnd' or its corresponding type declarations.
+archon/archon-ui-main/src/components/project-tasks/TasksTab.tsx(4,30): error TS2307: Cannot find module 'react-dnd-html5-backend' or its corresponding type declarations.
+archon/archon-ui-main/src/components/project-tasks/TasksTab.tsx(100,41): error TS2339: Property 'lastUpdate' does not exist on type 'Task'.
+archon/archon-ui-main/src/components/project-tasks/TasksTab.tsx(186,31): error TS2367: This comparison appears to be unintentional because the types 'WebSocketState' and '"connected"' have no overlap.
+archon/archon-ui-main/src/components/project-tasks/TasksTab.tsx(317,11): error TS2353: Object literal may only specify known properties, and 'client_timestamp' does not exist in type 'UpdateTaskRequest'.
+archon/archon-ui-main/src/components/project-tasks/TasksTab.tsx(437,9): error TS2353: Object literal may only specify known properties, and 'client_timestamp' does not exist in type 'UpdateTaskRequest'.
+archon/archon-ui-main/src/components/project-tasks/TasksTab.tsx(502,9): error TS2353: Object literal may only specify known properties, and 'client_timestamp' does not exist in type 'Partial<UpdateTaskRequest>'.
+archon/archon-ui-main/src/components/project-tasks/TaskTableView.tsx(2,34): error TS2307: Cannot find module 'react-dnd' or its corresponding type declarations.
+archon/archon-ui-main/src/components/prp/PRPViewer.tsx(62,59): error TS2339: Property 'substring' does not exist on type 'never'.
+archon/archon-ui-main/src/components/prp/sections/PlanSection.tsx(102,12): error TS2339: Property 'duration' does not exist on type 'object'.
+archon/archon-ui-main/src/components/prp/sections/PlanSection.tsx(102,30): error TS2339: Property 'deliverables' does not exist on type 'object'.
+archon/archon-ui-main/src/components/prp/sections/PlanSection.tsx(102,52): error TS2339: Property 'tasks' does not exist on type 'object'.
+archon/archon-ui-main/src/components/prp/utils/markdownParser.ts(75,7): error TS2741: Property 'sectionKey' is missing in type '{ title: string; content: string; level: number; type: "text"; rawContent: string; }' but required in type 'ParsedSection'.
+archon/archon-ui-main/src/components/settings/CodeExtractionSettings.tsx(84,15): error TS2322: Type '"orange"' is not assignable to type '"blue" | "green" | "pink" | "purple"'.
+archon/archon-ui-main/src/components/settings/CodeExtractionSettings.tsx(97,15): error TS2322: Type '"orange"' is not assignable to type '"blue" | "green" | "pink" | "purple"'.
+archon/archon-ui-main/src/components/settings/CodeExtractionSettings.tsx(197,15): error TS2322: Type '"orange"' is not assignable to type '"blue" | "green" | "pink" | "purple"'.
+archon/archon-ui-main/src/components/settings/CodeExtractionSettings.tsx(211,15): error TS2322: Type '"orange"' is not assignable to type '"blue" | "green" | "pink" | "purple"'.
+archon/archon-ui-main/src/components/settings/CodeExtractionSettings.tsx(224,15): error TS2322: Type '"orange"' is not assignable to type '"blue" | "green" | "pink" | "purple"'.
+archon/archon-ui-main/src/components/settings/CodeExtractionSettings.tsx(237,15): error TS2322: Type '"orange"' is not assignable to type '"blue" | "green" | "pink" | "purple"'.
+archon/archon-ui-main/src/components/settings/FeaturesSection.tsx(182,48): error TS2559: Type 'boolean' has no properties in common with type '{ enabled?: boolean; delay?: number; }'.
+archon/archon-ui-main/src/pages/KnowledgeBasePage.tsx(270,15): error TS2322: Type '"group"' is not assignable to type '"file" | "url"'.
+archon/archon-ui-main/src/pages/KnowledgeBasePage.tsx(420,20): error TS2339: Property 'progressId' does not exist on type 'unknown'.
+archon/archon-ui-main/src/pages/KnowledgeBasePage.tsx(423,32): error TS2339: Property 'progressId' does not exist on type 'unknown'.
+archon/archon-ui-main/src/pages/KnowledgeBasePage.tsx(429,11): error TS2353: Object literal may only specify known properties, and 'message' does not exist in type 'CrawlProgressData'.
+archon/archon-ui-main/src/pages/KnowledgeBasePage.tsx(440,59): error TS2339: Property 'progressId' does not exist on type 'unknown'.
+archon/archon-ui-main/src/pages/KnowledgeBasePage.tsx(446,47): error TS2339: Property 'progressId' does not exist on type 'unknown'.
+archon/archon-ui-main/src/pages/KnowledgeBasePage.tsx(447,40): error TS2339: Property 'progressId' does not exist on type 'unknown'.
+archon/archon-ui-main/src/pages/KnowledgeBasePage.tsx(458,68): error TS2339: Property 'progressId' does not exist on type 'unknown'.
+archon/archon-ui-main/src/pages/KnowledgeBasePage.tsx(464,76): error TS2339: Property 'progressId' does not exist on type 'unknown'.
+archon/archon-ui-main/src/pages/KnowledgeBasePage.tsx(469,91): error TS2339: Property 'progressId' does not exist on type 'unknown'.
+archon/archon-ui-main/src/pages/KnowledgeBasePage.tsx(472,70): error TS2339: Property 'progressId' does not exist on type 'unknown'.
+archon/archon-ui-main/src/pages/KnowledgeBasePage.tsx(474,87): error TS2339: Property 'progressId' does not exist on type 'unknown'.
+archon/archon-ui-main/src/pages/KnowledgeBasePage.tsx(479,61): error TS2339: Property 'progressId' does not exist on type 'unknown'.
+archon/archon-ui-main/src/pages/KnowledgeBasePage.tsx(491,56): error TS2339: Property 'progressId' does not exist on type 'unknown'.
+archon/archon-ui-main/src/pages/KnowledgeBasePage.tsx(692,66): error TS2345: Argument of type 'FormData' is not assignable to parameter of type 'File'.
+  Type 'FormData' is missing the following properties from type 'File': lastModified, name, webkitRelativePath, size, and 6 more.
+archon/archon-ui-main/src/pages/KnowledgeBasePage.tsx(966,21): error TS2322: Type '"gray"' is not assignable to type '"blue" | "cyan" | "green" | "orange" | "pink" | "purple"'.
+archon/archon-ui-main/src/pages/KnowledgeBasePage.tsx(1084,22): error TS2367: This comparison appears to be unintentional because the types '"grid"' and '"list"' have no overlap.
+archon/archon-ui-main/src/pages/OnboardingPage.tsx(2,29): error TS2307: Cannot find module 'react-router-dom' or its corresponding type declarations.
+archon/archon-ui-main/src/pages/OnboardingPage.tsx(91,17): error TS2322: Type '{ children: string; variant: "primary"; size: "lg"; icon: Element; iconPosition: string; onClick: () => void; className: string; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.
+  Property 'iconPosition' does not exist on type 'IntrinsicAttributes & ButtonProps'.
+archon/archon-ui-main/src/pages/ProjectPage.tsx(509,9): error TS2353: Object literal may only specify known properties, and 'color' does not exist in type 'CreateProjectRequest'.
+archon/archon-ui-main/src/pages/ProjectPage.tsx(534,11): error TS2353: Object literal may only specify known properties, and 'color' does not exist in type 'Project'.
+archon/archon-ui-main/src/pages/ProjectPage.tsx(550,27): error TS2345: Argument of type '{ title: string; description: string; }' is not assignable to parameter of type 'SetStateAction<{ title: string; description: string; color: "blue"; }>'.
+  Property 'color' is missing in type '{ title: string; description: string; }' but required in type '{ title: string; description: string; color: "blue"; }'.
+archon/archon-ui-main/src/pages/ProjectPage.tsx(590,27): error TS2345: Argument of type '{ title: string; description: string; }' is not assignable to parameter of type 'SetStateAction<{ title: string; description: string; color: "blue"; }>'.
+  Property 'color' is missing in type '{ title: string; description: string; }' but required in type '{ title: string; description: string; color: "blue"; }'.
+archon/archon-ui-main/src/pages/SettingsPage.tsx(214,15): error TS2322: Type '{ children: Element; title: string; icon: ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>; iconColor: string; borderColor: string; defaultExpanded: false; }' is not assignable to type 'IntrinsicAttributes & CollapsibleSettingsCardProps'.
+  Property 'iconColor' does not exist on type 'IntrinsicAttributes & CollapsibleSettingsCardProps'.
+archon/archon-ui-main/src/services/agentChatService.ts(741,15): error TS2484: Export declaration conflicts with exported declaration of 'ChatMessage'.
+archon/archon-ui-main/src/services/credentialsService.ts(336,13): error TS2322: Type 'number' is not assignable to type 'never'.
+archon/archon-ui-main/src/services/credentialsService.ts(342,11): error TS2322: Type 'boolean' is not assignable to type 'never'.
+archon/archon-ui-main/src/services/mcpClientService.ts(2,10): error TS2300: Duplicate identifier 'getApiUrl'.
+archon/archon-ui-main/src/services/mcpClientService.ts(92,10): error TS2300: Duplicate identifier 'getApiUrl'.
+archon/archon-ui-main/src/services/projectService.ts(201,46): error TS2367: This comparison appears to be unintentional because the types 'boolean' and 'string' have no overlap.
+archon/archon-ui-main/src/services/socketIOService.ts(15,28): error TS2307: Cannot find module 'socket.io-client' or its corresponding type declarations.
+archon/archon-ui-main/src/services/socketService.ts(13,24): error TS2307: Cannot find module 'socket.io-client' or its corresponding type declarations.
+archon/archon-ui-main/src/services/socketService.ts(807,10): error TS2339: Property 'conflictQueue' does not exist on type 'DocumentSyncService'.
+components/ui/calendar.tsx(129,9): error TS2322: Type '({ children, ...props }: { children: React.ReactNode; [key: string]: unknown; }) => React.JSX.Element' is not assignable to type '(props: { week: CalendarWeek; } & ThHTMLAttributes<HTMLTableCellElement>) => Element'.
+  Types of parameters '__0' and 'props' are incompatible.
+    Type '{ week: CalendarWeek; } & ThHTMLAttributes<HTMLTableCellElement>' is not assignable to type '{ [key: string]: unknown; children: ReactNode; }'.
+      Property 'children' is optional in type '{ week: CalendarWeek; } & ThHTMLAttributes<HTMLTableCellElement>' but required in type '{ [key: string]: unknown; children: ReactNode; }'.
+components/ui/calendar.tsx(169,6): error TS2322: Type '{ 'aria-pressed': boolean | "true" | "false" | "mixed"; 'aria-expanded': Booleanish; disabled?: boolean; form?: string; formAction?: string | ((formData: FormData) => void | Promise<...>); ... 289 more ...; className: string; }' is not assignable to type 'ButtonProps'.
+  Types of property ''aria-expanded'' are incompatible.
+    Type 'string | boolean' is not assignable to type 'boolean'.
+      Type 'string' is not assignable to type 'boolean'.
+lib/accessibility/hooks/useFocusManagement.ts(62,9): error TS2552: Cannot find name 'result'. Did you mean '_result'?
+lib/accessibility/hooks/useFocusManagement.ts(85,12): error TS2552: Cannot find name 'result'. Did you mean '_result'?
+lib/accessibility/hooks/useFocusManagement.ts(95,9): error TS2552: Cannot find name 'result'. Did you mean '_result'?
+lib/accessibility/hooks/useFocusManagement.ts(100,12): error TS2552: Cannot find name 'result'. Did you mean '_result'?
+lib/accessibility/hooks/useKeyboardNavigation.ts(46,10): error TS2552: Cannot find name 'result'. Did you mean '_result'?
+lib/accessibility/hooks/useKeyboardNavigation.ts(59,10): error TS2552: Cannot find name 'result'. Did you mean '_result'?
+lib/accessibility/utils/focus-helpers.ts(135,12): error TS2552: Cannot find name 'result'. Did you mean '_result'?
+lib/accessibility/utils/focus-helpers.ts(558,15): error TS2552: Cannot find name 'result'. Did you mean '_result'?
+lib/accessibility/utils/focus-helpers.ts(579,12): error TS2552: Cannot find name 'result'. Did you mean '_result'?
+lib/analytics/auth-middleware.ts(124,34): error TS2304: Cannot find name 'result'.
+lib/analytics/auth-middleware.ts(184,34): error TS2304: Cannot find name 'result'.
+lib/ask-database/error-handler.ts(16,36): error TS2304: Cannot find name 'ErrorPatternSchema'.
+lib/ask-database/error-handler.ts(86,23): error TS2304: Cannot find name 'error'.
+lib/data/data-source-config.ts(178,16): error TS2304: Cannot find name 'context'.
+lib/data/data-source-config.ts(183,38): error TS2304: Cannot find name 'context'.
+lib/data/data-source-config.ts(184,38): error TS2304: Cannot find name 'context'.
+lib/data/data-source-config.ts(187,16): error TS2304: Cannot find name 'context'.
+lib/data/data-source-config.ts(187,54): error TS2304: Cannot find name 'context'.
+lib/data/data-source-config.ts(216,67): error TS2304: Cannot find name 'context'.
+lib/database/backup-disaster-recovery.ts(237,55): error TS2345: Argument of type '"get_table_size"' is not assignable to parameter of type '"get_dashboard_stats" | "search_pallet_optimized" | "execute_stock_transfer" | "rpc_get_warehouse_work_level" | "api_cleanup_pallet_buffer" | "auto_check_pallet_buffer_health" | ... 107 more ... | "validate_system_schema"'.
+lib/database/backup-disaster-recovery.ts(295,37): error TS2589: Type instantiation is excessively deep and possibly infinite.
+lib/database/backup-disaster-recovery.ts(296,15): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(relation: "data_code" | "data_supplier" | "data_id" | "stock_level" | "record_palletinfo" | "API" | "record_history" | "record_inventory" | "record_transfer" | "record_aco" | "record_grn" | ... 9 more ... | "work_level"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"backup_history"' is not assignable to parameter of type '"data_code" | "data_supplier" | "data_id" | "stock_level" | "record_palletinfo" | "API" | "record_history" | "record_inventory" | "record_transfer" | "record_aco" | "record_grn" | ... 9 more ... | "work_level"'.
+  Overload 2 of 2, '(relation: never): PostgrestQueryBuilder<{ Tables: { API: { Row: { description: string; name: string; uuid: string; value: string; }; Insert: { description?: string; name: string; uuid?: string; value: string; }; Update: { description?: string; name?: string; uuid?: string; value?: string; }; Relationships: []; }; ... 19 more ...; work_level: { ...; }; }; Views: {}; Functions: { ...; }; Enums: {}; CompositeTypes: {}; }, never, never, never>', gave the following error.
+    Argument of type '"backup_history"' is not assignable to parameter of type 'never'.
+lib/database/backup-disaster-recovery.ts(557,48): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(relation: "data_code" | "data_supplier" | "data_id" | "stock_level" | "record_palletinfo" | "API" | "record_history" | "record_inventory" | "record_transfer" | "record_aco" | "record_grn" | ... 9 more ... | "work_level"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"backup_history"' is not assignable to parameter of type '"data_code" | "data_supplier" | "data_id" | "stock_level" | "record_palletinfo" | "API" | "record_history" | "record_inventory" | "record_transfer" | "record_aco" | "record_grn" | ... 9 more ... | "work_level"'.
+  Overload 2 of 2, '(relation: never): PostgrestQueryBuilder<{ Tables: { API: { Row: { description: string; name: string; uuid: string; value: string; }; Insert: { description?: string; name: string; uuid?: string; value: string; }; Update: { description?: string; name?: string; uuid?: string; value?: string; }; Relationships: []; }; ... 19 more ...; work_level: { ...; }; }; Views: {}; Functions: { ...; }; Enums: {}; CompositeTypes: {}; }, never, never, never>', gave the following error.
+    Argument of type '"backup_history"' is not assignable to parameter of type 'never'.
+lib/database/backup-disaster-recovery.ts(558,7): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: { description?: string; name: string; uuid?: string; value: string; } | { code: string; colour?: string; description: string; remark?: string; standard_qty?: number; type?: string; } | { department: string; ... 5 more ...; uuid?: string; } | ... 17 more ... | { ...; }, options?: { ...; }): PostgrestFilterBuilder<...>', gave the following error.
+    Object literal may only specify known properties, and 'backup_type' does not exist in type '{ description?: string; name: string; uuid?: string; value: string; } | { code: string; colour?: string; description: string; remark?: string; standard_qty?: number; type?: string; } | { department: string; ... 5 more ...; uuid?: string; } | ... 17 more ... | { ...; }'.
+  Overload 2 of 2, '(values: ({ description?: string; name: string; uuid?: string; value: string; } | { code: string; colour?: string; description: string; remark?: string; standard_qty?: number; type?: string; } | { department: string; ... 5 more ...; uuid?: string; } | ... 17 more ... | { ...; })[], options?: { ...; }): PostgrestFilterBuilder<...>', gave the following error.
+    Object literal may only specify known properties, and 'backup_type' does not exist in type '({ description?: string; name: string; uuid?: string; value: string; } | { code: string; colour?: string; description: string; remark?: string; standard_qty?: number; type?: string; } | { department: string; ... 5 more ...; uuid?: string; } | ... 17 more ... | { ...; })[]'.
+lib/database/backup-disaster-recovery.ts(572,29): error TS2589: Type instantiation is excessively deep and possibly infinite.
+lib/database/backup-disaster-recovery.ts(572,29): error TS2589: Type instantiation is excessively deep and possibly infinite.
+lib/database/backup-disaster-recovery.ts(573,13): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(relation: "data_code" | "data_supplier" | "data_id" | "stock_level" | "record_palletinfo" | "API" | "record_history" | "record_inventory" | "record_transfer" | "record_aco" | "record_grn" | ... 9 more ... | "work_level"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"backup_history"' is not assignable to parameter of type '"data_code" | "data_supplier" | "data_id" | "stock_level" | "record_palletinfo" | "API" | "record_history" | "record_inventory" | "record_transfer" | "record_aco" | "record_grn" | ... 9 more ... | "work_level"'.
+  Overload 2 of 2, '(relation: never): PostgrestQueryBuilder<{ Tables: { API: { Row: { description: string; name: string; uuid: string; value: string; }; Insert: { description?: string; name: string; uuid?: string; value: string; }; Update: { description?: string; name?: string; uuid?: string; value?: string; }; Relationships: []; }; ... 19 more ...; work_level: { ...; }; }; Views: {}; Functions: { ...; }; Enums: {}; CompositeTypes: {}; }, never, never, never>', gave the following error.
+    Argument of type '"backup_history"' is not assignable to parameter of type 'never'.
+lib/database/backup-disaster-recovery.ts(575,9): error TS2353: Object literal may only specify known properties, and 'end_time' does not exist in type '{ description?: string; name?: string; uuid?: string; value?: string; } | { code?: string; colour?: string; description?: string; remark?: string; standard_qty?: number; type?: string; } | { department?: string; ... 5 more ...; uuid?: string; } | ... 17 more ... | { ...; }'.
+lib/database/backup-disaster-recovery.ts(605,35): error TS2589: Type instantiation is excessively deep and possibly infinite.
+lib/database/backup-disaster-recovery.ts(606,13): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(relation: "data_code" | "data_supplier" | "data_id" | "stock_level" | "record_palletinfo" | "API" | "record_history" | "record_inventory" | "record_transfer" | "record_aco" | "record_grn" | ... 9 more ... | "work_level"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"backup_history"' is not assignable to parameter of type '"data_code" | "data_supplier" | "data_id" | "stock_level" | "record_palletinfo" | "API" | "record_history" | "record_inventory" | "record_transfer" | "record_aco" | "record_grn" | ... 9 more ... | "work_level"'.
+  Overload 2 of 2, '(relation: never): PostgrestQueryBuilder<{ Tables: { API: { Row: { description: string; name: string; uuid: string; value: string; }; Insert: { description?: string; name: string; uuid?: string; value: string; }; Update: { description?: string; name?: string; uuid?: string; value?: string; }; Relationships: []; }; ... 19 more ...; work_level: { ...; }; }; Views: {}; Functions: { ...; }; Enums: {}; CompositeTypes: {}; }, never, never, never>', gave the following error.
+    Argument of type '"backup_history"' is not assignable to parameter of type 'never'.
+lib/database/backup-disaster-recovery.ts(618,26): error TS2352: Conversion of type '{ account_num: string; created_at: string; customer_ref: string; delivery_add: string; invoice_to: string; loaded_qty: string; order_ref: string; product_code: string; product_desc: string; ... 5 more ...; weight: number; } | ... 19 more ... | { ...; }' to type '{ id: number; backup_type: string; status: string; start_time: string; end_time?: string; backup_size_mb?: number; backup_location?: string; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type '{ grn: number; id: number; latest_update: string; loading: number; move: number; qc: number; uuid: string; }' is missing the following properties from type '{ id: number; backup_type: string; status: string; start_time: string; end_time?: string; backup_size_mb?: number; backup_location?: string; }': backup_type, status, start_time
+lib/database/backup-disaster-recovery.ts(691,13): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(relation: "data_code" | "data_supplier" | "data_id" | "stock_level" | "record_palletinfo" | "API" | "record_history" | "record_inventory" | "record_transfer" | "record_aco" | "record_grn" | ... 9 more ... | "work_level"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"backup_history"' is not assignable to parameter of type '"data_code" | "data_supplier" | "data_id" | "stock_level" | "record_palletinfo" | "API" | "record_history" | "record_inventory" | "record_transfer" | "record_aco" | "record_grn" | ... 9 more ... | "work_level"'.
+  Overload 2 of 2, '(relation: never): PostgrestQueryBuilder<{ Tables: { API: { Row: { description: string; name: string; uuid: string; value: string; }; Insert: { description?: string; name: string; uuid?: string; value: string; }; Update: { description?: string; name?: string; uuid?: string; value?: string; }; Relationships: []; }; ... 19 more ...; work_level: { ...; }; }; Views: {}; Functions: { ...; }; Enums: {}; CompositeTypes: {}; }, never, never, never>', gave the following error.
+    Argument of type '"backup_history"' is not assignable to parameter of type 'never'.
+lib/database/backup-disaster-recovery.ts(707,24): error TS2352: Conversion of type '(SelectQueryError<"column 'id' does not exist on 'data_code'."> | SelectQueryError<"column 'id' does not exist on 'data_supplier'."> | ... 18 more ... | SelectQueryError<...>)[]' to type '{ id: number; backup_location?: string; }[]' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Type 'SelectQueryError<"column 'id' does not exist on 'data_code'."> | SelectQueryError<"column 'id' does not exist on 'data_supplier'."> | ... 18 more ... | SelectQueryError<...>' is not comparable to type '{ id: number; backup_location?: string; }'.
+    Property 'id' is missing in type '{ error: true; } & String' but required in type '{ id: number; backup_location?: string; }'.
+lib/database/backup-disaster-recovery.ts(720,34): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(relation: "data_code" | "data_supplier" | "data_id" | "stock_level" | "record_palletinfo" | "API" | "record_history" | "record_inventory" | "record_transfer" | "record_aco" | "record_grn" | ... 9 more ... | "work_level"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"backup_history"' is not assignable to parameter of type '"data_code" | "data_supplier" | "data_id" | "stock_level" | "record_palletinfo" | "API" | "record_history" | "record_inventory" | "record_transfer" | "record_aco" | "record_grn" | ... 9 more ... | "work_level"'.
+  Overload 2 of 2, '(relation: never): PostgrestQueryBuilder<{ Tables: { API: { Row: { description: string; name: string; uuid: string; value: string; }; Insert: { description?: string; name: string; uuid?: string; value: string; }; Update: { description?: string; name?: string; uuid?: string; value?: string; }; Relationships: []; }; ... 19 more ...; work_level: { ...; }; }; Views: {}; Functions: { ...; }; Enums: {}; CompositeTypes: {}; }, never, never, never>', gave the following error.
+    Argument of type '"backup_history"' is not assignable to parameter of type 'never'.
+lib/database/grn-database-service.ts(128,11): error TS2561: Object literal may only specify known properties, but '_ttl' does not exist in type 'QueryOptions'. Did you mean to write 'ttl'?
+lib/database/grn-database-service.ts(305,11): error TS2561: Object literal may only specify known properties, but '_ttl' does not exist in type 'QueryOptions'. Did you mean to write 'ttl'?
+lib/database/grn-database-service.ts(368,11): error TS2561: Object literal may only specify known properties, but '_ttl' does not exist in type 'QueryOptions'. Did you mean to write 'ttl'?
+lib/error-handling/components/ErrorFallback.tsx(263,18): error TS2552: Cannot find name 'error'. Did you mean '_error'?
+lib/examples/zod-integration-examples.ts(72,18): error TS2339: Property 'errors' does not exist on type 'ValidationResult<{ code?: string; }>'.
+  Property 'errors' does not exist on type 'ValidationSuccess<{ code?: string; }>'.
+lib/examples/zod-integration-examples.ts(95,25): error TS2339: Property 'error' does not exist on type '{ success: false; error: string; } | { success: true; data: { password?: string; clockNumber?: number; rememberMe?: boolean; }; }'.
+  Property 'error' does not exist on type '{ success: true; data: { password?: string; clockNumber?: number; rememberMe?: boolean; }; }'.
+lib/examples/zod-integration-examples.ts(204,36): error TS2339: Property 'error' does not exist on type '{ success: false; error: string; } | { success: true; data: { success?: boolean; data?: { name?: string; id?: string; quantity?: number; }[]; error?: string; }; }'.
+  Property 'error' does not exist on type '{ success: true; data: { success?: boolean; data?: { name?: string; id?: string; quantity?: number; }[]; error?: string; }; }'.
+lib/examples/zod-integration-examples.ts(277,53): error TS2339: Property 'error' does not exist on type '{ success: false; error: string; } | { success: true; data: { type?: "order" | "supplier" | "product"; id?: string; data?: Record<string, unknown>; timestamp?: string; }; }'.
+  Property 'error' does not exist on type '{ success: true; data: { type?: "order" | "supplier" | "product"; id?: string; data?: Record<string, unknown>; timestamp?: string; }; }'.
+lib/examples/zod-integration-examples.ts(353,18): error TS2339: Property 'errors' does not exist on type 'ValidationResult<{ remarks?: string; netWeight?: number; supplierCode?: string; grossWeight?: number; palletCount?: number; packageCount?: number; materialCode?: string; grnRef?: number; receiveDate?: string; receiveBy?: string; }>'.
+  Property 'errors' does not exist on type 'ValidationSuccess<{ remarks?: string; netWeight?: number; supplierCode?: string; grossWeight?: number; palletCount?: number; packageCount?: number; materialCode?: string; grnRef?: number; receiveDate?: string; receiveBy?: string; }>'.

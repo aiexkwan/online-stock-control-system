@@ -2,35 +2,34 @@
 
 // import { createSupabaseServerClient } from '@/lib/supabase/server'; // 舊的錯誤路徑
 // import { createServerActionClient } from '@supabase/auth-helpers-nextjs'; // OLD
-// import { cookies } from 'next/headers'; // Not needed directly, createClient handles it
+// import { cookies } from 'next/headers'; // Not needed directly, _createClient handles it
 import { writeFile as _writeFile, readFile as _readFile, unlink as _unlink } from 'fs/promises';
 import { join as _join } from 'path';
 import { tmpdir as _tmpdir } from 'os';
 import { format, isValid } from 'date-fns'; // 用於日期格式化
 import { createClient } from '@/app/utils/supabase/server'; // NEW: Using @supabase/ssr helper
-import { getUserIdFromEmail as _getUserIdFromEmail } from '@/lib/utils/getUserId'; // 統一的用戶 ID 獲取函數
-import { isDevelopment } from '@/lib/utils/env';
-import { DatabaseRecord, convertToReportItem as _convertToReportItem } from '@/types/database/tables';
+import { getUserIdFromEmail } from '@/lib/utils/getUserId'; // 統一的用戶 ID 獲取函數
+import { DatabaseRecord, convertToReportItem } from '@/types/database/tables';
 import { isRecord } from '@/types/database/helpers';
 import { getErrorMessage } from '@/lib/types/error-handling';
 import { Tables } from '@/types/database/supabase';
 import type { ActionResult } from '@/lib/types/api';
 import { isErrorResult } from '@/lib/types/api';
 // Database record types
-interface _AcoOrderRecord {
+interface AcoOrderRecord {
   order_ref: number;
   code: string;
   required_qty: number | null;
 }
 
-interface _PalletRecord {
+interface PalletRecord {
   plt_num: string;
   product_code: string;
   product_qty: number;
   generate_time: string;
 }
 
-interface _GrnRecord {
+interface GrnRecord {
   grn_ref: number;
   material_code: string;
   sup_code: string;
@@ -42,20 +41,20 @@ interface _GrnRecord {
   package_count: number;
 }
 
-interface _MaterialRecord {
+interface MaterialRecord {
   description: string;
 }
 
-interface _SupplierRecord {
+interface SupplierRecord {
   supplier_name: string;
 }
 
-interface _OperatorRecord {
+interface OperatorRecord {
   id: number;
   name: string;
 }
 
-interface _OrderLoadingRecord {
+interface OrderLoadingRecord {
   order_ref: string;
   product_code: string;
   quantity: number;
@@ -65,7 +64,7 @@ interface _OrderLoadingRecord {
 }
 
 // 擴展類型定義用於複雜查詢
-interface _OrderItemWithJoins {
+interface OrderItemWithJoins {
   order_number: string;
   product_qty: string;
   loaded_qty: string | number;
@@ -78,7 +77,7 @@ interface _OrderItemWithJoins {
   action?: string;
 }
 
-interface _OrderSummary {
+interface OrderSummary {
   totalQty: number;
   loadedQty: number;
   status: string;
@@ -92,11 +91,11 @@ interface OrderDetails {
   products: Set<string>;
 }
 
-interface _UserStats {
-  user_name: string;
+interface UserStats {
+  username: string;
   total_loads: number;
   total_quantity: number;
-  load_times: string[];
+  loadtimes: string[];
 }
 
 /**
@@ -116,7 +115,8 @@ export async function getUniqueAcoOrderRefs(): Promise<ActionResult<string[]>> {
     }
 
     if (!data || data.length === 0) {
-      isDevelopment() && console.log('No ACO order references found in database.');
+      process.env.NODE_ENV !== 'production' &&
+        console.log('No ACO order references found in database.');
       return { success: true, data: [] };
     }
 
@@ -196,7 +196,8 @@ export async function getAcoReportData(orderRef: string): Promise<ActionResult<A
     }
 
     if (!acoCodesData || acoCodesData.length === 0) {
-      isDevelopment() && console.log(`No product codes found for orderRef ${orderRefNum}.`);
+      process.env.NODE_ENV !== 'production' &&
+        console.log(`No product codes found for orderRef ${orderRefNum}.`);
       return { success: true, data: [] };
     }
 
@@ -218,8 +219,7 @@ export async function getAcoReportData(orderRef: string): Promise<ActionResult<A
     });
 
     if (uniqueProductCodes.length === 0) {
-      isDevelopment() &&
-        isDevelopment() &&
+      process.env.NODE_ENV !== 'production' &&
         console.log(`No valid product codes extracted for orderRef ${orderRefNum}.`);
       return { success: true, data: [] };
     }
@@ -263,15 +263,13 @@ export async function getAcoReportData(orderRef: string): Promise<ActionResult<A
             if (isValid(dateObj)) {
               formattedDate = format(dateObj, 'dd-MMM-yy');
             } else {
-              isDevelopment() &&
-                isDevelopment() &&
+              process.env.NODE_ENV !== 'production' &&
                 console.warn(
                   `Invalid date value for generate_time: ${p.generate_time} for product ${productCode}`
                 );
             }
           } catch (dateError) {
-            isDevelopment() &&
-              isDevelopment() &&
+            process.env.NODE_ENV !== 'production' &&
               console.warn(
                 `Error parsing date ${p.generate_time} for product ${productCode}:`,
                 dateError
@@ -304,8 +302,7 @@ export async function getAcoReportData(orderRef: string): Promise<ActionResult<A
     // 按產品代碼排序
     reportData.sort((a, b) => a.product_code.localeCompare(b.product_code));
 
-    isDevelopment() &&
-      isDevelopment() &&
+    process.env.NODE_ENV !== 'production' &&
       console.log(
         `Successfully fetched ACO report data for orderRef ${orderRefNum}: ${reportData.length} products, ${reportData.reduce((sum, p) => sum + p.pallets.length, 0)} pallets`
       );
@@ -332,7 +329,7 @@ export async function getUniqueGrnRefs(): Promise<ActionResult<string[]>> {
     }
 
     if (!data || data.length === 0) {
-      isDevelopment() && isDevelopment() && console.log('No GRN references found in database.');
+      process.env.NODE_ENV !== 'production' && console.log('No GRN references found in database.');
       return { success: true, data: [] };
     }
 
@@ -389,8 +386,7 @@ export async function getMaterialCodesForGrnRef(grnRef: string): Promise<ActionR
     }
 
     if (!data || data.length === 0) {
-      isDevelopment() &&
-        isDevelopment() &&
+      process.env.NODE_ENV !== 'production' &&
         console.log(`No material codes found for grnRef ${grnRefNum}.`);
       return { success: true, data: [] };
     }
@@ -490,8 +486,7 @@ export async function getGrnReportData(
     }
 
     if (!grnRecords || grnRecords.length === 0) {
-      isDevelopment() &&
-        isDevelopment() &&
+      process.env.NODE_ENV !== 'production' &&
         console.log(
           `No GRN records found for grnRef ${grnRefNum} and materialCode ${trimmedMaterialCode}.`
         );
@@ -504,7 +499,7 @@ export async function getGrnReportData(
     // Store supplier code from the first record to fetch supplier name later
     supplierCode = grnRecords[0].sup_code;
 
-    const recordsDetails: GrnRecordDetail[] = grnRecords.map(r => ({
+    const recordsDetails: GrnRecordDetail[] = grnRecords.map((r: any) => ({
       gross_weight: typeof r.gross_weight === 'number' ? r.gross_weight : null,
       net_weight: typeof r.net_weight === 'number' ? r.net_weight : null,
       pallet: r.pallet || null,
@@ -514,14 +509,11 @@ export async function getGrnReportData(
     }));
 
     // DEBUGGING LOG START
-    isDevelopment() &&
-      isDevelopment() &&
+    process.env.NODE_ENV !== 'production' &&
       console.log(`[DEBUG] GRN Ref: ${grnRefNum}, Material: ${trimmedMaterialCode}`);
-    isDevelopment() &&
-      isDevelopment() &&
+    process.env.NODE_ENV !== 'production' &&
       console.log('[DEBUG] grnRecords from DB:', JSON.stringify(grnRecords, null, 2));
-    isDevelopment() &&
-      isDevelopment() &&
+    process.env.NODE_ENV !== 'production' &&
       console.log('[DEBUG] Mapped recordsDetails:', JSON.stringify(recordsDetails, null, 2));
     // DEBUGGING LOG END
 
@@ -534,8 +526,7 @@ export async function getGrnReportData(
       .single();
 
     if (materialError) {
-      isDevelopment() &&
-        isDevelopment() &&
+      process.env.NODE_ENV !== 'production' &&
         console.warn(
           `Could not fetch description for materialCode ${trimmedMaterialCode}:`,
           materialError.message
@@ -555,8 +546,7 @@ export async function getGrnReportData(
         .single();
 
       if (supplierError) {
-        isDevelopment() &&
-          isDevelopment() &&
+        process.env.NODE_ENV !== 'production' &&
           console.warn(
             `Could not fetch supplier name for sup_code ${supplierCode}:`,
             supplierError.message
@@ -566,8 +556,7 @@ export async function getGrnReportData(
         supplierName = supplierData.supplier_name;
       }
     } else {
-      isDevelopment() &&
-        isDevelopment() &&
+      process.env.NODE_ENV !== 'production' &&
         console.warn('Supplier code was not found in GRN records, cannot fetch supplier name.');
     }
 
@@ -600,8 +589,7 @@ export async function getGrnReportData(
       weight_difference: Math.round(weightDifference * 100) / 100,
     };
 
-    isDevelopment() &&
-      isDevelopment() &&
+    process.env.NODE_ENV !== 'production' &&
       console.log(
         `Successfully generated GRN report data for grnRef ${grnRefNum}, materialCode ${trimmedMaterialCode}: ${recordsDetails.length} records`
       );
@@ -624,7 +612,7 @@ export interface TransferRecord {
   quantity: number;
   from_location: string;
   to_location: string;
-  operator_name: string;
+  operatorname: string;
   operator_id: number;
 }
 
@@ -682,8 +670,7 @@ export async function getTransactionReportData(
 
   try {
     // 1. 獲取指定日期範圍內的轉移記錄
-    isDevelopment() &&
-      isDevelopment() &&
+    process.env.NODE_ENV !== 'production' &&
       console.log(`[DEBUG] Searching for transfers between ${startDate} and ${endDate}`);
 
     // 🆕 修復日期查詢：處理帶時間戳的日期格式
@@ -691,8 +678,7 @@ export async function getTransactionReportData(
     const startDateTime = `${startDate}T00:00:00.000Z`;
     const endDateTime = `${endDate}T23:59:59.999Z`;
 
-    isDevelopment() &&
-      isDevelopment() &&
+    process.env.NODE_ENV !== 'production' &&
       console.log(`[DEBUG] Using datetime range: ${startDateTime} to ${endDateTime}`);
 
     const { data: transferRecords, error: transferError } = await supabase
@@ -710,8 +696,7 @@ export async function getTransactionReportData(
       .lte('tran_date', endDateTime)
       .order('tran_date', { ascending: true });
 
-    isDevelopment() &&
-      isDevelopment() &&
+    process.env.NODE_ENV !== 'production' &&
       console.log(`[DEBUG] Transfer query result:`, {
         recordCount: transferRecords?.length || 0,
         error: transferError?.message,
@@ -725,12 +710,11 @@ export async function getTransactionReportData(
 
     // 如果沒有轉移記錄，返回空數據結構
     if (!transferRecords || transferRecords.length === 0) {
-      isDevelopment() &&
-        isDevelopment() &&
+      process.env.NODE_ENV !== 'production' &&
         console.log(`No transfer records found for date range ${startDate} to ${endDate}`);
 
       // 🆕 嘗試更寬鬆的日期查詢，以防日期格式問題
-      isDevelopment() && isDevelopment() && console.log(`[DEBUG] Trying broader date search...`);
+      process.env.NODE_ENV !== 'production' && console.log(`[DEBUG] Trying broader date search...`);
       const { data: allRecords, error: _allError } = await supabase
         .from('record_transfer')
         .select('tran_date')
@@ -738,11 +722,10 @@ export async function getTransactionReportData(
         .limit(10);
 
       if (allRecords && allRecords.length > 0) {
-        isDevelopment() &&
-          isDevelopment() &&
+        process.env.NODE_ENV !== 'production' &&
           console.log(
             `[DEBUG] Sample dates in database:`,
-            allRecords.map(r => r.tran_date)
+            allRecords.map((r: any) => r.tran_date)
           );
       }
 
@@ -759,39 +742,39 @@ export async function getTransactionReportData(
     }
 
     // 2. 獲取相關的棧板資訊
-    const palletNumbers = [...new Set(transferRecords.map(r => r.plt_num))];
+    const palletNumbers = Array.from(new Set(transferRecords.map((r: any) => r.plt_num)));
     const { data: palletInfo, error: palletError } = await supabase
       .from('record_palletinfo')
       .select('plt_num, product_code, product_qty')
       .in('plt_num', palletNumbers);
 
     if (palletError) {
-      isDevelopment() &&
-        isDevelopment() &&
+      process.env.NODE_ENV !== 'production' &&
         console.warn('Error fetching pallet info:', palletError.message);
     }
 
     // 3. 獲取操作員資訊 - 確保 operator_id 是 number 類型
-    const operatorIds = [
-      ...new Set(transferRecords.map(r => Number(r.operator_id)).filter(id => !isNaN(id))),
-    ];
+    const operatorIds = Array.from(
+      new Set(
+        transferRecords.map((r: any) => Number(r.operator_id)).filter((id: number) => !isNaN(id))
+      )
+    );
     const { data: operatorInfo, error: operatorError } = await supabase
       .from('data_id')
       .select('id, name')
       .in('id', operatorIds);
 
     if (operatorError) {
-      isDevelopment() &&
-        isDevelopment() &&
+      process.env.NODE_ENV !== 'production' &&
         console.warn('Error fetching operator info:', operatorError.message);
     }
 
     // 4. 創建查找映射
-    const palletMap = new Map((palletInfo || []).map(p => [p.plt_num, p]));
-    const operatorMap = new Map((operatorInfo || []).map(o => [o.id, o.name]));
+    const palletMap = new Map((palletInfo || []).map((p: any) => [p.plt_num, p]));
+    const operatorMap = new Map((operatorInfo || []).map((o: any) => [o.id, o.name]));
 
     // 5. 處理轉移記錄
-    const transfers: TransferRecord[] = transferRecords.map(record => {
+    const transfers: TransferRecord[] = transferRecords.map((record: any) => {
       const pallet = palletMap.get(record.plt_num);
       const operatorId = Number(record.operator_id);
       const operatorName = operatorMap.get(operatorId) || `ID: ${operatorId}`;
@@ -799,11 +782,11 @@ export async function getTransactionReportData(
       return {
         transfer_date: record.tran_date,
         pallet_number: record.plt_num,
-        product_code: pallet?.product_code || 'Unknown',
-        quantity: pallet?.product_qty || 0,
+        product_code: (pallet as any)?.product_code || 'Unknown',
+        quantity: (pallet as any)?.product_qty || 0,
         from_location: record.f_loc,
         to_location: record.t_loc,
-        operator_name: operatorName,
+        operatorname: operatorName,
         operator_id: operatorId,
       };
     });
@@ -850,8 +833,7 @@ export async function getTransactionReportData(
       total_pallets: palletNumbers.length,
     };
 
-    isDevelopment() &&
-      isDevelopment() &&
+    process.env.NODE_ENV !== 'production' &&
       console.log(
         `Successfully fetched transaction report data: ${transfers.length} transfers, ${palletNumbers.length} unique pallets`
       );
@@ -984,7 +966,7 @@ export interface VoidPalletFilters {
   voidReason?: string;
 }
 
-interface _VoidPalletRecord {
+interface VoidPalletRecord {
   plt_num: string;
   time: string;
   remark: string;
@@ -1022,7 +1004,7 @@ interface VoidPalletDetails {
   product_description: string;
   quantity: number;
   void_reason: string;
-  operator_name: string;
+  operatorname: string;
   remark: string;
 }
 
@@ -1200,7 +1182,7 @@ export async function getVoidReasonStats(
 
       const reason = extractVoidReason(String(item.remark || ''));
       const palletInfo = isRecord(item.record_palletinfo) ? item.record_palletinfo : {};
-      const quantity = Number(palletInfo.product_qty) || 0;
+      const quantity = Number((palletInfo as any).product_qty) || 0;
 
       if (!reasonStats.has(reason)) {
         reasonStats.set(reason, { count: 0, quantity: 0 });
@@ -1294,7 +1276,7 @@ export async function getVoidPalletDetails(
       product_description: (item.description as string) || '',
       quantity: Number(item.product_qty) || 0,
       void_reason: extractVoidReason(item.remark as string),
-      operator_name: (item.name as string) || `ID: ${item.id}`,
+      operatorname: (item.name as string) || `ID: ${item.id}`,
       remark: (item.remark as string) || '',
     }));
 
@@ -1370,13 +1352,15 @@ export async function getVoidProductStats(
       if (!isRecord(item)) return;
 
       const palletInfo = isRecord(item.record_palletinfo) ? item.record_palletinfo : {};
-      const code = String(palletInfo.product_code || '');
+      const code = String((palletInfo as any).product_code || '');
       if (!code) return;
 
       if (!productStats.has(code)) {
         productStats.set(code, {
           description: String(
-            (isRecord(palletInfo.data_code) ? palletInfo.data_code.description : '') || ''
+            (isRecord((palletInfo as any).data_code)
+              ? (palletInfo as any).data_code.description
+              : '') || ''
           ),
           count: 0,
           totalQty: 0,
@@ -1385,7 +1369,7 @@ export async function getVoidProductStats(
 
       const stats = productStats.get(code)!;
       stats.count++;
-      stats.totalQty += Number(palletInfo.product_qty) || 0;
+      stats.totalQty += Number((palletInfo as any).product_qty) || 0;
     });
 
     const result = Array.from(productStats.entries())
@@ -1423,7 +1407,7 @@ interface StockTakeRecord {
   remain_qty: number | null;
   counted_qty: number | null;
   counted_id: number | null;
-  counted_name: string | null;
+  countedname: string | null;
   created_at: string | null;
 }
 
@@ -1520,7 +1504,7 @@ export async function getStockTakeSummary(
       remain_qty: Number(item.remain_qty) || null,
       counted_qty: Number(item.counted_qty) || null,
       counted_id: Number(item.counted_id) || null,
-      counted_name: item.counted_name ? String(item.counted_name) : null,
+      countedname: item.countedname ? String(item.countedname) : null,
       created_at: item.created_at ? String(item.created_at) : null,
     })) as StockTakeRecord[];
 
@@ -1629,7 +1613,7 @@ export async function getStockTakeDetails(
       remain_qty: Number(item.remain_qty) || null,
       counted_qty: Number(item.counted_qty) || null,
       counted_id: Number(item.counted_id) || null,
-      counted_name: item.counted_name ? String(item.counted_name) : null,
+      countedname: item.countedname ? String(item.countedname) : null,
       created_at: item.created_at ? String(item.created_at) : null,
     })) as StockTakeRecord[];
 
@@ -1761,7 +1745,7 @@ export async function getNotCountedItems(
       remain_qty: Number(item.remain_qty) || null,
       counted_qty: Number(item.counted_qty) || null,
       counted_id: Number(item.counted_id) || null,
-      counted_name: item.counted_name ? String(item.counted_name) : null,
+      countedname: item.countedname ? String(item.countedname) : null,
       created_at: item.created_at ? String(item.created_at) : null,
     })) as StockTakeRecord[];
 
@@ -1868,7 +1852,7 @@ export interface OrderLoadingFilters {
   userId?: number;
 }
 
-interface _OrderLoadingHistoryRecord {
+interface OrderLoadingHistoryRecord {
   uuid: string;
   order_ref: string;
   product_code: string;
@@ -1900,16 +1884,16 @@ interface LoadingDetails {
   product_code: string;
   product_description: string;
   loaded_qty: number;
-  user_name: string;
+  username: string;
   action: string;
 }
 
 interface UserPerformance {
   user_id: string;
-  user_name: string;
+  username: string;
   total_loads: number;
   total_quantity: number;
-  avg_load_time: string;
+  avg_loadtime: string;
 }
 
 /**
@@ -2204,7 +2188,7 @@ export async function getLoadingDetails(
       product_code: String(item.product_code || ''),
       product_description: '', // No longer available without JOIN
       loaded_qty: Number(item.quantity || 0),
-      user_name: `User ${item.action_by}`,
+      username: `User ${item.action_by}`,
       action: String(item.action_type || ''),
     }));
 
@@ -2276,10 +2260,10 @@ export async function getUserPerformance(
     const userStats = new Map<
       string,
       {
-        user_name: string;
+        username: string;
         total_loads: number;
         total_quantity: number;
-        load_times: number[];
+        loadtimes: number[];
       }
     >();
 
@@ -2288,10 +2272,10 @@ export async function getUserPerformance(
 
       if (!userStats.has(userId)) {
         userStats.set(userId, {
-          user_name: `User ${String(item.action_by || 'unknown')}`,
+          username: `User ${String(item.action_by || 'unknown')}`,
           total_loads: 0,
           total_quantity: 0,
-          load_times: [],
+          loadtimes: [],
         });
       }
 
@@ -2305,10 +2289,10 @@ export async function getUserPerformance(
     const result = Array.from(userStats.entries())
       .map(([userId, stats]) => ({
         user_id: userId,
-        user_name: stats.user_name,
+        username: stats.username,
         total_loads: stats.total_loads,
         total_quantity: stats.total_quantity,
-        avg_load_time: 'N/A', // Would need more complex calculation
+        avg_loadtime: 'N/A', // Would need more complex calculation
       }))
       .sort((a, b) => b.total_loads - a.total_loads);
 
@@ -2342,7 +2326,7 @@ export async function generateAcoReportExcel(
     }
 
     // Dynamic import ExcelJS
-    const ExcelJS = await import('exceljs');
+    const _ExcelJS = await import('exceljs');
     const { exportAcoReportBuffer } = await import('@/lib/DownloadCenter-server');
 
     // Generate Excel buffer

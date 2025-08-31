@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { dataSourceConfig } from '@/lib/data/data-source-config';
-import { unifiedDataLayer , DataSourceType } from '@/lib/api/unified-data-layer';
+import { unifiedDataLayer, DataSourceType } from '@/lib/api/unified-data-layer';
 import type { DataSourceRule, ABTestConfig } from '@/lib/data/data-source-config';
 
 export async function GET(request: NextRequest) {
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     const { action, ...data } = body;
 
     switch (action) {
-      case 'switch_data_source':
+      case 'switchdata_source':
         // 手動切換數據源
         const { targetSource, duration } = data;
         if (!Object.values(DataSourceType).includes(targetSource)) {

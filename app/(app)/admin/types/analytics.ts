@@ -16,7 +16,6 @@ export interface WorkLevelCardProps {
   className?: string;
   chartTypes?: string[];
   dataSources?: string[];
-  _dataSources?: string[];
   dateRange?: { start: Date; end: Date };
   timeGranularity?: string;
   aggregationType?: string;

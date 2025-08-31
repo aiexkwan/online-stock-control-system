@@ -5,9 +5,9 @@
  */
 
 // import useSWR, { SWRConfiguration } from 'swr';
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import type { RealtimeChannel } from '@supabase/supabase-js';
-import { createClient } from '@/app/utils/supabase/client';
+import { createClient } from '../../../app/utils/supabase/client';
 
 interface StockMovement {
   id: string;
@@ -26,8 +26,27 @@ interface RealtimeStockData {
   lastUpdate: string;
 }
 
+interface UseRealtimeStockResult {
+  data: RealtimeStockData;
+  error: Error | null;
+  isLoading: boolean;
+  isRealtime: boolean;
+  movementsPerMinute: number;
+  mutate: () => Promise<void>;
+  refresh: () => Promise<void>;
+  clear: () => Promise<void>;
+}
+
+interface UseRealtimePalletResult {
+  location?: string;
+  status?: 'idle' | 'moving' | 'transferred';
+  lastUpdate?: string;
+  error: Error | null;
+  isLoading: boolean;
+}
+
 // SWR fetcher
-const fetcher = async (url: string): Promise<RealtimeStockData> => {
+const _fetcher = async (url: string): Promise<RealtimeStockData> => {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error('Failed to fetch');
@@ -52,12 +71,13 @@ export function useRealtimeStock(
     enableWebSocket?: boolean;
     refreshInterval?: number;
   }
-) {
+): UseRealtimeStockResult {
   const channelRef = useRef<RealtimeChannel | null>(null);
   const supabase = createClient();
+  const [error, setError] = useState<Error | null>(null);
 
   // Build API URL with filters
-  const apiUrl = `/api/inventory/realtime${warehouse ? `?warehouse=${warehouse}` : ''}`;
+  const _apiUrl = `/api/inventory/realtime${warehouse ? `?warehouse=${warehouse}` : ''}`;
 
   // Temporarily disabled SWR for build compatibility
   // const { data, error, mutate, isLoading } = useSWR<RealtimeStockData>(
@@ -75,15 +95,18 @@ export function useRealtimeStock(
     activeTransfers: 0,
     lastUpdate: new Date().toISOString(),
   };
-  const error = null;
   const isLoading = false;
 
   // Wrap mutate in useCallback to prevent recreation on every render
   const mutate = useCallback(
-    (updater?: (currentData: RealtimeStockData | undefined) => RealtimeStockData | undefined) =>
-      Promise.resolve(),
+    (
+      _updater?: (currentData: RealtimeStockData | undefined) => RealtimeStockData | undefined
+    ): Promise<void> => Promise.resolve(),
     []
   );
+
+  const refresh = useCallback((): Promise<void> => mutate(), [mutate]);
+  const clear = useCallback((): Promise<void> => mutate(undefined), [mutate]);
 
   // WebSocket subscription for real-time updates
   useEffect(() => {
@@ -98,40 +121,48 @@ export function useRealtimeStock(
           event: '*',
           schema: 'public',
           table: 'record_history',
-          filter: warehouse ? `loc=like.${warehouse}%` : undefined,
+          ...(warehouse ? { filter: `loc=like.${warehouse}%` } : {}),
         },
         payload => {
-          console.log('[Realtime] Stock movement:', payload);
+          try {
+            console.log('[Realtime] Stock movement:', payload);
 
-          // Optimistically update the data
-          mutate((currentData: RealtimeStockData | undefined) => {
-            if (!currentData) return currentData;
+            // Optimistically update the data
+            mutate((currentData: RealtimeStockData | undefined) => {
+              if (!currentData) return currentData;
 
-            const newPayload = payload.new as Record<string, unknown>;
-            const oldPayload = payload.old as Record<string, unknown>;
+              const newPayload = payload.new as Record<string, unknown>;
+              const oldPayload = payload.old as Record<string, unknown>;
 
-            const movement: StockMovement = {
-              id: (newPayload?.uuid as string) || crypto.randomUUID(),
-              palletNum: (newPayload?.plt_num as string) || '',
-              productCode: (newPayload?.product_code as string) || '',
-              fromLocation: (oldPayload?.loc as string) || '',
-              toLocation: (newPayload?.loc as string) || '',
-              quantity: (newPayload?.quantity as number) || 0,
-              timestamp: (newPayload?.time as string) || new Date().toISOString(),
-              operator: (newPayload?.user_name as string) || 'System',
-            };
+              const movement: StockMovement = {
+                id: (newPayload?.uuid as string) || crypto.randomUUID(),
+                palletNum: (newPayload?.plt_num as string) || '',
+                productCode: (newPayload?.product_code as string) || '',
+                fromLocation: (oldPayload?.loc as string) || '',
+                toLocation: (newPayload?.loc as string) || '',
+                quantity: (newPayload?.quantity as number) || 0,
+                timestamp: (newPayload?.time as string) || new Date().toISOString(),
+                operator: (newPayload?.user_name as string) || 'System',
+              };
 
-            return {
-              ...currentData,
-              movements: [movement, ...currentData.movements.slice(0, 49)], // Keep last 50
-              activeTransfers: currentData.activeTransfers + 1,
-              lastUpdate: new Date().toISOString(),
-            };
-          }); // Don't revalidate immediately
+              return {
+                ...currentData,
+                movements: [movement, ...currentData.movements.slice(0, 49)], // Keep last 50
+                activeTransfers: currentData.activeTransfers + 1,
+                lastUpdate: new Date().toISOString(),
+              };
+            }); // Don't revalidate immediately
+          } catch (err) {
+            console.error('[Realtime] Error processing stock movement:', err);
+            setError(err instanceof Error ? err : new Error('Unknown error'));
+          }
         }
       )
       .subscribe(status => {
         console.log('[Realtime] Subscription status:', status);
+        if (status === 'CHANNEL_ERROR') {
+          setError(new Error('Real-time subscription failed'));
+        }
       });
 
     channelRef.current = channel;
@@ -163,8 +194,8 @@ export function useRealtimeStock(
     movementsPerMinute,
     mutate,
     // Helper methods
-    refresh: () => mutate(),
-    clear: () => mutate(undefined),
+    refresh,
+    clear,
   };
 }
 
@@ -172,8 +203,9 @@ export function useRealtimeStock(
  * Hook for monitoring specific pallet in real-time
  * Temporarily disabled SWR for build compatibility
  */
-export function useRealtimePallet(palletNum: string) {
+export function useRealtimePallet(palletNum: string): UseRealtimePalletResult {
   const supabase = createClient();
+  const [error, setError] = useState<Error | null>(null);
 
   // Temporarily disabled SWR
   // const { data, error, mutate } = useSWR<{
@@ -188,20 +220,19 @@ export function useRealtimePallet(palletNum: string) {
   //     revalidateOnFocus: true,
 
   // Mock data for build compatibility
-  const data = {
+  const [data] = useState({
     location: 'Unknown',
     status: 'idle' as const,
     lastUpdate: new Date().toISOString(),
-  };
-  const error = null;
+  });
 
   // Wrap mutate in useCallback
   const mutate = useCallback(
-    (updater?: {
+    (_updater?: {
       location: string;
       status: 'idle' | 'moving' | 'transferred';
       lastUpdate: string;
-    }) => Promise.resolve(),
+    }): Promise<void> => Promise.resolve(),
     []
   );
 
@@ -218,19 +249,24 @@ export function useRealtimePallet(palletNum: string) {
           filter: `plt_num=eq.${palletNum}`,
         },
         payload => {
-          // Immediate optimistic update
-          const newPayload = payload.new as Record<string, unknown>;
-          mutate({
-            location: (newPayload.current_plt_loc as string) || 'Unknown',
-            status: 'transferred',
-            lastUpdate: new Date().toISOString(),
-          });
+          try {
+            // Immediate optimistic update
+            const newPayload = payload.new as Record<string, unknown>;
+            mutate({
+              location: (newPayload.current_plt_loc as string) || 'Unknown',
+              status: 'transferred',
+              lastUpdate: new Date().toISOString(),
+            });
+          } catch (err) {
+            console.error('[Realtime] Error processing pallet update:', err);
+            setError(err instanceof Error ? err : new Error('Unknown error'));
+          }
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(channel).catch(console.error);
     };
   }, [palletNum, supabase, mutate]);
 

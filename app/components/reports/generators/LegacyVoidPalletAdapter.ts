@@ -5,13 +5,13 @@
 
 import { ProcessedReportData, ReportConfig } from '../core/ReportConfig';
 import { LegacyVoidPalletPdfGenerator } from '../core/LegacyPdfGenerator';
-import { safeGet, safeString, safeNumber, toRecordArray } from '@/types/database/helpers';
+import { safeGet, safeString, safeNumber, toRecordArray } from '../../../../types/database/helpers';
 
 export class LegacyVoidPalletAdapter {
   /**
    * 將統一框架數據轉換為舊版格式並生成 PDF
    */
-  static async generatePdf(data: ProcessedReportData, config: ReportConfig): Promise<Blob> {
+  static async generatePdf(data: ProcessedReportData, _config: ReportConfig): Promise<Blob> {
     // 從 metadata 中提取日期範圍
     const dateRange = this.extractDateRange(data.metadata.filters);
 

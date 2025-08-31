@@ -1,6 +1,6 @@
 /**
  * 企業級品牌類型系統 (Enterprise Branded Types System)
- * 
+ *
  * 此文件定義了系統中使用的品牌類型，用於在編譯時區分基礎類型，
  * 提升類型安全性和領域模型的精確性
  */
@@ -161,9 +161,8 @@ export const createEmail = (email: string): Email => {
 
 /** 創建ISO時間戳 */
 export const createISOTimestamp = (timestamp?: string | Date): ISOTimestamp => {
-  const isoString = timestamp instanceof Date 
-    ? timestamp.toISOString() 
-    : timestamp || new Date().toISOString();
+  const isoString =
+    timestamp instanceof Date ? timestamp.toISOString() : timestamp || new Date().toISOString();
   return isoString as ISOTimestamp;
 };
 
@@ -259,8 +258,8 @@ export const toQuantity = (value: number | null | undefined): Quantity | null =>
 // 運行時驗證和強化 (Runtime Validation and Enhancement)
 // ============================================================================
 
-/** 
- * 品牌類型驗證配置 
+/**
+ * 品牌類型驗證配置
  */
 export interface BrandedTypeValidationConfig {
   enableRuntimeValidation: boolean;
@@ -284,7 +283,7 @@ export class BrandedTypeValidator {
   /**
    * 驗證並創建品牌類型
    */
-  validate<T extends Brand<any, any>>(
+  validate<T extends Brand<unknown, unknown>>(
     value: unknown,
     guard: (value: unknown) => value is T,
     typeName: string
@@ -298,7 +297,7 @@ export class BrandedTypeValidator {
     }
 
     const error = new Error(`Invalid ${typeName}: ${String(value)}`);
-    
+
     if (this.config.logValidationErrors) {
       console.warn(`[BrandedTypeValidator] ${error.message}`);
     }
@@ -315,22 +314,25 @@ export class BrandedTypeValidator {
 export const brandedTypeValidator = new BrandedTypeValidator();
 
 // ============================================================================
-// 類型操作工具 (Type Operation Utilities)  
+// 類型操作工具 (Type Operation Utilities)
 // ============================================================================
 
 /** 從品牌類型中提取原始值 */
 export const unwrap = <T, B>(branded: Brand<T, B>): T => branded as unknown as T;
 
 /** 品牌類型比較函數 */
-export const equals = <T extends Brand<any, any>>(a: T, b: T): boolean => {
-  return (unwrap as any)(a) === (unwrap as any)(b);
+export const equals = <T extends Brand<unknown, unknown>>(a: T, b: T): boolean => {
+  return (
+    (unwrap as <U, V>(branded: Brand<U, V>) => U)(a) ===
+    (unwrap as <U, V>(branded: Brand<U, V>) => U)(b)
+  );
 };
 
 /** 品牌類型排序函數 */
-export const compare = <T extends Brand<string | number, any>>(a: T, b: T): number => {
-  const aVal = (unwrap as any)(a) as string | number;
-  const bVal = (unwrap as any)(b) as string | number;
-  
+export const compare = <T extends Brand<string | number, unknown>>(a: T, b: T): number => {
+  const aVal = (unwrap as <U extends string | number, V>(branded: Brand<U, V>) => U)(a);
+  const bVal = (unwrap as <U extends string | number, V>(branded: Brand<U, V>) => U)(b);
+
   if (aVal < bVal) return -1;
   if (aVal > bVal) return 1;
   return 0;
@@ -341,13 +343,13 @@ export const compare = <T extends Brand<string | number, any>>(a: T, b: T): numb
 // ============================================================================
 
 /** 可空品牌類型 */
-export type Nullable<T extends Brand<any, any>> = T | null;
+export type Nullable<T extends Brand<unknown, unknown>> = T | null;
 
 /** 可選品牌類型 */
-export type Optional<T extends Brand<any, any>> = T | undefined;
+export type Optional<T extends Brand<unknown, unknown>> = T | undefined;
 
 /** 品牌類型數組 */
-export type BrandedArray<T extends Brand<any, any>> = T[];
+export type BrandedArray<T extends Brand<unknown, unknown>> = T[];
 
 /** 品牌類型映射 */
 export type BrandedMap<K extends string, V> = Map<K, V>;

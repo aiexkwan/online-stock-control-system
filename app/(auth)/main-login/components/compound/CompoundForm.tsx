@@ -21,7 +21,9 @@ import {
 // Form Context with generic support using proper typing
 const FormContext = createContext<FormCompoundContext<Record<string, unknown>> | null>(null);
 
-function useFormContext<TFormData = Record<string, string>>(): FormCompoundContext<TFormData> {
+function useFormContext<
+  TFormData extends Record<string, unknown> = Record<string, string>,
+>(): FormCompoundContext<TFormData> {
   const context = useContext(FormContext);
   if (!context) {
     throw new Error('Form compound components must be used within a CompoundForm');
@@ -30,7 +32,8 @@ function useFormContext<TFormData = Record<string, string>>(): FormCompoundConte
 }
 
 // Main Form Component with generic support
-interface CompoundFormProps<TFormData = Record<string, string>> extends BaseCompoundProps {
+interface CompoundFormProps<TFormData extends Record<string, unknown> = Record<string, string>>
+  extends BaseCompoundProps {
   formType: 'login' | 'register' | 'reset' | 'change';
   onSubmit: (data: TFormData) => Promise<void>;
   onFieldChange?: (field: string, value: string) => void;
@@ -38,7 +41,7 @@ interface CompoundFormProps<TFormData = Record<string, string>> extends BaseComp
   hasErrors?: boolean;
 }
 
-function CompoundFormBase<TFormData = Record<string, string>>({
+function CompoundFormBase<TFormData extends Record<string, unknown> = Record<string, string>>({
   children,
   className = '',
   formType,
@@ -82,7 +85,7 @@ function CompoundFormBase<TFormData = Record<string, string>>({
   );
 
   return (
-    <FormContext.Provider value={contextValue}>
+    <FormContext.Provider value={contextValue as FormCompoundContext<Record<string, unknown>>}>
       <form onSubmit={handleSubmit} className={`space-y-4 ${className}`} {...props}>
         {children}
       </form>
@@ -191,7 +194,7 @@ function Input({
         autoComplete={autoComplete}
         value={value}
         onChange={e => onChange(e.target.value)}
-        className={`w-full rounded-lg border bg-slate-900/80 px-4 py-3 text-white placeholder-gray-400 transition-colors focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 ${error ? 'border-red-500' : 'border-gray-600'} ${showPasswordToggle ? 'pr-12' : ''} ${disabled || isSubmitting ? 'cursor-not-allowed opacity-50' : ''} ${className} `}
+        className={`w-full rounded-lg border bg-slate-900/80 px-4 py-3 text-white placeholder-gray-400 transition-colors focus:border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-500 ${error ? 'border-red-500' : 'border-gray-600'} ${showPasswordToggle ? 'pr-12' : ''} ${disabled || isSubmitting ? 'cursor-not-allowed opacity-50' : ''} ${className}`}
         {...props}
       />
 
@@ -223,7 +226,7 @@ function ErrorDisplay({ error, className = '', ...props }: ErrorDisplayProps) {
 }
 
 // Button Component
-function Button({
+function CompoundButton({
   children,
   type = 'button',
   variant = 'primary',
@@ -258,7 +261,7 @@ function Button({
       type={type}
       disabled={isDisabled}
       onClick={onClick}
-      className={` ${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${variant === 'primary' ? 'w-full' : ''} ${className} `}
+      className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${variant === 'primary' ? 'w-full' : ''} ${className}`}
       {...props}
     >
       {loading || isSubmitting ? (
@@ -348,7 +351,7 @@ export const CompoundForm = Object.assign(CompoundFormBase, {
   Label,
   Input,
   Error: ErrorDisplay,
-  Button,
+  Button: CompoundButton,
   Footer,
   Link,
   displayName: 'CompoundForm',

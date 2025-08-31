@@ -16,8 +16,8 @@ export function useFeatureFlag(
   refresh: () => Promise<void>;
 } {
   const [evaluation, setEvaluation] = useState<FeatureEvaluation | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error>();
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<Error | undefined>(undefined);
 
   // 合併上下文
   const mergedContext = useMemo(() => {
@@ -33,7 +33,8 @@ export function useFeatureFlag(
       const result = await featureFlagManager.evaluate(key, mergedContext);
       setEvaluation(result);
     } catch (err) {
-      setError(err as Error);
+      const errorInstance = err instanceof Error ? err : new Error(String(err));
+      setError(errorInstance);
       setEvaluation({ enabled: false, reason: 'Evaluation error' });
     } finally {
       setLoading(false);
@@ -58,7 +59,7 @@ export function useFeatureFlag(
   }, [key, evaluate]);
 
   return {
-    enabled: evaluation?.enabled || false,
+    enabled: evaluation?.enabled ?? false,
     variant: evaluation?.variant,
     loading,
     error,
@@ -79,8 +80,8 @@ export function useFeatureFlags(
   refresh: () => Promise<void>;
 } {
   const [flags, setFlags] = useState<Record<string, FeatureEvaluation>>({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error>();
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<Error | undefined>(undefined);
 
   // 合併上下文
   const mergedContext = useMemo(() => {
@@ -96,15 +97,16 @@ export function useFeatureFlags(
       const evaluations: Record<string, FeatureEvaluation> = {};
 
       await Promise.all(
-        keys.map(async key => {
-          const result = await featureFlagManager.evaluate(key, mergedContext);
-          evaluations[key] = result;
+        keys.map(async flagKey => {
+          const result = await featureFlagManager.evaluate(flagKey, mergedContext);
+          evaluations[flagKey] = result;
         })
       );
 
       setFlags(evaluations);
     } catch (err) {
-      setError(err as Error);
+      const errorInstance = err instanceof Error ? err : new Error(String(err));
+      setError(errorInstance);
     } finally {
       setLoading(false);
     }
@@ -146,8 +148,8 @@ export function useAllFeatureFlags(context?: Partial<FeatureContext>): {
   refresh: () => Promise<void>;
 } {
   const [flags, setFlags] = useState<Record<string, FeatureEvaluation>>({});
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error>();
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<Error | undefined>(undefined);
 
   // 合併上下文
   const mergedContext = useMemo(() => {
@@ -163,7 +165,8 @@ export function useAllFeatureFlags(context?: Partial<FeatureContext>): {
       const result = await featureFlagManager.evaluateAll(mergedContext);
       setFlags(result);
     } catch (err) {
-      setError(err as Error);
+      const errorInstance = err instanceof Error ? err : new Error(String(err));
+      setError(errorInstance);
     } finally {
       setLoading(false);
     }
@@ -198,7 +201,7 @@ export function useFeatureFlagToggle(key: string): {
   error?: Error;
 } {
   const { enabled, loading, error, refresh } = useFeatureFlag(key);
-  const [toggling, setToggling] = useState(false);
+  const [toggling, setToggling] = useState<boolean>(false);
 
   const toggle = useCallback(async () => {
     try {

@@ -4,14 +4,14 @@
  * batch processing, and performance monitoring
  */
 
-import type { Database } from '@/types/database/supabase';
-import { createGrnLogger } from '@/lib/security/grn-logger';
+import type { Database } from '../../types/database/supabase';
+import { createGrnLogger } from '../security/grn-logger';
 import {
   DatabaseError,
   DatabaseQueryResult,
-  GrnDatabaseRecord,
-  GrnQueryFilters,
-} from '@/lib/types/database-operations';
+  // GrnDatabaseRecord, // Unused in current implementation
+  // GrnQueryFilters // Unused in current implementation
+} from '../types/database-operations';
 import { getSupabaseClient } from './supabase-client-manager';
 
 // Type definitions for GRN operations
@@ -456,7 +456,7 @@ export class GrnDatabaseService {
     }
 
     const allMetrics: GrnOperationMetrics[] = [];
-    for (const metrics of this.operationMetrics.values()) {
+    for (const metrics of Array.from(this.operationMetrics.values())) {
       allMetrics.push(...metrics);
     }
     return allMetrics;
@@ -491,7 +491,7 @@ export class GrnDatabaseService {
 
     let totalDuration = 0;
 
-    for (const [operationName, metrics] of this.operationMetrics.entries()) {
+    for (const [operationName, metrics] of Array.from(this.operationMetrics.entries())) {
       const opStats = {
         count: metrics.length,
         avgDuration: 0,

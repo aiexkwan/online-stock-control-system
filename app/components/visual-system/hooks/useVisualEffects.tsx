@@ -4,7 +4,7 @@ import { useVisualSystem } from '../core/VisualSystemProvider';
 import { GlassmorphismVariant, ContainerBorderVariant } from '../config/visual-config';
 
 export function useVisualEffects() {
-  const { state, config, actions } = useVisualSystem();
+  const { state, _config: config, actions } = useVisualSystem();
 
   // 獲取玻璃態樣式
   const getGlassmorphicStyles = (variant: GlassmorphismVariant = 'default') => {

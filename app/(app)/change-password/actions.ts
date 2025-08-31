@@ -1,6 +1,6 @@
 'use server';
 
-// import { cookies } from 'next/headers'; // 由新的 createClient 內部處理
+// import { cookies } from 'next/headers'; // 由新的 _createClient 內部處理
 // import { createServerActionClient } from '@supabase/auth-helpers-nextjs'; // 已棄用
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@/app/utils/supabase/server'; // 使用 @supabase/ssr 的服務器客戶端
@@ -21,7 +21,7 @@ export async function updateUserPasswordInDbAction(
   (process.env.NODE_ENV as string) !== 'production' &&
     (process.env.NODE_ENV as string) !== 'production' &&
     console.log('[updateUserPasswordInDbAction] Action started. PrevState:', prevState);
-  // const cookieStore = cookies(); // 不再直接需要
+  // const _cookieStore = cookies(); // 不再直接需要
 
   const supabase = await createClient(); // 使用新的輔助函數創建客戶端
   (process.env.NODE_ENV as string) !== 'production' &&
@@ -61,7 +61,7 @@ export async function updateUserPasswordInDbAction(
 
   if (userError) {
     console.error(
-      '[updateUserPasswordInDbAction] Error fetching user from session:',
+      '[updateUserPasswordInDbAction] Error fetching user from _session:',
       userError.message
     );
     return { error: `Session error: ${userError.message}. Please try logging in again.` };
@@ -83,7 +83,7 @@ export async function updateUserPasswordInDbAction(
       user.id
     );
     // 考慮是否仍然需要返回錯誤，或者僅記錄警告，因為 updatePasswordWithSupabaseAuth 將使用 supabase 客戶端內部的用戶
-    // return { error: 'User identification failed (clock number missing). Cannot change password.' };
+    // return { _error: 'User identification failed (clock number missing). Cannot change password.' };
   }
   if (clockNumber) {
     (process.env.NODE_ENV as string) !== 'production' &&
@@ -94,7 +94,7 @@ export async function updateUserPasswordInDbAction(
   // 可選：如果表單也提交了 clockNumber，可以進行驗證
   // if (clockNumberFromForm && clockNumberFromForm !== clockNumber) {
   //   console.error('[updateUserPasswordInDbAction] Form clockNumber does not match session clockNumber.');
-  //   return { error: 'User identification mismatch.' };
+  //   return { _error: 'User identification mismatch.' };
   // }
 
   (process.env.NODE_ENV as string) !== 'production' &&

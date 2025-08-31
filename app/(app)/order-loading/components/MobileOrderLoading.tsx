@@ -26,7 +26,7 @@ import {
   ArrowLeftIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
-// import { toast } from 'sonner'; // TODO: Remove if not used
+// import { _toast } from 'sonner'; // TODO: Remove if not used
 import { MobileButton, MobileInput, MobileCard } from '@/components/ui/mobile';
 import { mobileConfig, cn } from '@/lib/mobile-config';
 import { UnifiedSearch } from '@/components/ui/unified-search';
@@ -66,7 +66,7 @@ interface MobileOrderLoadingProps {
   searchValue: string;
   isSearching: boolean;
   onSearchChange: (value: string) => void;
-  onSearchSelect: (result: SearchResult) => void;
+  onSearchSelect: (_result: SearchResult) => void;
 
   // Recent Loads
   recentLoads: Record<string, unknown>[];
@@ -319,10 +319,10 @@ export default function MobileOrderLoading({
                           <span className={cn(mobileConfig.fontSize.bodySmall, 'text-slate-500')}>
                             {(() => {
                               // 策略4: unknown + type narrowing - 安全處理時間
-                              const time = load.time;
-                              if (time instanceof Date) return time.toLocaleTimeString();
-                              if (typeof time === 'string' || typeof time === 'number') {
-                                const date = new Date(time);
+                              const _time = load.time;
+                              if (_time instanceof Date) return _time.toLocaleTimeString();
+                              if (typeof _time === 'string' || typeof _time === 'number') {
+                                const date = new Date(_time);
                                 return isNaN(date.getTime())
                                   ? 'Invalid time'
                                   : date.toLocaleTimeString();

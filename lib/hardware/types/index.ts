@@ -1,5 +1,4 @@
 // Strategy 4: unknown + type narrowing - 提升安全性
-import { DatabaseRecord } from '@/types/database/tables';
 
 /**
  * Unified Hardware Service Types

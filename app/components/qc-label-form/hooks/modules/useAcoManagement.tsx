@@ -5,10 +5,10 @@
 
 import { useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
-import { createClient } from '@/app/utils/supabase/client';
-import { getAcoPalletCount } from '@/app/utils/qcLabelHelpers';
-import { MIN_ACO_ORDER_REF_LENGTH } from '../../constants';
-import type { FormData, ProductInfo } from '../../types';
+import { createClient } from '../../../../utils/supabase/client';
+import { getAcoPalletCount } from '../../../../utils/qcLabelHelpers';
+import { _MIN_ACO_ORDER_REF_LENGTH } from '../../constants';
+import type { FormData, ProductInfo, AcoOrderDetail } from '../../types';
 
 interface UseAcoManagementProps {
   formData: FormData;
@@ -57,7 +57,7 @@ export const useAcoManagement = ({
       if (error) {
         console.error('Error fetching ACO order refs:', error);
         toast.error('Error fetching historical ACO order refs.');
-        setFormData(prev => ({ ...prev, availableAcoOrderRefs: [] }));
+        setFormData(prev => ({ ...prev, availableAcoOrderRefs: [] as readonly number[] }));
       } else if (
         (data as { success?: boolean; available_orders?: number[] })?.success &&
         (data as { success?: boolean; available_orders?: number[] }).available_orders
@@ -65,12 +65,12 @@ export const useAcoManagement = ({
         // RPC 返回的是 JSONB array，直接使用
         const orderRefs = (data as { success?: boolean; available_orders?: number[] })
           .available_orders as number[];
-        setFormData(prev => ({ ...prev, availableAcoOrderRefs: orderRefs }));
+        setFormData(prev => ({ ...prev, availableAcoOrderRefs: orderRefs as readonly number[] }));
       } else {
-        setFormData(prev => ({ ...prev, availableAcoOrderRefs: [] }));
+        setFormData(prev => ({ ...prev, availableAcoOrderRefs: [] as readonly number[] }));
       }
-    } catch (error) {
-      console.error('Error fetching ACO order refs:', error);
+    } catch (fetchError) {
+      console.error('Error fetching ACO order refs:', fetchError);
       setFormData(prev => ({ ...prev, availableAcoOrderRefs: [] }));
     }
   }, [productInfo?.type, productInfo?.code, createClientSupabase, setFormData]);
@@ -125,10 +125,10 @@ export const useAcoManagement = ({
     async (orderRef?: string) => {
       const searchOrderRef = orderRef || formData.acoOrderRef.trim();
 
-      if (!searchOrderRef || searchOrderRef.length < MIN_ACO_ORDER_REF_LENGTH) {
+      if (!searchOrderRef || searchOrderRef.length < _MIN_ACO_ORDER_REF_LENGTH) {
         // 對於自動調用，不顯示錯誤toast，只對手動調用顯示
         if (!orderRef) {
-          toast.error(`ACO Order Ref must be at least ${MIN_ACO_ORDER_REF_LENGTH} characters.`);
+          toast.error(`ACO Order Ref must be at least ${_MIN_ACO_ORDER_REF_LENGTH} characters.`);
         }
         return;
       }
@@ -142,8 +142,8 @@ export const useAcoManagement = ({
         ...prev,
         acoSearchLoading: true,
         acoNewRef: false,
-        acoOrderDetails: [],
-        acoOrderDetailErrors: [],
+        acoOrderDetails: [] as readonly AcoOrderDetail[],
+        acoOrderDetailErrors: [] as readonly string[],
       }));
 
       try {
@@ -186,7 +186,7 @@ export const useAcoManagement = ({
         if (data && result.available_orders) {
           setFormData(prev => ({
             ...prev,
-            availableAcoOrderRefs: result.available_orders || [],
+            availableAcoOrderRefs: (result.available_orders || []) as readonly number[],
           }));
         }
 
@@ -215,8 +215,8 @@ export const useAcoManagement = ({
             }
           }
         }
-      } catch (error) {
-        console.error('Error searching ACO order:', error);
+      } catch (searchError) {
+        console.error('Error searching ACO order:', searchError);
         // 對於自動調用，減少錯誤toast的干擾
         if (!orderRef) {
           toast.error('Error searching ACO order.');
@@ -246,7 +246,7 @@ export const useAcoManagement = ({
       }));
 
       // Auto-trigger search with debounce to avoid excessive calls
-      if (selectedOrderRef && selectedOrderRef.length >= MIN_ACO_ORDER_REF_LENGTH) {
+      if (selectedOrderRef && selectedOrderRef.length >= _MIN_ACO_ORDER_REF_LENGTH) {
         autoSearchTimeoutRef.current = setTimeout(async () => {
           await handleAcoSearch(selectedOrderRef);
         }, 300); // 300ms debounce
@@ -270,7 +270,7 @@ export const useAcoManagement = ({
       setFormData(prev => {
         const newDetails = [...prev.acoOrderDetails];
         newDetails[idx] = { ...newDetails[idx], [key]: value };
-        return { ...prev, acoOrderDetails: newDetails };
+        return { ...prev, acoOrderDetails: newDetails as readonly AcoOrderDetail[] };
       });
     },
     [setFormData]
@@ -283,7 +283,7 @@ export const useAcoManagement = ({
         setFormData(prev => {
           const newErrors = [...prev.acoOrderDetailErrors];
           newErrors[idx] = '';
-          return { ...prev, acoOrderDetailErrors: newErrors };
+          return { ...prev, acoOrderDetailErrors: newErrors as readonly string[] };
         });
         return;
       }
@@ -298,7 +298,7 @@ export const useAcoManagement = ({
           setFormData(prev => {
             const newErrors = [...prev.acoOrderDetailErrors];
             newErrors[idx] = `Product code ${code} not found.`;
-            return { ...prev, acoOrderDetailErrors: newErrors };
+            return { ...prev, acoOrderDetailErrors: newErrors as readonly string[] };
           });
         } else {
           const productData =
@@ -317,7 +317,7 @@ export const useAcoManagement = ({
               const newErrors = [...prev.acoOrderDetailErrors];
               newErrors[idx] =
                 `Product ${code} is not an ACO product. Only ACO products are allowed in ACO orders.`;
-              return { ...prev, acoOrderDetailErrors: newErrors };
+              return { ...prev, acoOrderDetailErrors: newErrors as readonly string[] };
             });
           } else {
             // 產品是有效的 ACO 類型，標準化代碼並清除錯誤
@@ -331,18 +331,18 @@ export const useAcoManagement = ({
 
               return {
                 ...prev,
-                acoOrderDetailErrors: newErrors,
-                acoOrderDetails: newDetails,
+                acoOrderDetailErrors: newErrors as readonly string[],
+                acoOrderDetails: newDetails as readonly AcoOrderDetail[],
               };
             });
           }
         }
-      } catch (error) {
-        console.error('Error validating product code:', error);
+      } catch (validationError) {
+        console.error('Error validating product code:', validationError);
         setFormData(prev => {
           const newErrors = [...prev.acoOrderDetailErrors];
           newErrors[idx] = 'Error validating product code. Please try again.';
-          return { ...prev, acoOrderDetailErrors: newErrors };
+          return { ...prev, acoOrderDetailErrors: newErrors as string[] };
         });
         toast.error('Error validating product code.');
       }
@@ -354,20 +354,23 @@ export const useAcoManagement = ({
   const handleAcoOrderDetailUpdate = useCallback(() => {
     setFormData(prev => ({
       ...prev,
-      acoOrderDetails: [...prev.acoOrderDetails, { code: '', qty: '' }],
-      acoOrderDetailErrors: [...prev.acoOrderDetailErrors, ''],
+      acoOrderDetails: [
+        ...prev.acoOrderDetails,
+        { code: '', qty: '' },
+      ] as readonly AcoOrderDetail[],
+      acoOrderDetailErrors: [...prev.acoOrderDetailErrors, ''] as readonly string[],
     }));
   }, [setFormData]);
 
   // 獲取 ACO 卡板計數（用於生成序數）
-  const getAcoPalletOrdinal = useCallback(
+  const _getAcoPalletOrdinal = useCallback(
     async (acoOrderRef: string): Promise<string> => {
       try {
         const supabase = createClientSupabase();
         const count = await getAcoPalletCount(supabase, acoOrderRef);
         return count.toString();
-      } catch (error) {
-        console.error('Error getting ACO pallet count:', error);
+      } catch (countError) {
+        console.error('Error getting ACO pallet count:', countError);
         return '1';
       }
     },

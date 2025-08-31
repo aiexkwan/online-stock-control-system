@@ -12,7 +12,7 @@ import {
   LogContext,
   AnyLogData,
   SanitizedLogEntry,
-} from '@/lib/types/security-monitoring';
+} from '../types/security-monitoring';
 import { sanitizeData, sanitizeError, createSanitizedLogEntry } from './logger-sanitizer';
 
 // Extended list of sensitive fields for GRN operations
@@ -207,7 +207,7 @@ export function sanitizeGrnData(data: unknown, maxDepth: number = 10): unknown {
 
   try {
     return sanitizeRecursive(data, maxDepth);
-  } catch (error) {
+  } catch (_error) {
     // If sanitization fails, return a safe fallback
     return '[SANITIZATION_ERROR]';
   }
@@ -234,11 +234,6 @@ export class GrnLogger {
     }
 
     const sanitizedData = data ? sanitizeGrnData(data) : undefined;
-    const logEntry = createSanitizedLogEntry('INFO', message, {
-      component: this.component,
-      ...(sanitizedData || {}),
-    });
-
     console.log(`[${this.component}]`, message, sanitizedData || '');
   }
 
@@ -247,11 +242,6 @@ export class GrnLogger {
    */
   warn(message: string, data?: AnyLogData): void {
     const sanitizedData = data ? sanitizeGrnData(data) : undefined;
-    const logEntry = createSanitizedLogEntry('WARN', message, {
-      component: this.component,
-      ...(sanitizedData || {}),
-    });
-
     console.warn(`[${this.component}]`, message, sanitizedData || '');
   }
 
@@ -261,12 +251,6 @@ export class GrnLogger {
   error(message: string, error?: unknown, additionalData?: AnyLogData): void {
     const sanitizedError = error ? sanitizeError(error) : undefined;
     const sanitizedData = additionalData ? sanitizeGrnData(additionalData) : undefined;
-
-    const logEntry = createSanitizedLogEntry('ERROR', message, {
-      component: this.component,
-      error: sanitizedError,
-      ...(sanitizedData || {}),
-    });
 
     console.error(`[${this.component}]`, message, sanitizedError || '', sanitizedData || '');
   }
@@ -280,11 +264,6 @@ export class GrnLogger {
     }
 
     const sanitizedData = data ? sanitizeGrnData(data) : undefined;
-    const logEntry = createSanitizedLogEntry('DEBUG', message, {
-      component: this.component,
-      ...(sanitizedData || {}),
-    });
-
     console.log(`[${this.component}] [DEBUG]`, message, sanitizedData || '');
   }
 

@@ -391,6 +391,63 @@ export type Database = {
           },
         ];
       };
+      feature_flags: {
+        Row: {
+          id: string;
+          key: string;
+          name: string;
+          description: string | null;
+          type: string;
+          status: string;
+          default_value: Json;
+          rules: Json | null;
+          variants: Json | null;
+          rollout_percentage: number | null;
+          start_date: string | null;
+          end_date: string | null;
+          tags: string[] | null;
+          metadata: Json | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          key: string;
+          name: string;
+          description?: string | null;
+          type?: string;
+          status?: string;
+          default_value?: Json;
+          rules?: Json | null;
+          variants?: Json | null;
+          rollout_percentage?: number | null;
+          start_date?: string | null;
+          end_date?: string | null;
+          tags?: string[] | null;
+          metadata?: Json | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          key?: string;
+          name?: string;
+          description?: string | null;
+          type?: string;
+          status?: string;
+          default_value?: Json;
+          rules?: Json | null;
+          variants?: Json | null;
+          rollout_percentage?: number | null;
+          start_date?: string | null;
+          end_date?: string | null;
+          tags?: string[] | null;
+          metadata?: Json | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       // 注：包含所有主要表格的定義
       [table: string]: {
         Row: Record<string, unknown>;

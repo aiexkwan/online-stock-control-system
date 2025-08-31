@@ -3,37 +3,192 @@
  * Custom hooks for product-related GraphQL operations
  */
 
-import { useQuery, useMutation, useLazyQuery , gql } from '@apollo/client';
+import {
+  useQuery,
+  useMutation,
+  useLazyQuery,
+  gql,
+  ApolloError,
+  QueryHookOptions,
+  MutationHookOptions,
+  LazyQueryHookOptions,
+} from '@apollo/client';
 
-// Common types for hook options
-interface QueryOptions<T = unknown> {
+// Common types for hook options - Use Apollo's built-in types for better type safety
+interface QueryOptions<TData = any, TVariables = any> {
   pollInterval?: number;
   fetchPolicy?: 'cache-first' | 'cache-and-network' | 'network-only' | 'no-cache' | 'standby';
   errorPolicy?: 'none' | 'ignore' | 'all';
-  onCompleted?: (data: T) => void;
-  onError?: (error: unknown) => void;
+  onCompleted?: (data: TData) => void;
+  onError?: (error: ApolloError) => void;
   skip?: boolean;
 }
 
-interface MutationOptions<T = unknown> {
+interface MutationOptions<TData = any, TVariables = any> {
   errorPolicy?: 'none' | 'ignore' | 'all';
-  onCompleted?: (data: T) => void;
-  onError?: (error: unknown) => void;
+  onCompleted?: (data: TData) => void;
+  onError?: (error: ApolloError) => void;
+}
+
+// Product-related type definitions
+interface Product {
+  code: string;
+  description: string;
+  colour?: string;
+  type: string;
+  standardQty?: number;
+  remark?: string;
+}
+
+interface ProductInventory {
+  totalQuantity: number;
+  availableQuantity: number;
+  reservedQuantity: number;
+  locationBreakdown?: {
+    injection: number;
+    pipeline: number;
+    prebook: number;
+    await: number;
+    fold: number;
+    bulk: number;
+    backcarpark: number;
+    damage: number;
+  };
+  lastUpdate?: string;
+}
+
+interface ProductStatistics {
+  totalQuantity: number;
+  totalPallets: number;
+  totalLocations: number;
+  averageStockLevel: number;
+  stockTurnoverRate: number;
+  lastMovementDate?: string;
+}
+
+interface ProductPallet {
+  pltNum: string;
+  productCode: string;
+  quantity: number;
+  location: string;
+  status: string;
+  grnNumber?: string;
+  batchNumber?: string;
+  expiryDate?: string;
+  manufactureDate?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 // Type for search product by code response
 interface SearchProductByCodeResponse {
-  product?: {
-    code: string;
-    description: string;
-    type: string;
-    standardQty?: number;
-    inventory?: {
-      totalQuantity: number;
-      availableQuantity: number;
-      reservedQuantity: number;
+  product?: Product & {
+    inventory?: ProductInventory;
+  };
+}
+
+// Type for product with inventory response
+interface GetProductWithInventoryResponse {
+  product?: Product & {
+    inventory?: ProductInventory;
+  };
+}
+
+// Type for product with statistics response
+interface GetProductWithStatisticsResponse {
+  product?: Product & {
+    statistics?: ProductStatistics;
+  };
+}
+
+// Type for product with pallets response
+interface GetProductWithPalletsResponse {
+  product?: Product & {
+    pallets?: {
+      edges: Array<{
+        cursor: string;
+        node: ProductPallet;
+      }>;
+      pageInfo: {
+        hasNextPage: boolean;
+        hasPreviousPage: boolean;
+        startCursor?: string;
+        endCursor?: string;
+      };
+      totalCount: number;
     };
   };
+}
+
+// Type for search products response
+interface SearchProductsResponse {
+  searchProducts: Product[];
+}
+
+// Type for get products response
+interface GetProductsResponse {
+  products: {
+    edges: Array<{
+      cursor: string;
+      node: Product;
+    }>;
+    pageInfo: {
+      hasNextPage: boolean;
+      hasPreviousPage: boolean;
+      startCursor?: string;
+      endCursor?: string;
+    };
+    totalCount: number;
+  };
+}
+
+// Type for product statistics response
+interface GetProductStatisticsResponse {
+  productStatistics: ProductStatistics;
+}
+
+// Type for products with inventory by type response
+interface GetProductsWithInventoryByTypeResponse {
+  products: {
+    edges: Array<{
+      node: Product & {
+        inventory?: ProductInventory;
+        statistics?: ProductStatistics;
+      };
+    }>;
+    totalCount: number;
+  };
+}
+
+// Mutation input types
+interface CreateProductInput {
+  code: string;
+  description: string;
+  colour?: string;
+  type: string;
+  standardQty?: number;
+  remark?: string;
+}
+
+interface UpdateProductInput {
+  description?: string;
+  colour?: string;
+  type?: string;
+  standardQty?: number;
+  remark?: string;
+}
+
+// Mutation response types
+interface CreateProductResponse {
+  createProduct: Product;
+}
+
+interface UpdateProductResponse {
+  updateProduct: Product;
+}
+
+interface DeactivateProductResponse {
+  deactivateProduct: Product;
 }
 
 interface FilterOptions {
@@ -283,8 +438,8 @@ export const DEACTIVATE_PRODUCT = gql`
 `;
 
 // Hook: Use single product
-export function useProduct(code: string, options?: QueryOptions) {
-  return useQuery(GET_PRODUCT, {
+export function useProduct(code: string, options?: QueryOptions<Product>) {
+  return useQuery<Product>(GET_PRODUCT, {
     variables: { code },
     skip: !code,
     ...options,
@@ -292,8 +447,11 @@ export function useProduct(code: string, options?: QueryOptions) {
 }
 
 // Hook: Use product with inventory
-export function useProductWithInventory(code: string, options?: QueryOptions) {
-  return useQuery(GET_PRODUCT_WITH_INVENTORY, {
+export function useProductWithInventory(
+  code: string,
+  options?: QueryOptions<GetProductWithInventoryResponse>
+) {
+  return useQuery<GetProductWithInventoryResponse>(GET_PRODUCT_WITH_INVENTORY, {
     variables: { code },
     skip: !code,
     ...options,
@@ -301,8 +459,11 @@ export function useProductWithInventory(code: string, options?: QueryOptions) {
 }
 
 // Hook: Use product with statistics
-export function useProductWithStatistics(code: string, options?: QueryOptions) {
-  return useQuery(GET_PRODUCT_WITH_STATISTICS, {
+export function useProductWithStatistics(
+  code: string,
+  options?: QueryOptions<GetProductWithStatisticsResponse>
+) {
+  return useQuery<GetProductWithStatisticsResponse>(GET_PRODUCT_WITH_STATISTICS, {
     variables: { code },
     skip: !code,
     ...options,
@@ -315,9 +476,9 @@ export function useProductWithPallets(
   filter?: FilterOptions,
   pagination?: PaginationOptions,
   sort?: SortOptions,
-  options?: QueryOptions
+  options?: QueryOptions<GetProductWithPalletsResponse>
 ) {
-  return useQuery(GET_PRODUCT_WITH_PALLETS, {
+  return useQuery<GetProductWithPalletsResponse>(GET_PRODUCT_WITH_PALLETS, {
     variables: { code, filter, pagination, sort },
     skip: !code,
     ...options,
@@ -356,13 +517,15 @@ export const GET_PRODUCT_BASIC_INFO = gql`
 `;
 
 // Hook: Use search products
-export function useSearchProducts(options?: QueryOptions) {
-  return useLazyQuery(SEARCH_PRODUCTS, options);
+export function useSearchProducts(options?: LazyQueryHookOptions<SearchProductsResponse>) {
+  return useLazyQuery<SearchProductsResponse>(SEARCH_PRODUCTS, options);
 }
 
 // Hook: Use search single product by code (for QC Label migration)
-export function useSearchProductByCode(options?: QueryOptions<SearchProductByCodeResponse>) {
-  return useLazyQuery(SEARCH_PRODUCT_BY_CODE, {
+export function useSearchProductByCode(
+  options?: LazyQueryHookOptions<SearchProductByCodeResponse>
+) {
+  return useLazyQuery<SearchProductByCodeResponse>(SEARCH_PRODUCT_BY_CODE, {
     errorPolicy: 'all',
     fetchPolicy: 'network-only', // Always fetch fresh data
     ...options,
@@ -370,8 +533,8 @@ export function useSearchProductByCode(options?: QueryOptions<SearchProductByCod
 }
 
 // Hook: Get basic product info without inventory (for QC Label Card only)
-export function useGetProductBasicInfo(options?: QueryOptions) {
-  return useLazyQuery(GET_PRODUCT_BASIC_INFO, {
+export function useGetProductBasicInfo(options?: LazyQueryHookOptions<{ product?: Product }>) {
+  return useLazyQuery<{ product?: Product }>(GET_PRODUCT_BASIC_INFO, {
     errorPolicy: 'all',
     fetchPolicy: 'network-only', // Always fetch fresh data
     ...options,
@@ -383,9 +546,9 @@ export function useProducts(
   filter?: FilterOptions,
   pagination?: PaginationOptions,
   sort?: SortOptions,
-  options?: QueryOptions
+  options?: QueryOptions<GetProductsResponse>
 ) {
-  return useQuery(GET_PRODUCTS, {
+  return useQuery<GetProductsResponse>(GET_PRODUCTS, {
     variables: { filter, pagination, sort },
     ...options,
   });
@@ -395,9 +558,9 @@ export function useProducts(
 export function useProductStatistics(
   productCode: string,
   dateRange?: { start: Date; end: Date },
-  options?: QueryOptions
+  options?: QueryOptions<GetProductStatisticsResponse>
 ) {
-  return useQuery(GET_PRODUCT_STATISTICS, {
+  return useQuery<GetProductStatisticsResponse>(GET_PRODUCT_STATISTICS, {
     variables: { productCode, dateRange },
     skip: !productCode,
     ...options,
@@ -408,9 +571,9 @@ export function useProductStatistics(
 export function useProductsWithInventoryByType(
   type: string,
   limit: number = 50,
-  options?: QueryOptions
+  options?: QueryOptions<GetProductsWithInventoryByTypeResponse>
 ) {
-  return useQuery(GET_PRODUCTS_WITH_INVENTORY_BY_TYPE, {
+  return useQuery<GetProductsWithInventoryByTypeResponse>(GET_PRODUCTS_WITH_INVENTORY_BY_TYPE, {
     variables: { type, limit },
     skip: !type || type === '',
     ...options,
@@ -418,15 +581,19 @@ export function useProductsWithInventoryByType(
 }
 
 // Hook: Use create product
-export function useCreateProduct(options?: MutationOptions) {
-  return useMutation(CREATE_PRODUCT, {
-    update(cache, { data: { createProduct } }) {
+export function useCreateProduct(
+  options?: MutationOptions<CreateProductResponse, { input: CreateProductInput }>
+) {
+  return useMutation<CreateProductResponse, { input: CreateProductInput }>(CREATE_PRODUCT, {
+    update(cache, { data }) {
+      if (!data?.createProduct) return;
+
       // Update cache after creation
       cache.modify({
         fields: {
           products(existingProducts = { edges: [] }) {
             const newProductRef = cache.writeFragment({
-              data: createProduct,
+              data: data.createProduct,
               fragment: gql`
                 fragment NewProduct on Product {
                   code
@@ -448,37 +615,55 @@ export function useCreateProduct(options?: MutationOptions) {
 }
 
 // Hook: Use update product
-export function useUpdateProduct(options?: MutationOptions) {
-  return useMutation(UPDATE_PRODUCT, {
-    update(cache, { data: { updateProduct } }) {
-      // Update cache after update
-      const id = cache.identify(updateProduct);
-      cache.modify({
-        id,
-        fields: {
-          updatedAt() {
-            return updateProduct.updatedAt;
-          },
-        },
-      });
-    },
-    ...options,
-  });
+export function useUpdateProduct(
+  options?: MutationOptions<UpdateProductResponse, { code: string; input: UpdateProductInput }>
+) {
+  return useMutation<UpdateProductResponse, { code: string; input: UpdateProductInput }>(
+    UPDATE_PRODUCT,
+    {
+      update(cache, { data }) {
+        if (!data?.updateProduct) return;
+
+        // Update cache after update - use cache.writeFragment to properly handle cache updates
+        cache.writeFragment({
+          id: cache.identify(data.updateProduct as any),
+          fragment: gql`
+            fragment UpdatedProduct on Product {
+              code
+              description
+              colour
+              type
+              standardQty
+              remark
+            }
+          `,
+          data: data.updateProduct,
+        });
+      },
+      ...options,
+    }
+  );
 }
 
 // Hook: Use deactivate product
-export function useDeactivateProduct(options?: MutationOptions) {
-  return useMutation(DEACTIVATE_PRODUCT, {
-    update(cache, { data: { deactivateProduct } }) {
-      // Update cache after deactivation
-      const id = cache.identify(deactivateProduct);
-      cache.modify({
-        id,
-        fields: {
-          isActive() {
-            return false;
-          },
-        },
+export function useDeactivateProduct(
+  options?: MutationOptions<DeactivateProductResponse, { code: string }>
+) {
+  return useMutation<DeactivateProductResponse, { code: string }>(DEACTIVATE_PRODUCT, {
+    update(cache, { data }) {
+      if (!data?.deactivateProduct) return;
+
+      // Update cache after deactivation - use cache.writeFragment to properly handle cache updates
+      cache.writeFragment({
+        id: cache.identify(data.deactivateProduct as any),
+        fragment: gql`
+          fragment DeactivatedProduct on Product {
+            code
+            description
+            type
+          }
+        `,
+        data: data.deactivateProduct,
       });
     },
     ...options,

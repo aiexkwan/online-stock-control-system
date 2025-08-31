@@ -130,7 +130,7 @@ export class MemoryCacheAdapter extends BaseCacheAdapter {
       this.evictLRU();
     }
 
-    this.cache.set(fullKey, item);
+    this.cache.set(fullKey, item as CacheItem<unknown>);
 
     const responseTime = Date.now() - startTime;
     this.updateMetrics(responseTime);
@@ -210,7 +210,7 @@ export class MemoryCacheAdapter extends BaseCacheAdapter {
     const regex = new RegExp(fullPattern.replace(/\*/g, '.*'));
     let deletedCount = 0;
 
-    for (const key of this.cache.keys()) {
+    for (const key of Array.from(this.cache.keys())) {
       if (regex.test(key)) {
         this.cache.delete(key);
         deletedCount++;
@@ -243,14 +243,14 @@ export class MemoryCacheAdapter extends BaseCacheAdapter {
   async getStats(): Promise<CacheStats> {
     const now = Date.now();
     let totalMemory = 0;
-    let totalItems = 0;
-    let expiredItems = 0;
+    let _totalItems = 0;
+    let _expiredItems = 0;
 
     // 計算內存使用和統計
-    for (const [key, item] of this.cache) {
-      totalItems++;
+    for (const [key, item] of Array.from(this.cache.entries())) {
+      _totalItems++;
       if (now > item.expireAt) {
-        expiredItems++;
+        _expiredItems++;
       }
 
       // 估算內存使用（簡單計算）
@@ -300,7 +300,7 @@ export class MemoryCacheAdapter extends BaseCacheAdapter {
     let oldestAccess = Date.now();
 
     // 找到最久未訪問的項目
-    for (const [key, item] of this.cache) {
+    for (const [key, item] of Array.from(this.cache.entries())) {
       if (item.lastAccess < oldestAccess) {
         oldestAccess = item.lastAccess;
         oldestKey = key;
@@ -340,7 +340,7 @@ export class MemoryCacheAdapter extends BaseCacheAdapter {
     const now = Date.now();
     let cleanedCount = 0;
 
-    for (const [key, item] of this.cache) {
+    for (const [key, item] of Array.from(this.cache.entries())) {
       if (now > item.expireAt) {
         this.cache.delete(key);
         cleanedCount++;

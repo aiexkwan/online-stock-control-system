@@ -149,7 +149,7 @@ export async function createGraphQLContext(req: Request) {
 
   try {
     // Import Supabase client for server
-    const { createClient } = await import('@/app/utils/supabase/server');
+    const { createClient } = await import('../../app/utils/supabase/server');
     const supabase = await createClient();
 
     // Try to get session from cookies first (SSR)

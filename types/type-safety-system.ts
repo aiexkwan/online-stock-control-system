@@ -1,6 +1,6 @@
 /**
  * 端到端類型安全驗證系統 (End-to-End Type Safety System)
- * 
+ *
  * 這個系統提供了從 Supabase 資料庫到 GraphQL API，再到 Next.js 前端的完整類型安全鏈路
  */
 
@@ -14,7 +14,7 @@ import type {
   Weight,
   Quantity,
   Price,
-  ISOTimestamp
+  ISOTimestamp,
 } from './branded-types';
 import {
   createUserId,
@@ -26,7 +26,7 @@ import {
   isUserId,
   isProductCode,
   isWeight,
-  isQuantity
+  isQuantity,
 } from './branded-types';
 
 // ============================================================================
@@ -150,7 +150,7 @@ export interface TypeSafeGraphQLResponse<TData> {
 /**
  * GraphQL變更操作的類型安全包裝器
  */
-export interface TypeSafeGraphQLMutation<TVariables = {}, TData = any> 
+export interface TypeSafeGraphQLMutation<TVariables = {}, TData = any>
   extends TypeSafeGraphQLQuery<TVariables, TData> {
   __mutationType: 'create' | 'update' | 'delete' | 'upsert';
 }
@@ -211,16 +211,20 @@ export interface TypeSafeGRN {
 export interface TypeSafeAPIResponse<TData> {
   success: boolean;
   data?: TData | undefined;
-  error?: {
-    code: string;
-    message: string;
-    details?: Record<string, any> | undefined;
-  } | undefined;
-  meta?: {
-    timestamp: ISOTimestamp;
-    requestId: string;
-    version: string;
-  } | undefined;
+  error?:
+    | {
+        code: string;
+        message: string;
+        details?: Record<string, any> | undefined;
+      }
+    | undefined;
+  meta?:
+    | {
+        timestamp: ISOTimestamp;
+        requestId: string;
+        version: string;
+      }
+    | undefined;
 }
 
 /**
@@ -266,16 +270,22 @@ export class TypeSafeInputValidator {
   /**
    * 驗證訂單創建輸入
    */
-  static validateCreateOrderInput(input: unknown): Omit<TypeSafeOrder, 'id' | 'createdAt' | 'updatedAt'> | never {
+  static validateCreateOrderInput(
+    input: unknown
+  ): Omit<TypeSafeOrder, 'id' | 'createdAt' | 'updatedAt'> | never {
     const schema = z.object({
       userId: UserIdSchema,
       status: z.enum(['pending', 'processing', 'completed', 'cancelled']),
-      items: z.array(z.object({
-        productId: ProductCodeSchema,
-        quantity: QuantitySchema,
-        unitPrice: PriceSchema,
-        totalPrice: PriceSchema,
-      })).min(1),
+      items: z
+        .array(
+          z.object({
+            productId: ProductCodeSchema,
+            quantity: QuantitySchema,
+            unitPrice: PriceSchema,
+            totalPrice: PriceSchema,
+          })
+        )
+        .min(1),
       totalAmount: PriceSchema,
     });
 
@@ -317,12 +327,12 @@ export class TypeSafeSupabaseQueryBuilder<T> {
    */
   async select(columns?: string[]): Promise<TypeSafeSupabaseResult<T[]>> {
     try {
-      const query = columns 
+      const query = columns
         ? this.supabaseClient.from(this.tableName).select(columns.join(','))
         : this.supabaseClient.from(this.tableName).select('*');
-      
+
       const { data, error, count } = await query;
-      
+
       return new TypeSafeSupabaseResult<T[]>(
         error ? null : data,
         error ? new Error(error.message) : null,
@@ -343,7 +353,7 @@ export class TypeSafeSupabaseQueryBuilder<T> {
         .insert(data)
         .select()
         .single();
-      
+
       return new TypeSafeSupabaseResult<T>(
         error ? null : insertedData,
         error ? new Error(error.message) : null
@@ -364,7 +374,7 @@ export class TypeSafeSupabaseQueryBuilder<T> {
         .eq('id', id)
         .select()
         .single();
-      
+
       return new TypeSafeSupabaseResult<T>(
         error ? null : updatedData,
         error ? new Error(error.message) : null
@@ -379,11 +389,8 @@ export class TypeSafeSupabaseQueryBuilder<T> {
    */
   async delete(id: string): Promise<TypeSafeSupabaseResult<boolean>> {
     try {
-      const { error } = await this.supabaseClient
-        .from(this.tableName)
-        .delete()
-        .eq('id', id);
-      
+      const { error } = await this.supabaseClient.from(this.tableName).delete().eq('id', id);
+
       return new TypeSafeSupabaseResult<boolean>(
         error ? null : true,
         error ? new Error(error.message) : null
@@ -476,7 +483,10 @@ export class TypeSafeError extends Error {
 /**
  * 安全地解析JSON
  */
-export const safeJsonParse = <T>(json: string, schema: z.ZodSchema<T>): TypeSafeSupabaseResult<T> => {
+export const safeJsonParse = <T>(
+  json: string,
+  schema: z.ZodSchema<T>
+): TypeSafeSupabaseResult<T> => {
   try {
     const parsed = JSON.parse(json);
     const validated = schema.parse(parsed);

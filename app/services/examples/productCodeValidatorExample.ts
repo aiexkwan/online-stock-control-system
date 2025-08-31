@@ -8,7 +8,7 @@
  */
 
 import ProductCodeValidator from '@/app/services/productCodeValidator';
-import type { ValidationResult } from '@/app/services/productCodeValidator';
+import type { ValidationResult as _ValidationResult } from '@/app/services/productCodeValidator';
 import { createLogger } from '@/lib/logger';
 
 const exampleLogger = createLogger('ProductCodeValidatorExample');
@@ -244,7 +244,7 @@ export async function errorHandlingExample(): Promise<void> {
       },
       {
         name: '無效輸入類型',
-        test: () => ProductCodeValidator.validateAndEnrichCodes(null as any), // eslint-disable-line @typescript-eslint/no-explicit-any -- Testing invalid input types intentionally
+        test: () => ProductCodeValidator.validateAndEnrichCodes(null as any), // Testing invalid input types intentionally
       },
     ];
 
@@ -402,7 +402,7 @@ export async function runAllExamples(): Promise<void> {
   console.log('='.repeat(80));
 }
 
-// 如果直接執行此檔案
-if (require.main === module) {
+// 如果直接執行此檔案 (Node.js 環境)
+if (typeof require !== 'undefined' && require.main === module) {
   runAllExamples().catch(console.error);
 }

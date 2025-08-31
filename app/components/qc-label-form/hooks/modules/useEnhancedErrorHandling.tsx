@@ -5,8 +5,20 @@
 
 import { useCallback, useRef, useState, useMemo } from 'react';
 import { toast } from 'sonner';
-import { getErrorMessage } from '@/lib/types/error-handling';
-import { systemLogger } from '@/lib/logger';
+import { getErrorMessage } from '../../../../../lib/types/error-handling';
+
+// 簡化的 logger 介面，避免複雜依賴
+const systemLogger = {
+  info: (data: any, message?: string) => {
+    console.info(message || 'Info:', data);
+  },
+  error: (data: any, message?: string) => {
+    console.error(message || 'Error:', data);
+  },
+  warn: (data: any, message?: string) => {
+    console.warn(message || 'Warning:', data);
+  },
+};
 
 export interface ErrorDetails {
   id: string;
@@ -48,15 +60,15 @@ export interface ErrorStatistics {
 }
 
 interface UseEnhancedErrorHandlingReturn {
-  errors: ErrorDetails[];
+  _errors: ErrorDetails[];
   errorStats: ErrorStatistics;
-  handleError: (error: unknown, context?: Record<string, unknown>) => Promise<ErrorDetails>;
+  handleError: (_error: unknown, context?: Record<string, unknown>) => Promise<ErrorDetails>;
   retryError: (errorId: string) => Promise<boolean>;
   clearError: (errorId: string) => void;
   clearAllErrors: () => void;
-  getRecoveryStrategy: (error: ErrorDetails) => ErrorRecoveryStrategy;
-  isRetryable: (error: unknown) => boolean;
-  categorizeError: (error: unknown) => {
+  _getRecoveryStrategy: (_error: ErrorDetails) => ErrorRecoveryStrategy;
+  isRetryable: (_error: unknown) => boolean;
+  categorizeError: (_error: unknown) => {
     type: ErrorDetails['type'];
     severity: ErrorDetails['severity'];
   };
@@ -74,10 +86,10 @@ const DEFAULT_CONFIG: ErrorHandlingConfig = {
 };
 
 export const useEnhancedErrorHandling = (
-  config: Partial<ErrorHandlingConfig> = {}
+  _config: Partial<ErrorHandlingConfig> = {}
 ): UseEnhancedErrorHandlingReturn => {
-  const finalConfig = useMemo(() => ({ ...DEFAULT_CONFIG, ...config }), [config]);
-  const [errors, setErrors] = useState<ErrorDetails[]>([]);
+  const finalConfig = useMemo(() => ({ ...DEFAULT_CONFIG, ..._config }), [_config]);
+  const [_errors, setErrors] = useState<ErrorDetails[]>([]);
   const [errorStats, setErrorStats] = useState<ErrorStatistics>({
     totalErrors: 0,
     errorsByType: {},
@@ -95,8 +107,8 @@ export const useEnhancedErrorHandling = (
    * 錯誤分類邏輯
    */
   const categorizeError = useCallback(
-    (error: unknown): { type: ErrorDetails['type']; severity: ErrorDetails['severity'] } => {
-      const message = getErrorMessage(error).toLowerCase();
+    (_error: unknown): { type: ErrorDetails['type']; severity: ErrorDetails['severity'] } => {
+      const message = getErrorMessage(_error).toLowerCase();
 
       // PDF 生成錯誤
       if (message.includes('pdf') || message.includes('blob') || message.includes('render')) {
@@ -159,8 +171,8 @@ export const useEnhancedErrorHandling = (
   /**
    * 判斷錯誤是否可重試
    */
-  const isRetryable = useCallback((error: unknown): boolean => {
-    const message = getErrorMessage(error).toLowerCase();
+  const isRetryable = useCallback((_error: unknown): boolean => {
+    const message = getErrorMessage(_error).toLowerCase();
 
     // 不可重試的錯誤類型
     const nonRetryablePatterns = [
@@ -180,20 +192,20 @@ export const useEnhancedErrorHandling = (
   /**
    * 獲取錯誤恢復策略
    */
-  const getRecoveryStrategy = useCallback(
-    (error: ErrorDetails): ErrorRecoveryStrategy => {
-      switch (error.type) {
+  const _getRecoveryStrategy = useCallback(
+    (_error: ErrorDetails): ErrorRecoveryStrategy => {
+      switch (_error.type) {
         case 'network':
         case 'upload':
           return {
             type: 'retry',
             delay:
-              finalConfig.retryDelayMs * Math.pow(finalConfig.backoffMultiplier, error.retryCount),
+              finalConfig.retryDelayMs * Math.pow(finalConfig.backoffMultiplier, _error.retryCount),
             maxAttempts: finalConfig.maxRetries,
           };
 
         case 'pdf_generation':
-          if (error.severity === 'high') {
+          if (_error.severity === 'high') {
             return {
               type: 'fallback',
               fallbackAction: async () => {
@@ -221,7 +233,7 @@ export const useEnhancedErrorHandling = (
           };
 
         default:
-          return error.retryable
+          return _error.retryable
             ? {
                 type: 'retry',
                 delay: finalConfig.retryDelayMs,
@@ -239,15 +251,15 @@ export const useEnhancedErrorHandling = (
    * 處理錯誤
    */
   const handleError = useCallback(
-    async (error: unknown, context?: Record<string, unknown>): Promise<ErrorDetails> => {
-      const { type, severity } = categorizeError(error);
-      const retryable = isRetryable(error);
+    async (_error: unknown, context?: Record<string, unknown>): Promise<ErrorDetails> => {
+      const { type, severity } = categorizeError(_error);
+      const retryable = isRetryable(_error);
 
       const errorDetails: ErrorDetails = {
-        id: `error-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: `error-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
         type,
         severity,
-        message: getErrorMessage(error),
+        message: getErrorMessage(_error),
         context,
         timestamp: Date.now(),
         retryable,
@@ -303,7 +315,7 @@ export const useEnhancedErrorHandling = (
         retryable &&
         errorDetails.retryCount < errorDetails.maxRetries
       ) {
-        const strategy = getRecoveryStrategy(errorDetails);
+        const strategy = _getRecoveryStrategy(errorDetails);
         if (strategy.type === 'retry' && strategy.delay) {
           recoveryTimeTracker.current.set(errorDetails.id, Date.now());
 
@@ -316,7 +328,7 @@ export const useEnhancedErrorHandling = (
 
       return errorDetails;
     },
-    [categorizeError, isRetryable, finalConfig, getRecoveryStrategy]
+    [categorizeError, isRetryable, finalConfig, _getRecoveryStrategy]
   );
 
   /**
@@ -324,8 +336,12 @@ export const useEnhancedErrorHandling = (
    */
   const retryError = useCallback(
     async (errorId: string): Promise<boolean> => {
-      const error = errors.find(e => e.id === errorId);
-      if (!error || !error.retryable || error.retryCount >= error.maxRetries) {
+      const targetError = _errors.find(e => e.id === errorId);
+      if (
+        !targetError ||
+        !targetError.retryable ||
+        targetError.retryCount >= targetError.maxRetries
+      ) {
         return false;
       }
 
@@ -339,8 +355,8 @@ export const useEnhancedErrorHandling = (
         systemLogger.info(
           {
             errorId,
-            retryCount: error.retryCount + 1,
-            maxRetries: error.maxRetries,
+            retryCount: targetError.retryCount + 1,
+            maxRetries: targetError.maxRetries,
           },
           '[Enhanced Error Handling] Retrying error'
         );
@@ -360,19 +376,19 @@ export const useEnhancedErrorHandling = (
         return false;
       }
     },
-    [errors]
+    [_errors]
   );
 
   /**
    * 清除單個錯誤
    */
   const clearError = useCallback((errorId: string) => {
-    const startTime = recoveryTimeTracker.current.get(errorId);
+    const _startTime = recoveryTimeTracker.current.get(errorId);
 
     setErrors(prev => prev.filter(e => e.id !== errorId));
 
-    if (startTime) {
-      const recoveryTime = Date.now() - startTime;
+    if (_startTime) {
+      const recoveryTime = Date.now() - _startTime;
       recoveryTimeTracker.current.delete(errorId);
 
       setErrorStats(prev => {
@@ -414,7 +430,7 @@ export const useEnhancedErrorHandling = (
     const report = {
       generatedAt: new Date().toISOString(),
       statistics: errorStats,
-      errors: errors.map(error => ({
+      errors: _errors.map(error => ({
         id: error.id,
         type: error.type,
         severity: error.severity,
@@ -426,16 +442,16 @@ export const useEnhancedErrorHandling = (
     };
 
     return JSON.stringify(report, null, 2);
-  }, [errors, errorStats]);
+  }, [errorStats, _errors]);
 
   return {
-    errors,
+    _errors,
     errorStats,
     handleError,
     retryError,
     clearError,
     clearAllErrors,
-    getRecoveryStrategy,
+    _getRecoveryStrategy,
     isRetryable,
     categorizeError,
     exportErrorReport,

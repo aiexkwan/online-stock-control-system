@@ -8,6 +8,8 @@ import { makeExecutableSchema } from '@graphql-tools/schema';
 import { resolvers } from './resolvers';
 import { createDataLoaderContext } from './dataloaders/base.dataloader';
 import { typeDefs } from './schema';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
+import type { NextRequest } from 'next/server';
 
 // Create executable schema
 const schema = makeExecutableSchema({
@@ -85,15 +87,15 @@ export async function getApolloServer() {
 }
 
 // Context creation function
-export async function createGraphQLContext(req: Request) {
+export async function createGraphQLContext(req: NextRequest) {
   // Extract user from request headers or cookies
-  let user = null;
-  let session = null;
+  let user: any = null;
+  let session: any = null;
 
   try {
-    // Import Supabase client for server
-    const { createClient } = await import('@/app/utils/supabase/server');
-    const supabase = await createClient();
+    // Import Supabase client for server - using relative path to ensure compatibility
+    const supabaseModule = await import('../../app/utils/supabase/server');
+    const supabase = await supabaseModule.createClient();
 
     // Try to get session from cookies first (SSR)
     const {
@@ -110,8 +112,8 @@ export async function createGraphQLContext(req: Request) {
       if (!userError && authUser) {
         user = {
           id: authUser.id,
-          email: authUser.email,
-          role: authUser.role,
+          email: authUser.email || null,
+          role: (authUser as any).role || 'user', // Supabase User doesn't have role by default
           metadata: authUser.user_metadata,
         };
         session = cookieSession;
@@ -133,8 +135,8 @@ export async function createGraphQLContext(req: Request) {
         if (!error && authUser) {
           user = {
             id: authUser.id,
-            email: authUser.email,
-            role: authUser.role,
+            email: authUser.email || null,
+            role: (authUser as any).role || 'user', // Supabase User doesn't have role by default
             metadata: authUser.user_metadata,
           };
           session = { access_token: token };

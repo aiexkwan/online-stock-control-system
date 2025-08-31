@@ -23,7 +23,7 @@ export const dialogPresets = {
     animation: 'scale',
     showAnimatedBorder: true,
     showCloseButton: false,
-  } as DialogPreset,
+  } as const satisfies DialogPreset,
 
   // 成功通知
   success: {
@@ -33,7 +33,7 @@ export const dialogPresets = {
     showAnimatedBorder: true,
     showCloseButton: false,
     severity: 'success',
-  } as DialogPreset,
+  } as const satisfies DialogPreset,
 
   // 錯誤通知
   error: {
@@ -43,7 +43,7 @@ export const dialogPresets = {
     showAnimatedBorder: true,
     showCloseButton: false,
     severity: 'error',
-  } as DialogPreset,
+  } as const satisfies DialogPreset,
 
   // 警告通知
   warning: {
@@ -53,7 +53,7 @@ export const dialogPresets = {
     showAnimatedBorder: true,
     showCloseButton: false,
     severity: 'warning',
-  } as DialogPreset,
+  } as const satisfies DialogPreset,
 
   // 確認對話框
   confirmation: {
@@ -61,7 +61,7 @@ export const dialogPresets = {
     size: 'sm',
     animation: 'fade',
     showCloseButton: false,
-  } as DialogPreset,
+  } as const satisfies DialogPreset,
 
   // 表單對話框
   form: {
@@ -69,7 +69,7 @@ export const dialogPresets = {
     size: 'md',
     animation: 'slide',
     mobileFullscreen: true,
-  } as DialogPreset,
+  } as const satisfies DialogPreset,
 
   // 大型表單
   largeForm: {
@@ -77,7 +77,7 @@ export const dialogPresets = {
     size: 'lg',
     animation: 'slide',
     mobileFullscreen: true,
-  } as DialogPreset,
+  } as const satisfies DialogPreset,
 
   // 報表查看
   report: {
@@ -85,7 +85,7 @@ export const dialogPresets = {
     size: 'xl',
     animation: 'fade',
     mobileFullscreen: true,
-  } as DialogPreset,
+  } as const satisfies DialogPreset,
 
   // 全屏模式
   fullscreen: {
@@ -93,7 +93,7 @@ export const dialogPresets = {
     size: 'full',
     animation: 'fade',
     showCloseButton: true,
-  } as DialogPreset,
+  } as const satisfies DialogPreset,
 
   // 移動端優化
   mobile: {
@@ -101,20 +101,20 @@ export const dialogPresets = {
     size: 'md',
     animation: 'slide',
     mobileFullscreen: true,
-  } as DialogPreset,
+  } as const satisfies DialogPreset,
 } as const;
 
 // 輔助函數：合併預設配置
-export const mergeDialogProps = (
+export const mergeDialogProps = <T extends Partial<DialogProps & DialogContentProps>>(
   preset: keyof typeof dialogPresets | DialogPreset,
-  props?: Partial<DialogProps & DialogContentProps>
-): DialogProps & DialogContentProps => {
+  props?: T
+): DialogPreset & T => {
   const presetConfig = typeof preset === 'string' ? dialogPresets[preset] : preset;
 
   return {
     ...presetConfig,
     ...props,
-  };
+  } as DialogPreset & T;
 };
 
 // 類型定義

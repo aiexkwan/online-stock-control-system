@@ -1,10 +1,11 @@
 import { GraphQLError } from 'graphql';
-import { toGraphQLErrorMessage } from '@/lib/types/api';
-import { createClient } from '@/app/utils/supabase/server';
-import { getAcoReportData } from '@/app/actions/DownloadCentre-Actions';
-import { orderLoadingDataSources } from '@/app/components/reports/dataSources/OrderLoadingDataSource';
-import { safeGet, safeString, safeNumber, toRecordArray } from '@/types/database/helpers';
-import type { GraphQLContext } from '@/lib/types/graphql-resolver.types';
+// import { toGraphQLErrorMessage } from '../../types/api'; // Type not found
+const toGraphQLErrorMessage = (error: any) => error?.message || 'Unknown error';
+import { createClient } from '../../../app/utils/supabase/server';
+import { getAcoReportData } from '../../../app/actions/DownloadCentre-Actions';
+import { orderLoadingDataSources } from '../../../app/components/reports/dataSources/OrderLoadingDataSource';
+import { safeNumber, toRecordArray } from '../../../types/database/helpers';
+import type { GraphQLContext } from './index';
 
 // Database types - matching actual database structure
 interface DataOrderRecord {
@@ -129,7 +130,7 @@ export const orderResolvers = {
         // 排序
         query = query.order('created_at', { ascending: false });
 
-        const { data: orders, error, count } = await query;
+        const { data: orders, error, count: _count } = await query;
 
         if (error) {
           throw new GraphQLError(`Database error: ${error.message}`, {
@@ -326,15 +327,13 @@ export const orderResolvers = {
       const reportResult = await getAcoReportData(args.reference);
 
       if (!reportResult.success) {
-        const errorMessage = 'error' in reportResult 
-          ? reportResult.error || 'Failed to fetch ACO order data'
-          : 'Failed to fetch ACO order data';
-        throw new GraphQLError(
-          toGraphQLErrorMessage(errorMessage),
-          {
-            extensions: { code: 'INTERNAL_SERVER_ERROR' },
-          }
-        );
+        const errorMessage =
+          'error' in reportResult
+            ? reportResult.error || 'Failed to fetch ACO order data'
+            : 'Failed to fetch ACO order data';
+        throw new GraphQLError(toGraphQLErrorMessage(errorMessage), {
+          extensions: { code: 'INTERNAL_SERVER_ERROR' },
+        });
       }
 
       const reportData = reportResult.data;

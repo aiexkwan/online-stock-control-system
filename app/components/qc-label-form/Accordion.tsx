@@ -66,10 +66,10 @@ export const AccordionItem: React.FC<AccordionItemProps> = React.memo(
     disabled = false,
     badge,
     icon,
-    className = '',
+    className: _className = '',
   }) => {
     const context = React.useContext(AccordionContext);
-    const [itemId] = useState(() => Math.random().toString(36).substr(2, 9));
+    const [itemId] = useState(() => Math.random().toString(36).substring(2, 11));
 
     // Initialize default open state
     React.useEffect(() => {
@@ -92,14 +92,14 @@ export const AccordionItem: React.FC<AccordionItemProps> = React.memo(
 
     return (
       <div
-        className={`overflow-hidden rounded-lg border border-gray-700 ${disabled ? 'opacity-50' : ''} ${className} `}
+        className={`overflow-hidden rounded-lg border border-gray-700 ${disabled ? 'opacity-50' : ''} ${_className}`}
       >
         {/* Header */}
         <button
           type='button'
           onClick={handleToggle}
           disabled={disabled}
-          className={`hover:bg-gray-750 flex w-full items-center justify-between bg-gray-800 px-4 py-3 text-left transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'} `}
+          className={`hover:bg-gray-750 flex w-full items-center justify-between bg-gray-800 px-4 py-3 text-left transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}`}
         >
           <div className='flex min-w-0 flex-1 items-center space-x-3'>
             {icon && <div className='flex-shrink-0 text-gray-400'>{icon}</div>}
@@ -128,7 +128,7 @@ export const AccordionItem: React.FC<AccordionItemProps> = React.memo(
 
         {/* Content */}
         <div
-          className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'} `}
+          className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? 'max-h-screen opacity-100' : 'max-h-0 opacity-0'}`}
         >
           <div className='bg-gray-850 border-t border-gray-700 px-4 py-4'>{children}</div>
         </div>
@@ -149,6 +149,11 @@ export const AccordionGroup: React.FC<{
     </div>
   );
 });
+
+// Set display names
+Accordion.displayName = 'Accordion';
+AccordionItem.displayName = 'AccordionItem';
+AccordionGroup.displayName = 'AccordionGroup';
 
 // Utility hook for controlling accordion state externally
 export const useAccordionControl = () => {
@@ -195,9 +200,5 @@ export const useAccordionControl = () => {
     closeAll,
   };
 };
-
-Accordion.displayName = 'Accordion';
-AccordionItem.displayName = 'AccordionItem';
-AccordionGroup.displayName = 'AccordionGroup';
 
 export default Accordion;

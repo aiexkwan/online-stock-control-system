@@ -7,7 +7,7 @@ import PasswordValidator from './PasswordValidator';
 
 interface ChangePasswordFormProps {
   onSuccess: () => void;
-  onError: (error: string) => void;
+  onError: (_error: string) => void;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
 }

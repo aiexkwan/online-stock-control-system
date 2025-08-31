@@ -3,12 +3,7 @@
 import React, { useMemo } from 'react';
 import { ClipboardDocumentListIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 import { DataCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
-import {
-  getCardTheme,
-  cardTextStyles,
-  cardStatusColors,
-  // cardContainerStyles, // Removed - not used
-} from '@/lib/card-system/theme';
+import { getCardTheme, cardTextStyles, cardStatusColors } from '@/lib/card-system/theme';
 import { cn } from '@/lib/utils';
 import { useStockCount } from '../hooks/useStockCount';
 import StockCountForm from './components/StockCountForm';

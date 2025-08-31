@@ -9,7 +9,7 @@ import React, { forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 import { StarfieldBackground } from '@/app/components/StarfieldBackground';
 import {
-  LayoutVariant,
+  LayoutVariant as _LayoutVariant,
   MaxWidthSize,
   SpacingSize,
   LegacyResponsiveLayoutProps,
@@ -74,7 +74,7 @@ export const UniversalContainer = forwardRef<HTMLDivElement, UniversalContainerP
       maxWidth,
       responsive = true,
       className = '',
-      legacy = false,
+      legacy: _legacy = false,
     },
     ref
   ) => {

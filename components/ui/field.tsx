@@ -5,7 +5,7 @@ import {
   Label as AriaLabel,
   Group,
   FieldError as AriaFieldError,
-  Text,
+  Text as _Text,
 } from 'react-aria-components';
 import { cn } from '@/lib/utils';
 
@@ -54,7 +54,7 @@ const FieldError = React.forwardRef<
 
   return (
     <AriaFieldError ref={ref} className={cn('text-destructive text-sm', className)} {...props}>
-      {children || ((validation: { validationErrors: string[] }) => validation.validationErrors)}
+      {children || ((validation: any) => validation?.validationErrors || [])}
     </AriaFieldError>
   );
 });

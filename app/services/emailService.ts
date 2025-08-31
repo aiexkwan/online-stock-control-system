@@ -13,15 +13,17 @@ interface EmailRequest {
   cc?: string[];
   from?: string;
   pdfAttachment?: {
-    filename: string;
+    _filename: string;
     content: string; // base64 encoded
   };
 }
 
-const RESEND_API_KEY = process.env.RESEND_API_KEY;
+import { env } from '@/lib/schemas/env-validation';
+
+const RESEND_API_KEY = env.getVar('RESEND_API_KEY');
 
 export async function sendOrderCreatedEmail(emailRequest: EmailRequest) {
-  process.env.NODE_ENV !== 'production' &&
+  env.isDev() &&
     console.log(
       '=== 📧 Internal Email Service Started ===',
       '🔍 [emailService] Bypassing all middleware and routes'
@@ -44,7 +46,7 @@ export async function sendOrderCreatedEmail(emailRequest: EmailRequest) {
   const fromEmail = from || 'orders@pennine.cc';
 
   // 在開發環境下添加警告
-  if (process.env.NODE_ENV !== 'production') {
+  if (env.isDev()) {
     console.warn(
       '⚠️  [emailService] Make sure the domain "pennine.cc" is verified in Resend dashboard'
     );
@@ -90,7 +92,7 @@ export async function sendOrderCreatedEmail(emailRequest: EmailRequest) {
     ];
   }
 
-  process.env.NODE_ENV !== 'production' &&
+  env.isDev() &&
     console.log('📧 Email details:', {
       from: fromEmail,
       to: toEmails,
@@ -100,7 +102,7 @@ export async function sendOrderCreatedEmail(emailRequest: EmailRequest) {
     });
 
   // 生成郵件內容
-  const orderRefs = [...new Set(orderData.map(item => item.order_ref))];
+  const orderRefs = Array.from(new Set(orderData.map(item => item.order_ref)));
 
   const orderSummaryHtml = orderData
     .map(
@@ -122,15 +124,15 @@ export async function sendOrderCreatedEmail(emailRequest: EmailRequest) {
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; background-color: #ffffff;">
         <div style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; padding: 30px; text-align: center;">
-          <h1 style="margin: 0; font-size: 28px; font-weight: bold;">New Order Created</h1>
-          <p style="margin: 10px 0 0 0; font-size: 16px; opacity: 0.9;">
+          <h1 style="margin: 0; font-_size: 28px; font-weight: bold;">New Order Created</h1>
+          <p style="margin: 10px 0 0 0; font-_size: 16px; opacity: 0.9;">
             Order Reference${orderRefs.length > 1 ? 's' : ''}: <strong>${orderRefs.join(', ')}</strong>
           </p>
         </div>
 
         <div style="padding: 30px;">
 
-          <h3 style="color: #333; margin: 25px 0 15px 0; font-size: 18px; border-bottom: 2px solid #007bff; padding-bottom: 8px;">
+          <h3 style="color: #333; margin: 25px 0 15px 0; font-_size: 18px; border-bottom: 2px solid #007bff; padding-bottom: 8px;">
             Order Details
           </h3>
 
@@ -138,9 +140,9 @@ export async function sendOrderCreatedEmail(emailRequest: EmailRequest) {
             <table style="width: 100%; border-collapse: collapse; background-color: white;">
               <thead>
                 <tr style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white;">
-                  <th style="padding: 15px; text-align: left; font-weight: bold; font-size: 14px;">Product Code</th>
-                  <th style="padding: 15px; text-align: left; font-weight: bold; font-size: 14px;">Description</th>
-                  <th style="padding: 15px; text-align: center; font-weight: bold; font-size: 14px;">Quantity</th>
+                  <th style="padding: 15px; text-align: left; font-weight: bold; font-_size: 14px;">Product Code</th>
+                  <th style="padding: 15px; text-align: left; font-weight: bold; font-_size: 14px;">Description</th>
+                  <th style="padding: 15px; text-align: center; font-weight: bold; font-_size: 14px;">Quantity</th>
                 </tr>
               </thead>
               <tbody>
@@ -152,7 +154,7 @@ export async function sendOrderCreatedEmail(emailRequest: EmailRequest) {
         </div>
 
         <div style="background-color: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #dee2e6;">
-          <p style="color: #999; font-size: 12px; margin: 0;">
+          <p style="color: #999; font-_size: 12px; margin: 0;">
             This is an automated notification from the Pennine Stock Control System<br>
             Generated on ${new Date().toLocaleString('en-GB', {
               timeZone: 'Europe/London',
@@ -182,20 +184,18 @@ This is an automated notification from the Pennine Stock Control System.
   };
 
   // 添加 PDF 附件（如果提供）
-  if (pdfAttachment && pdfAttachment.filename && pdfAttachment.content) {
+  if (pdfAttachment && pdfAttachment._filename && pdfAttachment.content) {
     emailData.attachments = [
       {
-        filename: pdfAttachment.filename,
+        filename: pdfAttachment._filename,
         content: pdfAttachment.content,
         type: 'application/pdf',
       },
     ];
-    process.env.NODE_ENV !== 'production' &&
-      console.log('📎 PDF attachment added:', pdfAttachment.filename);
+    env.isDev() && console.log('📎 PDF attachment added:', pdfAttachment._filename);
   }
 
-  process.env.NODE_ENV !== 'production' &&
-    console.log('📤 Sending email directly to Resend API...');
+  env.isDev() && console.log('📤 Sending email directly to Resend API...');
 
   // 發送郵件使用 Resend API
   const response = await fetch('https://api.resend.com/emails', {
@@ -207,43 +207,40 @@ This is an automated notification from the Pennine Stock Control System.
     body: JSON.stringify(emailData),
   });
 
-  process.env.NODE_ENV !== 'production' &&
-    console.log('📨 Resend API response status:', response.status);
+  env.isDev() && console.log('📨 Resend API response status:', response.status);
 
-  let result;
+  let _result;
   try {
-    result = await response.json();
-    process.env.NODE_ENV !== 'production' && console.log('📨 Resend API response body:', result);
+    _result = await response.json();
+    env.isDev() && console.log('📨 Resend API response body:', _result);
   } catch (jsonError) {
     console.error('❌ Failed to parse Resend API response as JSON:', jsonError);
     const textResult = await response.text();
-    process.env.NODE_ENV !== 'production' &&
-      console.log('📨 Resend API response as text:', textResult);
+    env.isDev() && console.log('📨 Resend API response as text:', textResult);
     throw new Error(`Failed to parse email service response: ${textResult}`);
   }
 
   if (!response.ok) {
-    console.error('❌ Resend API error:', {
+    console.error('❌ Resend API _error:', {
       status: response.status,
       statusText: response.statusText,
-      result,
+      _result,
     });
     throw new Error(
       `Failed to send email via Resend API: ${response.status} ${response.statusText}`
     );
   }
 
-  process.env.NODE_ENV !== 'production' &&
-    console.log('✅ Email sent successfully via internal service:', result);
+  env.isDev() && console.log('✅ Email sent successfully via internal service:', _result);
 
   return {
     success: true,
     message: `Order created email sent for ${orderRefs.length} order(s)`,
-    emailId: result.id || result.data?.id || 'unknown',
+    emailId: _result.id || _result.data?.id || 'unknown',
     recipients: {
       to: toEmails,
       cc: ccEmails,
     },
-    resendResponse: result,
+    resendResponse: _result,
   };
 }

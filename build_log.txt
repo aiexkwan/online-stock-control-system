@@ -1,0 +1,57 @@
+
+> pennine-stock@0.1.0 build
+> next build
+
+   ▲ Next.js 15.4.6
+   - Environments: .env
+   - Experiments (use with caution):
+     · fetchCacheKeyPrefix: "pennine-wms"
+     · webVitalsAttribution
+     · optimizePackageImports
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 6.0s
+   Linting and checking validity of types ...
+
+Failed to compile.
+
+./app/(app)/admin/components/UserIdVerificationDialog.tsx
+104:5  Warning: React Hook useCallback has a missing dependency: '_error'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/(app)/admin/hooks/useAdminQcLabelBusiness.tsx
+140:5  Warning: React Hook useCallback has a missing dependency: 'supabase'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+466:5  Warning: React Hook useCallback has a missing dependency: 'supabase'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/(app)/admin/hooks/useDataUpdate.ts
+200:5  Warning: React Hook useCallback has a missing dependency: 'config.fields'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+277:5  Warning: React Hook useCallback has missing dependencies: 'config.primaryKey' and 'supabase'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+319:6  Warning: React Hook useCallback has missing dependencies: 'supabase' and 'validateForm'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+370:6  Warning: React Hook useCallback has missing dependencies: 'config.primaryKey', 'supabase', and 'validateForm'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/(app)/admin/hooks/useUploadManager.ts
+180:6  Warning: React Hook useCallback has a missing dependency: 'supabase'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/components/shared/validation/SupplierInput.tsx
+133:5  Warning: React Hook useCallback has a missing dependency: 'supabase'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+182:5  Warning: React Hook useCallback has a missing dependency: 'supabase'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/hooks/useStockTransfer.ts
+204:5  Warning: React Hook useCallback has a missing dependency: 'supabase'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/hooks/useZodForm.ts
+181:31  Warning: React Hook useCallback has a missing dependency: 'errors'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+199:6  Warning: React Hook useCallback has a missing dependency: 'validateForm'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./lib/api/inventory/StockLevelsAPI.ts
+356:6  Warning: React Hook useEffect has missing dependencies: 'config' and 'params'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./lib/error-handling/components/ErrorFallback.tsx
+81:61  Warning: React Hook useMemo has a missing dependency: 'severity'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+./lib/error-handling/index.tsx
+225:10  Error: Do not pass children as props. Instead, pass them as additional arguments to React.createElement.  react/no-children-prop
+
+./lib/graphql/apollo-provider-dynamic.tsx
+82:6  Warning: React Hook useEffect has a missing dependency: 'supabase.auth'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules

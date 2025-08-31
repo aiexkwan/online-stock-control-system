@@ -27,7 +27,7 @@ interface RightSideCardWrapperProps extends EnhancedGlassmorphicCardProps {
  * 專為右側佈局設計的卡片包裝器
  */
 export const RightSideCardWrapper: React.FC<RightSideCardWrapperProps> = ({
-  autoSuppressTitle = true,
+  autoSuppressTitle: _autoSuppressTitle = true,
   children,
   ...props
 }) => {

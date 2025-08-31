@@ -17,16 +17,16 @@ interface SanitizedError {
 
 export class ErrorSanitizer {
   // 敏感信息模式列表
-  private static sensitivePatterns = [
+  private static readonly sensitivePatterns: readonly RegExp[] = [
     /supabase\.(co|io)/gi, // Supabase URLs
-    /[a-f0-9]{32,}/gi, // API Keys/Tokens
+    /[a-f0-9]{32}/gi, // API Keys/Tokens (32 hex chars)
     /Bearer\s+[A-Za-z0-9\-._~+/]+=*/gi, // Bearer tokens
-    /password['":\s]+[^,}\s]+/gi, // Passwords
-    /secret['":\s]+[^,}\s]+/gi, // Secrets
-    /key['":\s]+[^,}\s]+/gi, // Keys
-    /email['":\s]+[^,}\s]+@[^,}\s]+/gi, // Email addresses
+    /password['":\s]+[^ }\s]+/gi, // Passwords
+    /secret['":\s]+[^ }\s]+/gi, // Secrets
+    /key['":\s]+[^ }\s]+/gi, // Keys
+    /email['":\s]+[^ }\s]+@[^ }\s]+/gi, // Email addresses
     /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, // Credit card numbers
-  ];
+  ] as const;
 
   /**
    * 清理字符串中的敏感信息
@@ -46,11 +46,11 @@ export class ErrorSanitizer {
    */
   static sanitize(error: Error | AppError | unknown): SanitizedError {
     const timestamp = new Date().toISOString();
-    const requestId = `err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const requestId = `err_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
 
     if (process.env.NODE_ENV === 'production') {
       // 生產環境：只返回安全的錯誤信息
-      const safeErrorMessages: Record<string, string> = {
+      const safeErrorMessages: Readonly<Record<string, string>> = {
         // 認證錯誤
         'Invalid login credentials': 'Authentication failed. Please check your credentials.',
         'User not found': 'Authentication failed. Please check your credentials.',
@@ -71,7 +71,7 @@ export class ErrorSanitizer {
         'Database error': 'A system error occurred. Please try again later.',
         'Network error': 'Connection error. Please check your internet connection.',
         'Internal server error': 'An unexpected error occurred. Please try again later.',
-      };
+      } as const;
 
       // 檢查是否有匹配的安全錯誤信息
       const errorLike = error as { message?: string; code?: string };
@@ -128,7 +128,14 @@ export class ErrorSanitizer {
     const sanitized: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj)) {
       // 跳過可能包含敏感信息的字段
-      const sensitiveKeys = ['password', 'secret', 'token', 'key', 'apikey', 'authorization'];
+      const sensitiveKeys: readonly string[] = [
+        'password',
+        'secret',
+        'token',
+        'key',
+        'apikey',
+        'authorization',
+      ] as const;
       if (sensitiveKeys.some(k => key.toLowerCase().includes(k))) {
         sanitized[key] = '[REDACTED]';
       } else {
@@ -213,10 +220,15 @@ export class ErrorSanitizer {
   static middleware() {
     return (
       err: Error | AppError | unknown,
-      req: { method?: string; url?: string; ip?: string; get?: (header: string) => string },
+      req: {
+        method?: string;
+        url?: string;
+        ip?: string;
+        get?: (header: string) => string | undefined;
+      },
       res: { status: (code: number) => { json: (data: unknown) => void } },
       next: (error?: unknown) => void
-    ) => {
+    ): void => {
       const sanitized = this.sanitize(err);
 
       // 記錄錯誤

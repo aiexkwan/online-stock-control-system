@@ -7,7 +7,12 @@
 
 import React, { forwardRef } from 'react';
 import { cn } from '@/lib/utils';
-import { ResponsiveColumns, GridConfig, SpacingSize, LegacyResponsiveGridProps } from './types';
+import {
+  ResponsiveColumns,
+  GridConfig as _GridConfig,
+  SpacingSize,
+  LegacyResponsiveGridProps,
+} from './types';
 import { SPACING_CLASSES, GRID_PRESETS } from './constants';
 
 interface UniversalGridProps {
@@ -37,7 +42,7 @@ export const UniversalGrid = forwardRef<HTMLDivElement, UniversalGridProps>(
       align = 'stretch',
       justify = 'start',
       className = '',
-      legacy = false,
+      legacy: _legacy = false,
     },
     ref
   ) => {

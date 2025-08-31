@@ -86,7 +86,7 @@
   - 記憶體佔用: **-15至-20%** 📈
 - **Core Web Vitals 改善**:
   - FCP (First Contentful Paint): ✅ 顯著改善
-  - LCP (Largest Contentful Paint): ✅ 顯著改善  
+  - LCP (Largest Contentful Paint): ✅ 顯著改善
   - FID (First Input Delay): ✅ 顯著改善
 - **性能影響結論**: **全面性能提升**
 
@@ -97,6 +97,7 @@
 ### 發現的矛盾
 
 **依賴分析** vs **運行時分析** 結果矛盾：
+
 - **依賴分析**: 顯示「高風險移除」(基於靜態代碼掃描)
 - **運行時分析**: 顯示「已安全移除」(基於實際執行狀況)
 
@@ -123,6 +124,7 @@
 ### 緊急安全修復 🔴 需立即處理
 
 1. **🔴 啟用 CSRF 保護** (高優先級)
+
    ```typescript
    // 需要在 middleware.ts 或 API 路由中實施
    ```
@@ -135,23 +137,25 @@
 ### 後續清理任務
 
 3. **清理覆蓋率文件** (低優先級)
+
    ```bash
    rm -f coverage/app/\(auth\)/main-login/events/useAuthEvents.ts.html
    rm -f coverage/lcov-report/app/\(auth\)/main-login/events/useAuthEvents.ts.html
    ```
 
 4. **提交變更**
+
    ```bash
    git add -A
    git commit -m "feat: 移除 useAuthEvents.ts 事件系統，完成認證重構
-   
+
    - 所有認證組件已遷移至 useLoginContext
    - Bundle 大小減少 15-25KB
    - 組件性能提升 25-35%
    - 消除事件劫持安全風險
-   
+
    🤖 Generated with [Claude Code](https://claude.ai/code)
-   
+
    Co-Authored-By: Claude <noreply@anthropic.com>"
    ```
 
@@ -159,12 +163,12 @@
 
 ## 風險評估總結
 
-| 風險類別 | 等級 | 狀態 | 說明 |
-|---------|------|------|------|
-| **功能中斷** | 🟢 低 | ✅ 已控制 | 所有功能已遷移至 useLoginContext |
-| **性能影響** | 🟢 正面 | ✅ 已確認 | 15-35% 性能提升 |
-| **安全影響** | 🟡 中等 | ⚠️ 需處理 | 移除降低風險，但發現其他問題 |
-| **維護成本** | 🟢 降低 | ✅ 已實現 | 代碼複雜度降低 |
+| 風險類別     | 等級    | 狀態      | 說明                             |
+| ------------ | ------- | --------- | -------------------------------- |
+| **功能中斷** | 🟢 低   | ✅ 已控制 | 所有功能已遷移至 useLoginContext |
+| **性能影響** | 🟢 正面 | ✅ 已確認 | 15-35% 性能提升                  |
+| **安全影響** | 🟡 中等 | ⚠️ 需處理 | 移除降低風險，但發現其他問題     |
+| **維護成本** | 🟢 降低 | ✅ 已實現 | 代碼複雜度降低                   |
 
 ---
 

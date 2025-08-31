@@ -38,7 +38,7 @@ export const getSafeLocation = (): SafeLocation => {
       href: location.href,
       origin: location.origin,
     };
-  } catch (error) {
+  } catch (error: unknown) {
     console.warn('[SSR-Safe] Failed to access window.location:', error);
     return {};
   }
@@ -56,7 +56,7 @@ export const destructureLocation = (): SafeLocation => {
  * 獲取當前協議，在 SSR 中返回 'https'
  */
 export const getSafeProtocol = (): string => {
-  if (typeof window === 'undefined') {
+  if (typeof window === 'undefined' || !window.location) {
     return 'https:'; // SSR 預設
   }
   return window.location.protocol;
@@ -66,7 +66,7 @@ export const getSafeProtocol = (): string => {
  * 獲取當前主機名，在 SSR 中返回空字串
  */
 export const getSafeHostname = (): string => {
-  if (typeof window === 'undefined') {
+  if (typeof window === 'undefined' || !window.location) {
     return '';
   }
   return window.location.hostname;
@@ -76,7 +76,7 @@ export const getSafeHostname = (): string => {
  * 獲取當前完整 URL，在 SSR 中返回空字串
  */
 export const getSafeHref = (): string => {
-  if (typeof window === 'undefined') {
+  if (typeof window === 'undefined' || !window.location) {
     return '';
   }
   return window.location.href;
@@ -86,7 +86,7 @@ export const getSafeHref = (): string => {
  * 獲取當前路徑，在 SSR 中返回 '/'
  */
 export const getSafePathname = (): string => {
-  if (typeof window === 'undefined') {
+  if (typeof window === 'undefined' || !window.location) {
     return '/';
   }
   return window.location.pathname;
@@ -96,13 +96,13 @@ export const getSafePathname = (): string => {
  * 安全地替換瀏覽器歷史記錄
  */
 export const safeReplaceState = (url: string): void => {
-  if (typeof window === 'undefined') {
+  if (typeof window === 'undefined' || !window.history || typeof document === 'undefined') {
     return;
   }
 
   try {
     window.history.replaceState({}, document.title, url);
-  } catch (error) {
+  } catch (error: unknown) {
     console.warn('[SSR-Safe] Failed to replace state:', error);
   }
 };
@@ -111,13 +111,13 @@ export const safeReplaceState = (url: string): void => {
  * 安全地重新載入頁面
  */
 export const safeReload = (): void => {
-  if (typeof window === 'undefined') {
+  if (typeof window === 'undefined' || !window.location) {
     return;
   }
 
   try {
     window.location.reload();
-  } catch (error) {
+  } catch (error: unknown) {
     console.warn('[SSR-Safe] Failed to reload:', error);
   }
 };

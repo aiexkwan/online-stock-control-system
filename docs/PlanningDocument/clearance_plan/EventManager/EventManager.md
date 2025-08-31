@@ -29,7 +29,7 @@
 - **直接引用數量**: `4個登入相關組件`
 - **引用來源**:
   - `app/(auth)/main-login/components/LoginForm.tsx`
-  - `app/(auth)/main-login/components/RegisterForm.tsx`  
+  - `app/(auth)/main-login/components/RegisterForm.tsx`
   - `app/(auth)/main-login/components/organisms/RefactoredLoginForm.tsx`
   - `app/(auth)/main-login/components/compound/CompoundForm.tsx`
 - **依賴分析結論**: `被4個模組依賴，但現有LoginContext已提供相同功能`
@@ -55,17 +55,19 @@
 現有系統已有完善的LoginContext (393行) + hooks架構，EventManager添加了重複的通訊層：
 
 1. **雙重錯誤處理**
+
    ```typescript
    // 重複的錯誤通訊
-   onError?.(error);           // 現有回調機制
-   emitLoginError(error);      // EventManager事件
+   onError?.(error); // 現有回調機制
+   emitLoginError(error); // EventManager事件
    ```
 
 2. **雙重狀態管理**
+
    ```typescript
    // 重複的狀態獲取
-   const context = useLoginContext();     // Context狀態
-   const events = useAuthEvents();        // 事件狀態
+   const context = useLoginContext(); // Context狀態
+   const events = useAuthEvents(); // 事件狀態
    ```
 
 3. **雙重組件通訊**
@@ -76,6 +78,7 @@
 ### 🎯 **現有架構已經足夠**
 
 **LoginContext.tsx** (393行)已提供：
+
 - ✅ 集中狀態管理
 - ✅ 表單驗證 (useAuthValidation)
 - ✅ 認證提交 (useAuthSubmission)
@@ -87,12 +90,12 @@
 
 ### 📊 **架構對比**
 
-| 機制 | LoginContext | EventManager | 結果 |
-|------|-------------|--------------|------|
-| 狀態共享 | ✅ Context | ✅ 事件系統 | 🔴 重複 |
-| 錯誤處理 | ✅ 回調函數 | ✅ 錯誤事件 | 🔴 重複 |
-| 組件通訊 | ✅ Props/Context | ✅ 發布訂閱 | 🔴 重複 |
-| 複雜度 | 合理 | 額外層級 | 🔴 過度 |
+| 機制     | LoginContext     | EventManager | 結果    |
+| -------- | ---------------- | ------------ | ------- |
+| 狀態共享 | ✅ Context       | ✅ 事件系統  | 🔴 重複 |
+| 錯誤處理 | ✅ 回調函數      | ✅ 錯誤事件  | 🔴 重複 |
+| 組件通訊 | ✅ Props/Context | ✅ 發布訂閱  | 🔴 重複 |
+| 複雜度   | 合理             | 額外層級     | 🔴 過度 |
 
 ---
 
@@ -101,6 +104,7 @@
 ### 🔄 **移除方案** (推薦)
 
 1. **移除EventManager系統**:
+
    ```bash
    rm -rf app/(auth)/main-login/events/
    ```
@@ -129,6 +133,7 @@
 ### 💡 **教訓學習**
 
 **架構冗餘識別標準**:
+
 - 多個機制解決同樣問題
 - 在完善架構上添加不必要的抽象層
 - 重複的通訊和狀態管理機制

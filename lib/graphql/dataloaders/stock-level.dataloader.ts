@@ -74,14 +74,6 @@ async function batchStockLevelsByCode(
       return stockCodes.map(() => new Error(`Failed to load stock level: ${error.message}`));
     }
 
-    interface DatabaseStockLevelRecord {
-      uuid: string;
-      stock: string;
-      description?: string | null;
-      stock_level: number;
-      update_time: string;
-    }
-
     // Create a map for O(1) lookup
     const stockMap = new Map<string, StockLevelRecord>();
     data?.forEach((record: DatabaseStockLevelRecord) => {
@@ -281,12 +273,12 @@ export function createStockLevelByCodeLoader(
 export function createStockLevelQueryLoader(
   supabase: SupabaseClient
 ): DataLoader<StockLevelQuery, StockLevelConnection> {
-  return new DataLoader<StockLevelQuery, StockLevelConnection>(
+  return new DataLoader<StockLevelQuery, StockLevelConnection, string>(
     (queries: readonly StockLevelQuery[]) => batchStockLevelsWithFilter(supabase, queries),
     {
       maxBatchSize: 10, // Limit batch size for complex queries
       cache: true,
-      cacheKeyFn: (query: StockLevelQuery) => query, // Use query as cache key
+      cacheKeyFn: (query: StockLevelQuery) => JSON.stringify(query), // Serialize query for cache key
     }
   );
 }

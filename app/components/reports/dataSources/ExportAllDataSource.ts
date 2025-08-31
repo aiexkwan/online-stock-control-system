@@ -3,19 +3,19 @@
  */
 
 import { ReportDataSource } from '../core/ReportConfig';
-import { createClient } from '@/app/utils/supabase/client';
+import type { DatabaseRecord } from '@/types/database/tables';
 
 // Export all data source
 const exportAllDataSource: ReportDataSource = {
   id: 'all-data',
 
-  async fetch(filters: Record<string, unknown>) {
+  async fetch(filters: Record<string, unknown>): Promise<DatabaseRecord[]> {
     // This data source is special - it doesn't actually fetch data
     // The export is handled directly in the dialog component
-    return [];
+    return [] as DatabaseRecord[];
   },
 
-  transform(data: Record<string, unknown>[]) {
+  transform(data: DatabaseRecord[]): DatabaseRecord[] {
     // No transformation needed
     return data;
   },

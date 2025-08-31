@@ -8,7 +8,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { ErrorProvider } from '@/lib/error-handling';
 import { LoadingProvider } from '@/lib/loading/providers/LoadingProvider';
-import { UniversalTheme, ResponsiveBreakpoints } from './types';
+import { UniversalTheme, ResponsiveBreakpoints as _ResponsiveBreakpoints } from './types';
 import { THEMES, BREAKPOINTS } from './constants';
 
 interface UniversalLayoutContextType {

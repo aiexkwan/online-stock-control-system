@@ -223,9 +223,9 @@ export function usePrinting(options: UsePrintingOptions = {}): UsePrintingReturn
         // Convert old format to new format if needed
         let printRequest: PrintRequest;
         if (isOldPrintRequest(request)) {
-          printRequest = adaptPrintRequest(request);
+          printRequest = adaptPrintRequest(request as OldPrintRequest);
         } else if (isNewPrintRequest(request)) {
-          printRequest = request;
+          printRequest = request as PrintRequest;
         } else {
           throw new Error('Invalid print request format');
         }
@@ -281,12 +281,12 @@ export function usePrinting(options: UsePrintingOptions = {}): UsePrintingReturn
             if (!result.success && batch.options?.stopOnError) {
               break;
             }
-          } catch (error) {
+          } catch (batchError) {
             failed++;
             results.push({
               success: false,
               jobId: `batch-${Date.now()}-${i}`,
-              error: error instanceof Error ? error.message : 'Unknown error',
+              error: batchError instanceof Error ? batchError.message : 'Unknown error',
             });
 
             if (batch.options?.stopOnError) break;
@@ -309,10 +309,10 @@ export function usePrinting(options: UsePrintingOptions = {}): UsePrintingReturn
 
         return batchResult;
       } catch (err) {
-        const error = err instanceof Error ? err : new Error(String(err));
-        setError(error);
-        onError?.(error);
-        throw error;
+        const printError = err instanceof Error ? err : new Error(String(err));
+        setError(printError);
+        onError?.(printError);
+        throw printError;
       } finally {
         setPrinting(false);
         setProgress(100);

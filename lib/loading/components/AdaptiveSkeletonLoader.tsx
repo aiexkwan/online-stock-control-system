@@ -7,9 +7,10 @@
 
 'use client';
 
-import React, { useMemo } from 'react';
+import * as React from 'react';
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { cn } from '../../utils';
 import { SkeletonLoaderProps, PerformanceMetrics } from '../types';
 import { useSmartLoading } from '../hooks/useSmartLoading';
 
@@ -227,7 +228,7 @@ export function AdaptiveSkeletonLoader({
         type === 'card' && 'rounded-lg border border-slate-700/20 bg-slate-800/30',
         className
       )}
-      {...(props as React.HTMLAttributes<HTMLDivElement>)}
+      data-testid={id}
     >
       {renderSkeletonContent()}
     </div>

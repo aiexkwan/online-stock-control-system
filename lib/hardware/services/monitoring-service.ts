@@ -15,6 +15,30 @@ import {
   HardwareEventType,
 } from '../types';
 
+// Event interface for type safety
+interface MonitoringEvents {
+  'device.registered': (device: DeviceStatus) => void;
+  'device.unregistered': (data: { deviceId: string }) => void;
+  alert: (alert: HardwareAlert) => void;
+  'device.connected': (event: HardwareEvent) => void;
+  'device.disconnected': (event: HardwareEvent) => void;
+  'job.started': (event: HardwareEvent) => void;
+  'job.completed': (event: HardwareEvent) => void;
+  'job.failed': (event: HardwareEvent) => void;
+  'scan.success': (event: HardwareEvent) => void;
+  'scan.failed': (event: HardwareEvent) => void;
+}
+
+// Typed EventEmitter interface
+interface TypedEventEmitter {
+  emit<K extends keyof MonitoringEvents>(
+    event: K,
+    ...args: Parameters<MonitoringEvents[K]>
+  ): boolean;
+  on<K extends keyof MonitoringEvents>(event: K, listener: MonitoringEvents[K]): this;
+  off<K extends keyof MonitoringEvents>(event: K, listener: MonitoringEvents[K]): this;
+}
+
 interface UsageStats {
   totalUsage: number;
   successCount: number;
@@ -23,7 +47,19 @@ interface UsageStats {
   lastUsed: string;
 }
 
-export class HardwareMonitoringService extends EventEmitter {
+interface DashboardData {
+  totalDevices: number;
+  onlineDevices: number;
+  errorDevices: number;
+  overallMetrics: {
+    totalUsage: number;
+    totalErrors: number;
+    averageSuccessRate: number;
+  };
+  devices: Array<DeviceStatus & { metrics?: DeviceMetrics }>;
+}
+
+export class HardwareMonitoringService extends EventEmitter implements TypedEventEmitter {
   private devices: Map<string, DeviceStatus> = new Map();
   private metrics: Map<string, DeviceMetrics> = new Map();
   private usageHistory: Map<string, HardwareEvent[]> = new Map();
@@ -88,6 +124,9 @@ export class HardwareMonitoringService extends EventEmitter {
 
   // Get device status
   getDeviceStatus(deviceId: string): DeviceStatus | undefined {
+    if (!deviceId || typeof deviceId !== 'string') {
+      return undefined;
+    }
     return this.devices.get(deviceId);
   }
 
@@ -121,8 +160,17 @@ export class HardwareMonitoringService extends EventEmitter {
 
   // Record a hardware event
   recordEvent(event: HardwareEvent): void {
+    // Validate event
+    if (!event || !event.deviceId || !event.type || !event.timestamp) {
+      console.warn('Invalid hardware event received:', event);
+      return;
+    }
+
     const history = this.usageHistory.get(event.deviceId);
-    if (!history) return;
+    if (!history) {
+      console.warn(`No history found for device ${event.deviceId}`);
+      return;
+    }
 
     // Add event to history
     history.push(event);
@@ -152,6 +200,15 @@ export class HardwareMonitoringService extends EventEmitter {
     const listener = (alert: HardwareAlert) => callback(alert);
     this.on('alert', listener);
     return () => this.off('alert', listener);
+  }
+
+  // Subscribe to device events
+  onDeviceEvent<K extends keyof MonitoringEvents>(
+    event: K,
+    callback: MonitoringEvents[K]
+  ): Unsubscribe {
+    this.on(event, callback);
+    return () => this.off(event, callback);
   }
 
   // Private methods
@@ -262,11 +319,11 @@ export class HardwareMonitoringService extends EventEmitter {
   private getLastEvent(deviceId: string): HardwareEvent | null {
     const history = this.usageHistory.get(deviceId);
     if (!history || history.length === 0) return null;
-    return history[history.length - 1];
+    return history[history.length - 1] || null;
   }
 
   // Get monitoring dashboard data
-  getDashboardData() {
+  getDashboardData(): DashboardData {
     const devices = Array.from(this.devices.values());
     const totalDevices = devices.length;
     const onlineDevices = devices.filter(d => d.status === 'online').length;
@@ -293,10 +350,13 @@ export class HardwareMonitoringService extends EventEmitter {
       onlineDevices,
       errorDevices,
       overallMetrics,
-      devices: devices.map(device => ({
-        ...device,
-        metrics: this.metrics.get(device.deviceId),
-      })),
+      devices: devices.map(device => {
+        const metrics = this.metrics.get(device.deviceId);
+        return {
+          ...device,
+          ...(metrics && { metrics }),
+        };
+      }),
     };
   }
 }

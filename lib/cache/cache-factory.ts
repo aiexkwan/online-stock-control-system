@@ -287,8 +287,7 @@ class CacheFactory {
       cacheLogger.warn(
         {
           error: error instanceof Error ? error.message : 'Unknown error',
-          fallback: 'memory',
-        },
+          fallback: 'memory' },
         'Redis cache creation failed, falling back to memory cache'
       );
 

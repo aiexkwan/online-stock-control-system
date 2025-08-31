@@ -10,7 +10,7 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Download, FileText, Loader2, X } from 'lucide-react';
 import { useLazyQuery } from '@apollo/client';
-import { startOfDay, endOfDay , format } from 'date-fns';
+import { startOfDay, endOfDay, format } from 'date-fns';
 import { DateRange } from 'react-day-picker';
 import { Button } from '@/components/ui/button';
 // Card components removed - not used
@@ -68,7 +68,7 @@ export const DownloadCenterCard: React.FC<DownloadCenterCardProps> = ({
   className,
 }) => {
   const { toast } = useToast();
-  const [loadingReports, _setLoadingReports] = useState<Record<string, boolean>>({});
+  const [loadingReports, setLoadingReports] = useState<Record<string, boolean>>({});
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [selectedValue, setSelectedValue] = useState<string>('');
   const [isGenerating, setIsGenerating] = useState(false);

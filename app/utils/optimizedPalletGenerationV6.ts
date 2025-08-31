@@ -41,7 +41,8 @@ export async function generateOptimizedPalletNumbersV6(
     // 調用 v6 RPC 函數，返回 pallet_number 和 series
     const { data, error } = await supabase.rpc('generate_atomic_pallet_numbers_v6', {
       p_count: count,
-      p_session_id: sessionId || `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      p_session_id:
+        sessionId || `session-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
     });
 
     if (error) {
@@ -124,7 +125,7 @@ export async function confirmPalletUsage(
 
     isNotProduction() && console.log('[PalletGenerationV6] Successfully confirmed usage');
     return true;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('[PalletGenerationV6] Exception confirming usage:', error);
     return false;
   }
@@ -161,7 +162,7 @@ export async function releasePalletReservation(
 
     isNotProduction() && console.log('[PalletGenerationV6] Successfully released reservation');
     return true;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('[PalletGenerationV6] Exception releasing reservation:', error);
     return false;
   }
@@ -197,7 +198,7 @@ export async function getPalletBufferStatus(supabase?: SupabaseClient): Promise<
       usedCount: status.used_count,
       nextAvailableId: status.next_available_id,
     };
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('[PalletGenerationV6] Exception getting buffer status:', error);
     return null;
   }

@@ -1,8 +1,8 @@
 'use server';
 
-import { cookies } from 'next/headers';
+// import { cookies } from 'next/headers';
 import { createClient } from '@/app/utils/supabase/server';
-import { DatabaseRecord, convertToStockDistributionItem } from '@/types/database/tables';
+import { convertToStockDistributionItem } from '@/types/database/tables';
 
 // Chart colors 配置
 const CHART_COLORS = [
@@ -84,7 +84,7 @@ export async function getStockDistributionAction(
     }
 
     // 處理數據
-    const items = data.map((item: DatabaseRecord) => {
+    const items = data.map((item: any) => {
       const stockItem = convertToStockDistributionItem(item);
       // 計算總庫存
       const stockTotal =
@@ -100,8 +100,8 @@ export async function getStockDistributionAction(
       return {
         stock: String(item.product_code),
         stock_level: stockTotal,
-        description: String((item.data_code as DatabaseRecord)?.description || ''),
-        type: String((item.data_code as DatabaseRecord)?.type || ''),
+        description: String((item.data_code as any)?.description || ''),
+        type: String((item.data_code as any)?.type || ''),
       };
     });
 

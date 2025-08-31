@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
 interface MenuItem {
-  icon?: React.ElementType;
+  icon?: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   label: string;
   href: string;
   gradient?: string;
@@ -36,7 +36,7 @@ export function MenuBar({ items, activeItem, onItemClick, className }: MenuBarPr
       items.forEach(item => {
         const element = menuRef.current?.querySelector(
           `[data-label="${item.label}"]`
-        ) as HTMLElement;
+        ) as HTMLElement | null;
         if (element) {
           const rect = element.getBoundingClientRect();
           positions[item.label] = {
@@ -84,7 +84,7 @@ export function MenuBar({ items, activeItem, onItemClick, className }: MenuBarPr
               damping: 30,
             }}
             style={{
-              background: currentMenuItem.gradient,
+              background: currentMenuItem.gradient || 'rgba(255, 255, 255, 0.1)',
               filter: 'blur(8px)',
             }}
           />
@@ -135,7 +135,7 @@ export function MenuBar({ items, activeItem, onItemClick, className }: MenuBarPr
               <Icon
                 className={cn(
                   'h-4 w-4 transition-colors duration-200',
-                  isActive || isHovered ? item.iconColor : 'text-current'
+                  isActive || isHovered ? item.iconColor || 'text-current' : 'text-current'
                 )}
               />
             )}

@@ -27,12 +27,13 @@
 ### 2. 依賴分析結果
 
 - **直接引用數量**: 0
-- **引用來源**: 
+- **引用來源**:
   - 無任何檔案引用此組件
   - 只有自身檔案包含 `ConditionalProviders` 字樣
 - **依賴分析結論**: 零引用，完全孤立的死代碼組件
 
 **實際架構驗證**:
+
 ```bash
 # 實際搜索結果
 grep -r "ConditionalProviders" app/
@@ -63,12 +64,15 @@ app/(app)/layout.tsx   → FullProviders
 **建議執行 `git rm app/components/ConditionalProviders.tsx`，並在合併前執行完整的驗證流程。**
 
 ### 驗證步驟
+
 1. 刪除檔案後運行 `npm run typecheck` 確認無編譯錯誤
-2. 運行 `npm run build` 確認建構成功  
+2. 運行 `npm run build` 確認建構成功
 3. 運行現有測試套件確認無功能破壞
 
 ### 技術背景
+
 ConditionalProviders 原本設計用於根據路由條件動態載入不同的 Provider，但 Next.js 15 的分組路由 `(auth)` 和 `(app)` 已在架構層面解決了相同問題：
+
 - 認證頁面：自動使用 `StarfieldBackground`
 - 主應用頁面：自動使用 `FullProviders`
 

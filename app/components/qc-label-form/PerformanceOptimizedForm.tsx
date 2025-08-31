@@ -2,16 +2,14 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { toast } from 'sonner';
 import {
-  CubeIcon,
   DocumentTextIcon,
   Cog6ToothIcon,
   PrinterIcon,
   InformationCircleIcon,
 } from '@heroicons/react/24/outline';
 import { MAX_PALLET_COUNT, SLATE_DEFAULT_COUNT } from './constants';
-import type { AcoOrderDetail , ProductInfo, FormData, SlateDetail } from './types';
+import type { AcoOrderDetail, ProductInfo, FormData, SlateDetail, ProgressStatus } from './types';
 import {
   ResponsiveLayout,
   ResponsiveContainer,
@@ -19,17 +17,16 @@ import {
   ResponsiveStack,
 } from './ResponsiveLayout';
 import { EnhancedFormField, EnhancedInput, EnhancedSelect } from './EnhancedFormField';
-import { Accordion, AccordionItem, AccordionGroup } from './Accordion';
+import { AccordionItem, AccordionGroup } from './Accordion';
 import { EnhancedProgressBar } from './EnhancedProgressBar';
 import { ProductCodeInput } from './ProductCodeInput';
 import { BasicProductForm } from './BasicProductForm';
 import { AcoOrderForm } from './AcoOrderForm';
 import { SlateDetailsForm } from './SlateDetailsForm';
-import { FormPersistenceIndicator } from './FormPersistenceIndicator';
 import { useErrorHandler } from './hooks/useErrorHandler';
 import { useMediaQuery } from './hooks/useMediaQuery';
 
-import { useOptimizedFormHandler } from './hooks/useOptimizedCallback';
+import { useDebouncedCallback } from './hooks/useOptimizedCallback';
 import { useQcLabelBusiness } from './hooks/useQcLabelBusiness';
 import ClockNumberConfirmDialog from './ClockNumberConfirmDialog';
 
@@ -42,11 +39,12 @@ interface PerformanceOptimizedFormProps {
 interface AcoHandlers {
   onAcoOrderRefChange: (value: string) => void;
   onAcoSearch: () => void;
+  onAutoAcoConfirm: (orderRef: string) => Promise<void>;
 }
 
 // Memoized form sections
 // ProductSection is memoized because it receives multiple callback props
-// and renders expensive child components (ProductCodeInput, ProductInfoDisplay)
+// and renders expensive child components (_ProductCodeInput, ProductInfoDisplay)
 const ProductSection = React.memo<{
   productCode: string;
   onProductCodeChange: (value: string) => void;
@@ -82,7 +80,7 @@ const ProductSection = React.memo<{
       [onProductCodeChange]
     );
 
-    const handleProductInfoChange = useCallback(
+    const _handleProductInfoChange = useCallback(
       (info: ProductInfo | null) => {
         onProductInfoChange(info);
       },
@@ -122,12 +120,12 @@ const AcoSection = React.memo<{
   acoRemain: string | null;
   acoSearchLoading: boolean;
   onAutoAcoConfirm: (orderRef: string) => Promise<void>;
-  acoNewRef: boolean;
-  acoOrderDetails: AcoOrderDetail[];
-  acoOrderDetailErrors: string[];
-  onAcoOrderDetailChange: (idx: number, key: 'code' | 'qty', value: string) => void;
-  onAcoOrderDetailUpdate: () => void;
-  onValidateAcoOrderDetailCode: (code: string, idx: number) => void;
+  _acoNewRef: boolean;
+  _acoOrderDetails: AcoOrderDetail[];
+  _acoOrderDetailErrors: string[];
+  _onAcoOrderDetailChange: (idx: number, key: 'code' | 'qty', value: string) => void;
+  _onAcoOrderDetailUpdate: () => void;
+  _onValidateAcoOrderDetailCode: (code: string, idx: number) => void;
   isAcoOrderExcess?: boolean;
   disabled?: boolean;
 }>(
@@ -138,12 +136,12 @@ const AcoSection = React.memo<{
     acoRemain,
     acoSearchLoading,
     onAutoAcoConfirm,
-    acoNewRef,
-    acoOrderDetails,
-    acoOrderDetailErrors,
-    onAcoOrderDetailChange,
-    onAcoOrderDetailUpdate,
-    onValidateAcoOrderDetailCode,
+    _acoNewRef,
+    _acoOrderDetails,
+    _acoOrderDetailErrors,
+    _onAcoOrderDetailChange,
+    _onAcoOrderDetailUpdate,
+    _onValidateAcoOrderDetailCode,
     isAcoOrderExcess = false,
     disabled = false,
   }) => {
@@ -169,12 +167,12 @@ const AcoSection = React.memo<{
           acoRemain={acoRemain}
           acoSearchLoading={acoSearchLoading}
           onAutoAcoConfirm={onAutoAcoConfirm}
-          acoNewRef={acoNewRef}
-          acoOrderDetails={acoOrderDetails}
-          acoOrderDetailErrors={acoOrderDetailErrors}
-          onAcoOrderDetailChange={onAcoOrderDetailChange}
-          onAcoOrderDetailUpdate={onAcoOrderDetailUpdate}
-          onValidateAcoOrderDetailCode={onValidateAcoOrderDetailCode}
+          _acoNewRef={_acoNewRef}
+          _acoOrderDetails={_acoOrderDetails}
+          _acoOrderDetailErrors={_acoOrderDetailErrors}
+          _onAcoOrderDetailChange={_onAcoOrderDetailChange}
+          _onAcoOrderDetailUpdate={_onAcoOrderDetailUpdate}
+          _onValidateAcoOrderDetailCode={_onValidateAcoOrderDetailCode}
           isAcoOrderExcess={isAcoOrderExcess}
           disabled={disabled}
         />
@@ -219,7 +217,7 @@ const SlateSection = React.memo<{
 const ProgressSection = React.memo<{
   current: number;
   total: number;
-  status: Array<'Pending' | 'Processing' | 'Success' | 'Failed'>;
+  status: readonly ProgressStatus[];
   isMobile: boolean;
 }>(({ current, total, status, isMobile }) => {
   if (total === 0) return null;
@@ -229,7 +227,7 @@ const ProgressSection = React.memo<{
       <EnhancedProgressBar
         current={current}
         total={total}
-        status={status}
+        status={[...status] as ProgressStatus[]}
         title='QC Label Generation'
         variant={isMobile ? 'compact' : 'default'}
         showPercentage={true}
@@ -246,7 +244,7 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
     const isTablet = useMediaQuery('(max-width: 1024px)');
     const searchParams = useSearchParams();
 
-    const { handleError, handleSuccess } = useErrorHandler({
+    const { handleError } = useErrorHandler({
       component: 'PerformanceOptimizedForm',
       userId: '12345', // This should come from auth context
     });
@@ -284,11 +282,11 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
       acoNewOrderQty: '',
       slateDetail: {
         batchNumber: '',
-      },
+      } as SlateDetail,
       pdfProgress: {
         current: 0,
         total: 0,
-        status: [],
+        status: [] as readonly ProgressStatus[],
       },
       isLoading: false,
       acoSearchLoading: false,
@@ -303,7 +301,7 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
     const [pdfProgress, setPdfProgress] = useState({
       current: 0,
       total: 0,
-      status: [] as Array<'Pending' | 'Processing' | 'Success' | 'Failed'>,
+      status: [] as readonly ProgressStatus[],
     });
 
     // ACO specific state is now managed in formData and businessLogic hook
@@ -311,7 +309,7 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
     // Direct form handlers for immediate response
     const handleInputChange = useCallback(
       (field: keyof FormData, value: string) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+        setFormData(prev => ({ ...prev, [field]: value }) as FormData);
         // Clear error when user starts typing
         if (errors[field]) {
           setErrors(prev => ({ ...prev, [field]: '' }));
@@ -392,7 +390,7 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
         setPdfProgress({
           current: 0,
           total: 0,
-          status: [],
+          status: [] as readonly ProgressStatus[],
         });
       },
     });
@@ -439,7 +437,7 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
           ? {
               current: formData.pdfProgress.current,
               total: formData.pdfProgress.total,
-              status: formData.pdfProgress.status,
+              status: [...formData.pdfProgress.status] as readonly ProgressStatus[],
             }
           : prev;
       });
@@ -516,11 +514,11 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
               <div className='min-w-0 flex-1'>
                 {/* Form Persistence Indicator - Currently disabled */}
                 {/* {businessLogic.lastSaved && (
-                  <div className='mb-4'>
+                  <div className ='mb-4'>
                     <FormPersistenceIndicator
                       lastSaved={businessLogic.lastSaved}
                       hasSavedData={businessLogic.hasSavedData}
-                      className='text-sm'
+                      className ='text-sm'
                     />
                   </div>
                 )} */}
@@ -547,16 +545,16 @@ export const PerformanceOptimizedForm: React.FC<PerformanceOptimizedFormProps> =
                       <AcoSection
                         acoOrderRef={formData.acoOrderRef}
                         onAcoOrderRefChange={acoHandlers.onAcoOrderRefChange}
-                        availableAcoOrderRefs={formData.availableAcoOrderRefs}
+                        availableAcoOrderRefs={formData.availableAcoOrderRefs as number[]}
                         acoRemain={formData.acoRemain}
                         acoSearchLoading={formData.acoSearchLoading}
                         onAutoAcoConfirm={acoHandlers.onAutoAcoConfirm}
-                        acoNewRef={false}
-                        acoOrderDetails={[]}
-                        acoOrderDetailErrors={[]}
-                        onAcoOrderDetailChange={() => {}}
-                        onAcoOrderDetailUpdate={() => {}}
-                        onValidateAcoOrderDetailCode={() => {}}
+                        _acoNewRef={false}
+                        _acoOrderDetails={[]}
+                        _acoOrderDetailErrors={[]}
+                        _onAcoOrderDetailChange={() => {}}
+                        _onAcoOrderDetailUpdate={() => {}}
+                        _onValidateAcoOrderDetailCode={() => {}}
                         isAcoOrderExcess={businessLogic.isAcoOrderExcess}
                         disabled={isLoading}
                       />

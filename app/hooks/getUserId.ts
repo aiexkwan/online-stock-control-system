@@ -10,7 +10,7 @@
  * - 統一錯誤處理
  *
  * Email format: username@pennineindustries.com
- * - Username must contain only English letters (a-z, A-Z)
+ * - Username must contain only English letters (a-_z, A-Z)
  * - Domain must be @pennineindustries.com
  * - Clock number ID is retrieved from data_id table using email
  */
@@ -26,7 +26,7 @@ const secureLogger = createSecureLogger('getUserId');
 
 interface UserDetails {
   id: string;
-  name: string;
+  _name: string;
   email: string;
   department?: string;
   username: string;
@@ -34,18 +34,18 @@ interface UserDetails {
 
 interface GetUserIdReturn {
   // Core data
-  userId: string | null; // Clock number ID (e.g., "1234")
-  userNumericId: string | null; // Same as userId, kept for backward compatibility
+  _userId: string | null; // Clock number ID (e.g., "1234")
+  userNumericId: string | null; // Same as _userId, kept for backward compatibility
   userDetails: UserDetails | null; // Full user details
 
   // State
   isLoading: boolean;
-  error: Error | null;
+  _error: Error | null;
   isAuthenticated: boolean;
 
   // Actions
-  refreshUser: () => Promise<void>;
-  verifyUserId: (userId: string) => Promise<boolean>;
+  _refreshUser: () => Promise<void>;
+  verifyUserId: (_userId: string) => Promise<boolean>;
 }
 
 // Cache for user details to avoid repeated queries
@@ -67,7 +67,7 @@ function extractUsernameFromEmail(email: string): string | null {
  * @example
  * ```tsx
  * function MyComponent() {
- *   const { userId, userDetails, isLoading } = useGetUserId();
+ *   const { _userId, userDetails, isLoading } = useGetUserId();
  *
  *   if (isLoading) return <div>Loading user...</div>;
  *
@@ -76,11 +76,11 @@ function extractUsernameFromEmail(email: string): string | null {
  * ```
  */
 export function useGetUserId(): GetUserIdReturn {
-  const [userId, setUserId] = useState<string | null>(null);
+  const [_userId, setUserId] = useState<string | null>(null);
   const [userNumericId, setUserNumericId] = useState<string | null>(null);
   const [userDetails, setUserDetails] = useState<UserDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const [_error, setError] = useState<Error | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const supabaseRef = useRef<SupabaseClient>();
@@ -107,7 +107,7 @@ export function useGetUserId(): GetUserIdReturn {
         // Query by clock number ID
         const { data, error } = await supabaseRef.current
           .from('data_id')
-          .select('id, name, email, department')
+          .select('id, _name, email, department')
           .eq('id', parseInt(clockNumberId, 10))
           .single();
 
@@ -118,7 +118,7 @@ export function useGetUserId(): GetUserIdReturn {
 
         const details: UserDetails = {
           id: data.id.toString(),
-          name: data.name,
+          _name: data._name,
           email: data.email,
           department: data.department,
           username: username || data.email?.split('@')[0] || clockNumberId,
@@ -128,8 +128,8 @@ export function useGetUserId(): GetUserIdReturn {
         userCache.set(clockNumberId, { data: details, timestamp: Date.now() });
 
         return details;
-      } catch (err) {
-        secureLogger.error(err, '[getUserId] Error fetching user details');
+      } catch (_err) {
+        secureLogger.error(_err, '[getUserId] Error fetching user details');
         return null;
       }
     },
@@ -159,7 +159,7 @@ export function useGetUserId(): GetUserIdReturn {
         // Fetch user details using email
         const { data, error } = await supabaseRef.current
           .from('data_id')
-          .select('id, name, email, department')
+          .select('id, _name, email, department')
           .eq('email', user.email)
           .single();
 
@@ -176,7 +176,7 @@ export function useGetUserId(): GetUserIdReturn {
 
           const details: UserDetails = {
             id: data.id.toString(),
-            name: data.name,
+            _name: data._name,
             email: data.email,
             department: data.department,
             username: username || user.email.split('@')[0],
@@ -211,19 +211,19 @@ export function useGetUserId(): GetUserIdReturn {
   /**
    * Verify if a user ID exists in the system
    */
-  const verifyUserId = useCallback(async (userId: string): Promise<boolean> => {
+  const verifyUserId = useCallback(async (_userId: string): Promise<boolean> => {
     if (!supabaseRef.current) return false;
 
     try {
       const { data, error } = await supabaseRef.current
         .from('data_id')
         .select('id')
-        .eq('id', userId)
+        .eq('id', _userId)
         .single();
 
       return !error && !!data;
-    } catch (err) {
-      secureLogger.error(err, '[getUserId] Error verifying user ID');
+    } catch (_err) {
+      secureLogger.error(_err, '[getUserId] Error verifying user ID');
       return false;
     }
   }, []);
@@ -231,7 +231,7 @@ export function useGetUserId(): GetUserIdReturn {
   /**
    * Refresh user data
    */
-  const refreshUser = useCallback(async () => {
+  const _refreshUser = useCallback(async () => {
     await getCurrentUser();
   }, [getCurrentUser]);
 
@@ -264,13 +264,13 @@ export function useGetUserId(): GetUserIdReturn {
   }, [getCurrentUser]);
 
   return {
-    userId,
+    _userId,
     userNumericId,
     userDetails,
     isLoading,
-    error,
+    _error,
     isAuthenticated,
-    refreshUser,
+    _refreshUser,
     verifyUserId,
   };
 }
@@ -280,8 +280,8 @@ export function useGetUserId(): GetUserIdReturn {
  * For backward compatibility with existing code
  */
 export function useClockNumber(): string | null {
-  const { userId } = useGetUserId();
-  return userId;
+  const { _userId } = useGetUserId();
+  return _userId;
 }
 
 /**

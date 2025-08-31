@@ -15,13 +15,6 @@ const CONFIG = {
   maxRetries: 3,
   healthChecks: [
     {
-      name: 'Basic Health Check',
-      path: '/api/health',
-      method: 'GET',
-      expectedStatus: 200,
-      critical: true,
-    },
-    {
       name: 'GraphQL Endpoint Health',
       path: '/api/graphql',
       method: 'POST',

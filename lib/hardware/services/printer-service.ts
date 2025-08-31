@@ -84,7 +84,7 @@ export class DefaultPrinterService extends EventEmitter implements PrinterServic
   }
 
   async print(job: PrintJob): Promise<PrintResult> {
-    const jobId = this.generateJobId();
+    const jobId = job.id || this.generateJobId();
     const jobWithId = { ...job, id: jobId };
 
     try {
@@ -110,8 +110,13 @@ export class DefaultPrinterService extends EventEmitter implements PrinterServic
   }
 
   async batchPrint(jobs: PrintJob[]): Promise<PrintResult[]> {
-    // Add jobs to queue and process
-    this.printQueue.push(...jobs);
+    // Ensure all jobs have IDs before adding to queue
+    const jobsWithIds = jobs.map(job => ({
+      ...job,
+      id: job.id || this.generateJobId(),
+    }));
+
+    this.printQueue.push(...jobsWithIds);
     return this.processQueue();
   }
 
@@ -152,7 +157,7 @@ export class DefaultPrinterService extends EventEmitter implements PrinterServic
 
   // Private helper methods
   private generateJobId(): string {
-    return `job-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `job-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
   }
 
   private async processQueue(): Promise<PrintResult[]> {
@@ -166,13 +171,40 @@ export class DefaultPrinterService extends EventEmitter implements PrinterServic
     while (this.printQueue.length > 0) {
       const job = this.printQueue.shift();
       if (job) {
-        const result = await this.print(job);
+        // Process job directly without recursion through this.print()
+        const result = await this.processJobDirectly(job);
         results.push(result);
       }
     }
 
     this.isProcessing = false;
     return results;
+  }
+
+  // Direct job processing method to avoid recursion in processQueue
+  private async processJobDirectly(job: PrintJob): Promise<PrintResult> {
+    const jobId = job.id || this.generateJobId();
+
+    try {
+      // Route to appropriate handler based on job type
+      switch (job.type) {
+        case 'qc-label':
+          return await this.printQcLabel(job);
+        case 'grn-label':
+          return await this.printGrnLabel(job);
+        case 'report':
+        case 'document':
+          return await this.printDocument(job);
+        default:
+          throw new Error(`Unsupported print job type: ${job.type}`);
+      }
+    } catch (error) {
+      return {
+        success: false,
+        jobId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
   }
 
   // Type-specific print handlers that call existing APIs
@@ -195,7 +227,7 @@ export class DefaultPrinterService extends EventEmitter implements PrinterServic
 
         return {
           success: true,
-          jobId: job.id!,
+          jobId: job.id || this.generateJobId(),
           pdfUrl,
           printedAt: new Date().toISOString(),
           message: 'QC label printed successfully',
@@ -231,7 +263,7 @@ export class DefaultPrinterService extends EventEmitter implements PrinterServic
 
         return {
           success: true,
-          jobId: job.id!,
+          jobId: job.id || this.generateJobId(),
           pdfUrl,
           printedAt: new Date().toISOString(),
           message: 'GRN label printed successfully',
@@ -241,7 +273,7 @@ export class DefaultPrinterService extends EventEmitter implements PrinterServic
         // Note: GRN labels are typically generated with blob already
         return {
           success: false,
-          jobId: job.id!,
+          jobId: job.id || this.generateJobId(),
           error: 'GRN label printing requires PDF blob',
         };
       }
@@ -267,7 +299,7 @@ export class DefaultPrinterService extends EventEmitter implements PrinterServic
 
         return {
           success: true,
-          jobId: job.id!,
+          jobId: job.id || this.generateJobId(),
           pdfUrl,
           printedAt: new Date().toISOString(),
           message: 'Document printed successfully',
@@ -276,7 +308,7 @@ export class DefaultPrinterService extends EventEmitter implements PrinterServic
         // No PDF blob provided
         return {
           success: false,
-          jobId: job.id!,
+          jobId: job.id || this.generateJobId(),
           error: 'Document printing requires PDF blob',
         };
       }

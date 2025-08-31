@@ -4,7 +4,7 @@
  * for operational excellence and business continuity
  */
 
-import { createClient } from '@/app/utils/supabase/server';
+import { createClient } from '../../app/utils/supabase/server';
 // import { databasePerformanceMonitor } from '@/lib/monitoring/database-performance-monitor'; // Removed - monitoring disabled
 
 // Backup configuration interface
@@ -236,13 +236,16 @@ export class DatabaseBackupManager {
     const backupLocation = `${this.config.backupLocation}/${backupId}`;
 
     for (const table of tables) {
-      // Get table data size
-      const { data, error } = await this.supabase.rpc('get_table_size', { table_name: table });
+      // Get table data size - use a simulated approach since get_table_size RPC may not exist
+      const { data, error } = await this.supabase
+        .from(table as any)
+        .select('*', { count: 'exact', head: true });
 
       if (error) {
         console.warn(`[BackupManager] Could not get size for table ${table}:`, error);
       } else {
-        totalSize += typeof data === 'number' ? data : 0;
+        // Use count from the response if available
+        totalSize += data?.length || 0;
       }
 
       // In real implementation, would export table data
@@ -268,14 +271,14 @@ export class DatabaseBackupManager {
     // Backup only changes since last backup
     const { data, error } = await this.supabase
       .from('record_palletinfo')
-      .select('count')
+      .select('*', { count: 'exact', head: true })
       .gte('generate_time', sinceTime.toISOString());
 
     if (error) {
       throw new Error(`Failed to query incremental changes: ${error.message}`);
     }
 
-    const changeCount = Array.isArray(data) ? data.length : 0;
+    const changeCount = data?.length || 0;
     const estimatedSize = changeCount * 1000; // Estimated bytes per record
 
     return {
@@ -298,9 +301,10 @@ export class DatabaseBackupManager {
       // 4. Validate data consistency
 
       const { data, error } = await this.supabase
-        .from('backup_history')
-        .select('backup_location, backup_size_mb')
-        .eq('id', backupId)
+        .from('record_history')
+        .select('remark')
+        .like('action', 'backup_complete_%')
+        .like('remark', `%"backup_id":"${backupId}"%`)
         .single();
 
       if (error || !data) {
@@ -590,11 +594,17 @@ export class DatabaseBackupManager {
    * Log backup start
    */
   private async logBackupStart(backup: BackupStatus) {
-    const { error } = await this.supabase.from('backup_history').insert({
-      backup_type: backup.type,
-      start_time: backup.startTime.toISOString(),
-      status: backup.status,
-      retention_until: this.calculateRetentionDate(backup.type, backup.startTime),
+    const { error } = await this.supabase.from('record_history').insert({
+      action: `backup_start_${backup.type}`,
+      id: 1, // System backup process ID - in production, this should be a proper user ID
+      remark: JSON.stringify({
+        backup_id: backup.id,
+        status: backup.status,
+        start_time: backup.startTime.toISOString(),
+        retention_until: this.calculateRetentionDate(backup.type, backup.startTime),
+      }),
+      time: backup.startTime.toISOString(),
+      uuid: backup.id,
     });
 
     if (error) {
@@ -606,20 +616,25 @@ export class DatabaseBackupManager {
    * Log backup completion
    */
   private async logBackupCompletion(backup: BackupStatus) {
-    const { error } = await this.supabase
-      .from('backup_history')
-      .update({
-        end_time: backup.endTime?.toISOString(),
+    const { error } = await this.supabase.from('record_history').insert({
+      action: `backup_complete_${backup.type}`,
+      id: 1, // System backup process ID - in production, this should be a proper user ID
+      remark: JSON.stringify({
+        backup_id: backup.id,
         status: backup.status,
+        start_time: backup.startTime.toISOString(),
+        end_time: backup.endTime?.toISOString(),
+        duration: backup.duration,
         backup_size_mb: backup.sizeBytes ? Math.round(backup.sizeBytes / 1024 / 1024) : null,
         backup_location: backup.location,
         error_message: backup.error,
         recovery_point_objective_met:
           !backup.error && (backup.duration || 0) <= this.config.recoveryTimeObjective * 60 * 1000,
         recovery_time_objective_met: !backup.error,
-      })
-      .eq('backup_type', backup.type)
-      .eq('start_time', backup.startTime.toISOString());
+      }),
+      time: backup.endTime?.toISOString() || new Date().toISOString(),
+      uuid: `${backup.id}_complete`,
+    });
 
     if (error) {
       console.error('[BackupManager] Error logging backup completion:', error);
@@ -641,10 +656,10 @@ export class DatabaseBackupManager {
    */
   private async getLastSuccessfulBackup(): Promise<BackupStatus | null> {
     const { data, error } = await this.supabase
-      .from('backup_history')
+      .from('record_history')
       .select('*')
-      .eq('status', 'completed')
-      .order('start_time', { ascending: false })
+      .like('action', 'backup_complete_%')
+      .order('time', { ascending: false })
       .limit(1)
       .single();
 
@@ -652,29 +667,26 @@ export class DatabaseBackupManager {
       return null;
     }
 
-    // Type assertion for backup history record
-    const backupRecord = data as {
-      id: number;
-      backup_type: string;
-      status: string;
-      start_time: string;
-      end_time?: string | null;
-      backup_size_mb?: number | null;
-      backup_location?: string | null;
-    };
+    try {
+      const remarkData = JSON.parse(data.remark);
 
-    return {
-      id: String(backupRecord.id || ''),
-      type: backupRecord.backup_type as 'full' | 'incremental' | 'differential',
-      status: backupRecord.status as 'completed',
-      startTime: new Date(backupRecord.start_time),
-      endTime: backupRecord.end_time ? new Date(backupRecord.end_time) : undefined,
-      sizeBytes: backupRecord.backup_size_mb
-        ? backupRecord.backup_size_mb * 1024 * 1024
-        : undefined,
-      location: backupRecord.backup_location || undefined,
-      recoveryPoint: new Date(backupRecord.start_time),
-    };
+      return {
+        id: remarkData.backup_id || String(data.id),
+        type: data.action.replace('backup_complete_', '') as
+          | 'full'
+          | 'incremental'
+          | 'differential',
+        status: remarkData.status as 'completed',
+        startTime: new Date(remarkData.start_time || data.time),
+        endTime: remarkData.end_time ? new Date(remarkData.end_time) : undefined,
+        sizeBytes: remarkData.backup_size_mb ? remarkData.backup_size_mb * 1024 * 1024 : undefined,
+        location: remarkData.backup_location || undefined,
+        recoveryPoint: new Date(remarkData.start_time || data.time),
+      };
+    } catch (parseError) {
+      console.error('[BackupManager] Error parsing backup record:', parseError);
+      return null;
+    }
   }
 
   /**
@@ -727,10 +739,10 @@ export class DatabaseBackupManager {
     cutoffDate.setDate(cutoffDate.getDate() - this.config.retentionPolicy.daily);
 
     const { data, error } = await this.supabase
-      .from('backup_history')
-      .select('id, backup_location')
-      .lt('retention_until', cutoffDate.toISOString())
-      .eq('status', 'completed');
+      .from('record_history')
+      .select('id, remark')
+      .like('action', 'backup_complete_%')
+      .lt('time', cutoffDate.toISOString());
 
     if (error) {
       console.error('[BackupManager] Error finding old backups:', error);
@@ -742,23 +754,25 @@ export class DatabaseBackupManager {
       return;
     }
 
-    // Type assertion for backup data
-    const oldBackups = data as Array<{
-      id: number;
-      backup_location?: string | null;
-    }>;
+    console.log(`[BackupManager] Cleaning up ${data.length} old backup records`);
 
-    console.log(`[BackupManager] Cleaning up ${oldBackups.length} old backups`);
-
-    for (const backup of oldBackups) {
+    for (const record of data) {
       try {
+        let backupLocation = 'unknown';
+        try {
+          const remarkData = JSON.parse(record.remark);
+          backupLocation = remarkData.backup_location || 'unknown';
+        } catch (parseError) {
+          // Ignore parse errors for cleanup logging
+        }
+
         // In production, delete the backup files
-        console.log(`[BackupManager] Would delete backup: ${backup.backup_location}`);
+        console.log(`[BackupManager] Would delete backup: ${backupLocation}`);
 
         // Mark as deleted in database
-        await this.supabase.from('backup_history').delete().eq('id', backup.id);
+        await this.supabase.from('record_history').delete().eq('id', record.id);
       } catch (error) {
-        console.error(`[BackupManager] Error cleaning up backup ${backup.id}:`, error);
+        console.error(`[BackupManager] Error cleaning up backup ${record.id}:`, error);
       }
     }
   }

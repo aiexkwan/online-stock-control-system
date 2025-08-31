@@ -4,7 +4,7 @@
  */
 
 import { format, parseISO } from 'date-fns';
-import { fromZonedTime, toZonedTime, formatInTimeZone } from 'date-fns-tz';
+import { fromZonedTime, toZonedTime, formatInTimeZone as _formatInTimeZone } from 'date-fns-tz';
 
 // 定義時區
 export const TIMEZONES = {

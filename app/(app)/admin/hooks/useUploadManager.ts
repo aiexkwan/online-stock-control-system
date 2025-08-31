@@ -17,11 +17,14 @@
 
 import { useState, useCallback } from 'react';
 import { toast } from 'sonner';
-import { createClient } from '@/app/utils/supabase/client';
-import type { ExtractedOrderItem, DataExtractionOverlayState } from '@/lib/types/order-extraction';
+import { createClient } from '../../../utils/supabase/client';
+import type {
+  ExtractedOrderItem,
+  DataExtractionOverlayState,
+} from '../../../../lib/types/order-extraction';
 import type {
   // UploadConfiguration, // Unused type import
-  DocUploadRecord,
+  _DocUploadRecord as DocUploadRecord,
   UploadToastState,
 } from '../types/data-management';
 
@@ -137,7 +140,7 @@ export const useUploadManager = ({
 
       if (records && records.length > 0) {
         // Get unique upload_by IDs
-        const userIds = [...new Set(records.map(r => r.upload_by))];
+        const userIds = Array.from(new Set(records.map((r: any) => r.upload_by)));
 
         // Batch fetch user data
         const { data: users, error: usersError } = await supabase
@@ -150,11 +153,11 @@ export const useUploadManager = ({
         }
 
         // Create user ID to name mapping
-        const userMap = new Map(users?.map(u => [u.id, u.name]) || []);
+        const userMap = new Map(users?.map((u: any) => [u.id, u.name]) || []);
 
         // Merge data
         const recordsWithNames = records.map(
-          record =>
+          (record: any) =>
             ({
               uuid: record.uuid,
               doc_name: record.doc_name,
@@ -326,7 +329,7 @@ export const useUploadManager = ({
 
       try {
         // Get current user ID
-        const { getCurrentUserId } = await import('@/app/actions/orderUploadActions');
+        const { getCurrentUserId } = await import('../../../actions/orderUploadActions');
         const userId = await getCurrentUserId();
 
         if (!userId) {
@@ -362,7 +365,7 @@ export const useUploadManager = ({
         setUploadToast(prev => ({ ...prev, status: 'processing', progress: 40 }));
 
         // Call analyzeOrderPDF server action
-        const { analyzeOrderPDF } = await import('@/app/actions/orderUploadActions');
+        const { analyzeOrderPDF } = await import('../../../actions/orderUploadActions');
 
         // Simulate processing progress
         processInterval = setInterval(() => {

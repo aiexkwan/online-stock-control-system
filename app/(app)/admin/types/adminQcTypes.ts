@@ -1,6 +1,6 @@
 // Admin-specific types for QC Label Card
 // Simplified version without manual ACO order entry
-import type { Product } from '@/types/generated/graphql';
+import type { Product } from '../../../../types/generated/graphql';
 
 // Backward compatible ProductInfo interface
 export interface ProductInfo {
@@ -18,7 +18,7 @@ export function productToProductInfo(product: Product): ProductInfo {
     description: product.description,
     standard_qty: product.standardQty?.toString() || '1',
     type: product.type || 'Unknown',
-    remark: '-', // GraphQL schema doesn't have remark field
+    remark: product.remark || '-',
   };
 }
 

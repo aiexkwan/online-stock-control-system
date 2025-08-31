@@ -165,7 +165,7 @@ const getDestinationOptions = (currentLocation: string): FormOption[] => {
 };
 
 // Destination selector component - Changed to horizontal layout
-const _TransferDestinationSelector: React.FC<{
+const TransferDestinationSelector: React.FC<{
   currentLocation: string;
   selectedDestination: string;
   onDestinationChange: (destination: string) => void;
@@ -252,7 +252,7 @@ const StockTransferCardInternal: React.FC<StockTransferCardProps> = ({ className
   // Use the stock transfer hook for core functionality with safety checks
   const stockTransferHook = useStockTransfer({
     searchInputRef,
-    onTransferComplete: (_pallet, _destination) => {
+    onTransferComplete: (pallet, destination) => {
       if (sound?.playSuccess) {
         sound.playSuccess();
       }
@@ -474,6 +474,8 @@ const StockTransferCardInternal: React.FC<StockTransferCardProps> = ({ className
   // Load history on mount with cleanup and AbortController
   useEffect(() => {
     const abortController = new AbortController();
+    const currentTimeouts = timeoutsRef.current;
+    const currentCleanup = cleanupRef.current;
 
     // Load history with abort signal
     loadTransferHistory(abortController.signal);
@@ -486,23 +488,22 @@ const StockTransferCardInternal: React.FC<StockTransferCardProps> = ({ className
       mountedRef.current = false;
 
       // 清理所有追蹤的定時器
-      if (timeoutsRef.current) {
-        const timeouts = timeoutsRef.current;
-        timeouts.forEach(timeoutId => {
+      if (currentTimeouts) {
+        currentTimeouts.forEach(timeoutId => {
           clearTimeout(timeoutId);
         });
-        timeouts.clear();
+        currentTimeouts.clear();
       }
 
       // Execute all registered cleanup functions
-      cleanupRef.current.forEach(cleanup => {
+      currentCleanup.forEach(cleanup => {
         try {
           cleanup();
         } catch (error) {
           console.error('Cleanup error in StockTransferCard:', error);
         }
       });
-      cleanupRef.current = [];
+      currentCleanup.length = 0;
     };
   }, [loadTransferHistory]);
 

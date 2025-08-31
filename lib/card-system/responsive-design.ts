@@ -6,7 +6,7 @@
  * Purpose: Comprehensive responsive design patterns for all card types
  */
 
-import { cardBreakpoints } from './theme';
+import { cardBreakpoints as _cardBreakpoints } from './theme';
 
 /**
  * 響應式佈局配置

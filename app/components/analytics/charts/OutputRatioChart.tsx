@@ -19,7 +19,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { Loader2 } from 'lucide-react';
+// import { Loader2 } from 'lucide-react';
 import { dialogStyles } from '@/app/utils/dialogStyles';
 import { AnalyticsApiClient, type OutputRatioData } from '@/lib/analytics/api-client';
 

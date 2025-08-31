@@ -10,6 +10,7 @@ import {
 } from '@/app/(app)/order-loading/hooks/useOrderCache';
 import { useSoundFeedback, useSoundSettings } from '@/app/hooks/useSoundFeedback';
 import { safeString } from '@/types/database/helpers';
+import { DatabaseRecord } from '@/types/database/tables';
 
 // Types from order loading page
 export interface OrderSummary {
@@ -52,7 +53,7 @@ export interface SearchResult {
   title: string;
   subtitle: string;
   metadata?: string;
-  data: Array<Record<string, unknown>>;
+  data: DatabaseRecord[];
 }
 
 // Database result types
@@ -97,7 +98,7 @@ export interface UseOrderLoadReturn {
   handleIdChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   handleIdBlur: () => void;
   handleOrderSelect: (orderRef: string) => void;
-  handleSearchSelect: (result: SearchResult) => Promise<void>;
+  handleSearchSelect: (result: SearchResult) => void;
   handleUndoClick: (load: UndoItem) => void;
   handleConfirmedUndo: () => Promise<void>;
   refreshAllData: () => Promise<void>;
@@ -209,7 +210,7 @@ export function useOrderLoad(): UseOrderLoadReturn {
         const { data, error } = await supabase
           .from('data_id')
           .select('id')
-          .eq('id', parseInt(id))
+          .eq('id', parseInt(id, 10))
           .single();
 
         if (error || !data) {
@@ -284,8 +285,11 @@ export function useOrderLoad(): UseOrderLoadReturn {
 
       // Group by order_ref and calculate completion
       const orderMap = new Map<string, OrderSummary>();
-      (data as unknown as DatabaseOrderItem[]).forEach((item: DatabaseOrderItem) => {
-        const ref = safeString(item.order_ref);
+      data.forEach((item: any) => {
+        // Type guard to ensure item has required properties
+        if (!item || typeof item !== 'object') return;
+        const dbItem = item as DatabaseOrderItem;
+        const ref = safeString(dbItem.order_ref);
         if (!orderMap.has(ref)) {
           orderMap.set(ref, {
             orderRef: ref,
@@ -296,9 +300,10 @@ export function useOrderLoad(): UseOrderLoadReturn {
             completedItems: 0,
           });
         }
-        const order = orderMap.get(ref)!;
-        const itemQty = parseInt(String(item.product_qty || '0'));
-        const itemLoaded = parseInt(safeString(item.loaded_qty) || '0');
+        const order = orderMap.get(ref);
+        if (!order) return;
+        const itemQty = parseInt(String(dbItem.product_qty || '0'), 10);
+        const itemLoaded = parseInt(safeString(dbItem.loaded_qty) || '0', 10);
 
         order.totalQty += itemQty;
         order.loadedQty += itemLoaded;
@@ -405,8 +410,12 @@ export function useOrderLoad(): UseOrderLoadReturn {
 
         if (!error && data) {
           // Transform data to match expected format
-          const transformedData = (data as unknown as RecordHistoryItem[]).map(
-            (item: RecordHistoryItem) => {
+          const transformedData = data
+            .map((rawItem: any) => {
+              // Type guard and casting
+              if (!rawItem || typeof rawItem !== 'object') return null;
+              const item = rawItem as RecordHistoryItem;
+
               // Extract details from remark
               const orderMatch = item.remark.match(/Order: ([^,]+)/);
               const productMatch = item.remark.match(/Product: ([^,]+)/);
@@ -418,13 +427,13 @@ export function useOrderLoad(): UseOrderLoadReturn {
                 order_ref: orderMatch ? orderMatch[1] : orderRef,
                 pallet_num: item.plt_num || undefined,
                 product_code: productMatch ? productMatch[1] : '',
-                quantity: qtyMatch ? parseInt(qtyMatch[1]) : 0,
+                quantity: qtyMatch ? parseInt(qtyMatch[1], 10) : 0,
                 action_type: 'load',
                 action_by: byMatch ? byMatch[1] : 'Unknown',
                 action_time: item.time,
               };
-            }
-          );
+            })
+            .filter((item): item is NonNullable<typeof item> => item !== null);
           setRecentLoads(transformedData);
         }
       } catch (error) {
@@ -504,21 +513,21 @@ export function useOrderLoad(): UseOrderLoadReturn {
 
     try {
       // Call undo action
-      const result = await undoLoadPallet(
+      const _result = await undoLoadPallet(
         selectedOrderRef,
         undoItem.pallet_num,
         undoItem.product_code,
         undoItem.quantity
       );
 
-      if (result.success) {
+      if (_result.success) {
         sound.playSuccess();
         toast.success(`✓ Successfully undone: ${undoItem.pallet_num}`);
         // Refresh data
         await refreshAllData();
       } else {
         sound.playError();
-        toast.error(`❌ Failed to undo: ${result.message}`);
+        toast.error(`❌ Failed to undo: ${_result.message}`);
       }
     } catch (error) {
       console.error('Error undoing load:', error);
@@ -555,86 +564,89 @@ export function useOrderLoad(): UseOrderLoadReturn {
 
   // Handle search selection (same as stock-transfer)
   const handleSearchSelect = useCallback(
-    async (result: SearchResult) => {
+    (result: SearchResult) => {
       if (!selectedOrderRef) {
         toast.error('Please select an order first');
         return;
       }
 
-      setIsSearching(true);
-      try {
-        // 使用 server action 裝載棧板
-        // 策略4: unknown + type narrowing - 安全獲取 input 值
-        const inputValue =
-          Array.isArray(result.data) && result.data.length > 0
-            ? typeof result.data[0]?.value === 'string'
-              ? result.data[0].value
-              : result.title
-            : (result.title ?? '');
-        const response = await loadPalletToOrder(selectedOrderRef, inputValue);
+      // Execute async logic in background
+      (async () => {
+        setIsSearching(true);
+        try {
+          // 使用 server action 裝載棧板
+          // 策略4: unknown + type narrowing - 安全獲取 input 值
+          const inputValue =
+            Array.isArray(result.data) && result.data.length > 0
+              ? typeof result.data[0]?.value === 'string'
+                ? result.data[0].value
+                : result.title
+              : (result.title ?? '');
+          const response = await loadPalletToOrder(selectedOrderRef, inputValue);
 
-        if (response.success) {
-          // Play success sound
-          sound.playSuccess();
+          if (response.success) {
+            // Play success sound
+            sound.playSuccess();
 
-          // Show success with better formatting
-          if (response.data) {
-            toast.success(
-              `✓ Successfully Loaded! Pallet: ${response.data.palletNumber} | Product: ${response.data.productCode} | Qty: ${response.data.productQty} | Total: ${response.data.updatedLoadedQty}`
-            );
+            // Show success with better formatting
+            if (response.data) {
+              toast.success(
+                `✓ Successfully Loaded! Pallet: ${response.data.palletNumber} | Product: ${response.data.productCode} | Qty: ${response.data.productQty} | Total: ${response.data.updatedLoadedQty}`
+              );
+            } else {
+              toast.success(response.message);
+            }
+
+            // Show warning if anomaly detected
+            if (response.warning) {
+              sound.playWarning();
+              setTimeout(() => {
+                toast.warning(response.warning);
+              }, 500);
+            }
+
+            // Refresh order data and history
+            await refreshAllData();
+
+            // Clear search value after successful scan
+            setSearchValue('');
+
+            // Refocus on search input
+            if (searchInputRef.current) {
+              searchInputRef.current.focus();
+            }
           } else {
-            toast.success(response.message);
+            // Show more user-friendly error messages
+            let errorMessage = response.message;
+
+            if (response.message.includes('Exceeds order quantity')) {
+              errorMessage = response.message; // Already formatted well
+            } else if (response.error === 'EXCEED_ORDER_QTY') {
+              errorMessage = 'Cannot load more than ordered quantity';
+            } else if (response.error === 'NOT_FOUND') {
+              errorMessage = 'Pallet or series not found in system';
+            } else if (response.error === 'INVALID_FORMAT') {
+              errorMessage = 'Invalid scan format. Please scan a valid pallet or series barcode';
+            } else if (response.message.includes('is not in order')) {
+              errorMessage = response.message; // Already clear
+            } else if (response.error === 'DUPLICATE_SCAN') {
+              // Special handling for duplicate scan - use warning instead of error
+              sound.playWarning();
+              toast.warning(response.message);
+              return;
+            }
+
+            sound.playError();
+            toast.error(`❌ Loading Failed: ${errorMessage}`);
           }
-
-          // Show warning if anomaly detected
-          if (response.warning) {
-            sound.playWarning();
-            setTimeout(() => {
-              toast.warning(response.warning);
-            }, 500);
-          }
-
-          // Refresh order data and history
-          await refreshAllData();
-
-          // Clear search value after successful scan
-          setSearchValue('');
-
-          // Refocus on search input
-          if (searchInputRef.current) {
-            searchInputRef.current.focus();
-          }
-        } else {
-          // Show more user-friendly error messages
-          let errorMessage = response.message;
-
-          if (response.message.includes('Exceeds order quantity')) {
-            errorMessage = response.message; // Already formatted well
-          } else if (response.error === 'EXCEED_ORDER_QTY') {
-            errorMessage = 'Cannot load more than ordered quantity';
-          } else if (response.error === 'NOT_FOUND') {
-            errorMessage = 'Pallet or series not found in system';
-          } else if (response.error === 'INVALID_FORMAT') {
-            errorMessage = 'Invalid scan format. Please scan a valid pallet or series barcode';
-          } else if (response.message.includes('is not in order')) {
-            errorMessage = response.message; // Already clear
-          } else if (response.error === 'DUPLICATE_SCAN') {
-            // Special handling for duplicate scan - use warning instead of error
-            sound.playWarning();
-            toast.warning(response.message);
-            return;
-          }
-
+        } catch (error) {
+          console.error('Error loading pallet:', error);
           sound.playError();
-          toast.error(`❌ Loading Failed: ${errorMessage}`);
+          toast.error('Failed to load pallet');
+        } finally {
+          setIsSearching(false);
         }
-      } catch (error) {
-        console.error('Error loading pallet:', error);
-        sound.playError();
-        toast.error('Failed to load pallet');
-      } finally {
-        setIsSearching(false);
-      }
+      })();
     },
     [selectedOrderRef, sound, refreshAllData]
   );

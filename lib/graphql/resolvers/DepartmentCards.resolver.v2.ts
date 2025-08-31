@@ -7,7 +7,7 @@
 import { GraphQLError } from 'graphql';
 import { AdapterFactory, DepartmentDataAdapter } from '../adapters/database-adapter';
 import { withSchemaValidation } from '../middleware/schema-validation';
-import { TypeTransformers } from '../types/database-types';
+import { TypeTransformers as _TypeTransformers } from '../types/database-types';
 import type { GraphQLContext } from '../../types/graphql-resolver.types';
 import type {
   DepartmentStats,
@@ -86,7 +86,7 @@ export const enhancedDepartmentResolver = {
     // Injection Department Data with schema validation
     departmentInjectionData: withSchemaValidation(
       async (_: unknown, __: unknown, context: unknown) => {
-        const ctx = context as GraphQLContext;
+        const _ctx = context as GraphQLContext;
         try {
           const adapter = await AdapterFactory.createDepartmentAdapter();
           const config = getDepartmentConfig('INJECTION');
@@ -114,10 +114,10 @@ export const enhancedDepartmentResolver = {
           };
 
           // Log any errors for monitoring
-          [stats, topStocks, materialStocks].forEach((result, index) => {
-            if (result.status === 'rejected') {
+          [stats, topStocks, materialStocks].forEach((settledResult, index) => {
+            if (settledResult.status === 'rejected') {
               const section = ['stats', 'topStocks', 'materialStocks'][index];
-              console.error(`[departmentInjectionData] ${section} failed:`, result.reason);
+              console.error(`[departmentInjectionData] ${section} failed:`, settledResult.reason);
             }
           });
 
@@ -131,7 +131,7 @@ export const enhancedDepartmentResolver = {
 
     // Pipe Department Data with schema validation
     departmentPipeData: withSchemaValidation(
-      async (_: unknown, __: unknown, context: GraphQLContext) => {
+      async (_: unknown, __: unknown, _context: GraphQLContext) => {
         try {
           const adapter = await AdapterFactory.createDepartmentAdapter();
           const config = getDepartmentConfig('PIPE');
@@ -155,10 +155,10 @@ export const enhancedDepartmentResolver = {
             error: null,
           };
 
-          [stats, topStocks, materialStocks].forEach((result, index) => {
-            if (result.status === 'rejected') {
+          [stats, topStocks, materialStocks].forEach((settledResult, index) => {
+            if (settledResult.status === 'rejected') {
               const section = ['stats', 'topStocks', 'materialStocks'][index];
-              console.error(`[departmentPipeData] ${section} failed:`, result.reason);
+              console.error(`[departmentPipeData] ${section} failed:`, settledResult.reason);
             }
           });
 
@@ -172,7 +172,7 @@ export const enhancedDepartmentResolver = {
 
     // Warehouse Department Data with schema validation
     departmentWarehouseData: withSchemaValidation(
-      async (_: unknown, __: unknown, context: GraphQLContext) => {
+      async (_: unknown, __: unknown, _context: GraphQLContext) => {
         try {
           const adapter = await AdapterFactory.createDepartmentAdapter();
           const config = getDepartmentConfig('WAREHOUSE');
@@ -201,8 +201,8 @@ export const enhancedDepartmentResolver = {
           };
 
           [stats, topStocks, materialStocks, recentActivities, orderCompletions].forEach(
-            (result, index) => {
-              if (result.status === 'rejected') {
+            (settledResult, index) => {
+              if (settledResult.status === 'rejected') {
                 const section = [
                   'stats',
                   'topStocks',
@@ -210,7 +210,7 @@ export const enhancedDepartmentResolver = {
                   'recentActivities',
                   'orderCompletions',
                 ][index];
-                console.error(`[departmentWarehouseData] ${section} failed:`, result.reason);
+                console.error(`[departmentWarehouseData] ${section} failed:`, settledResult.reason);
               }
             }
           );
@@ -257,7 +257,7 @@ async function fetchMaterialStocksWithAdapter(
 }
 
 async function fetchOrderCompletionsWithAdapter(
-  adapter: DepartmentDataAdapter
+  _adapter: DepartmentDataAdapter
 ): Promise<OrderCompletion[]> {
   try {
     // This would be implemented in the adapter

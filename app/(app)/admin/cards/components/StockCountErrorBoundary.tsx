@@ -1,10 +1,11 @@
 'use client';
 
-import React from 'react';
+import { Component } from 'react';
+import type { ReactNode, ErrorInfo } from 'react';
 import { ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 interface Props {
-  children: React.ReactNode;
+  children: ReactNode;
 }
 
 interface State {
@@ -12,21 +13,25 @@ interface State {
   error?: Error;
 }
 
-export default class StockCountErrorBoundary extends React.Component<Props, State> {
+export default class StockCountErrorBoundary extends Component<Props, State> {
   constructor(props: Props) {
     super(props);
-    this.state = { hasError: false };
+    this.state = { hasError: false, error: undefined };
   }
 
-  static getDerivedStateFromError(error: Error): State {
+  static getDerivedStateFromError(error: Error): Partial<State> {
     return { hasError: true, error };
   }
 
-  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     console.error('StockCount Error:', error, errorInfo);
   }
 
-  override render() {
+  private handleRetry = (): void => {
+    this.setState({ hasError: false, error: undefined });
+  };
+
+  render(): ReactNode {
     if (this.state.hasError) {
       return (
         <div className='flex h-full items-center justify-center p-6'>
@@ -37,7 +42,7 @@ export default class StockCountErrorBoundary extends React.Component<Props, Stat
               {this.state.error?.message || 'An unexpected error occurred'}
             </p>
             <button
-              onClick={() => this.setState({ hasError: false })}
+              onClick={this.handleRetry}
               className='rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700'
             >
               Try Again

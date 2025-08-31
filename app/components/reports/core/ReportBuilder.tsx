@@ -27,27 +27,27 @@ import { useToast } from '@/components/ui/use-toast';
 import { dialogStyles } from '@/app/utils/dialogStyles';
 
 interface ReportBuilderProps {
-  config: ReportConfig;
+  _config: ReportConfig;
   onGenerate: (format: ReportFormat, filters: FilterValues) => Promise<void>;
   className?: string;
 }
 
-export function ReportBuilder({ config, onGenerate, className }: ReportBuilderProps) {
+export function ReportBuilder({ _config, onGenerate, className }: ReportBuilderProps) {
   const [filters, setFilters] = useState<FilterValues>({});
-  const [selectedFormat, setSelectedFormat] = useState<ReportFormat>(config.defaultFormat);
+  const [selectedFormat, setSelectedFormat] = useState<ReportFormat>(_config.defaultFormat);
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
   // 初始化默認值
   useEffect(() => {
     const defaultFilters: FilterValues = {};
-    config.filters.forEach(filter => {
+    _config.filters.forEach(filter => {
       if (filter.defaultValue !== undefined) {
         defaultFilters[filter.id] = filter.defaultValue;
       }
     });
     setFilters(defaultFilters);
-  }, [config]);
+  }, [_config]);
 
   const handleFilterChange = (filterId: string, value: unknown) => {
     // 策略 4: unknown + type narrowing - 安全的 filter 值轉換
@@ -76,7 +76,7 @@ export function ReportBuilder({ config, onGenerate, className }: ReportBuilderPr
       await onGenerate(selectedFormat, filters);
       toast({
         title: 'Report Generated',
-        description: `Your ${config.name} has been generated successfully.`,
+        description: `Your ${_config._name} has been generated successfully.`,
       });
     } catch (error) {
       console.error('Report generation error:', error);
@@ -297,15 +297,15 @@ export function ReportBuilder({ config, onGenerate, className }: ReportBuilderPr
   return (
     <Card className={cn(dialogStyles.card, 'w-full', className)}>
       <CardHeader>
-        <CardTitle className='text-white'>{config.name}</CardTitle>
-        <CardDescription className='text-slate-400'>{config.description}</CardDescription>
+        <CardTitle className='text-white'>{_config._name}</CardTitle>
+        <CardDescription className='text-slate-400'>{_config.description}</CardDescription>
       </CardHeader>
       <CardContent className='space-y-6'>
         {/* Filters Section */}
         <div className='space-y-4'>
           <h3 className='text-lg font-semibold text-white'>Report Filters</h3>
           <div className='grid grid-cols-1 gap-4 md:grid-cols-2'>
-            {config.filters.map(renderFilter)}
+            {_config.filters.map(renderFilter)}
           </div>
         </div>
 
@@ -320,7 +320,7 @@ export function ReportBuilder({ config, onGenerate, className }: ReportBuilderPr
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {config.formats.map(format => (
+              {_config.formats.map(format => (
                 <SelectItem key={format} value={format}>
                   {format.toUpperCase()}
                 </SelectItem>

@@ -172,7 +172,7 @@ export const GrnDetailCard: React.FC<GrnDetailCardPropsUnion> = props => {
   // Apply theme-based styling
   const containerClasses = React.useMemo(() => {
     const base = 'flex flex-col space-y-3';
-    const themeColor = config.theme.accentColor;
+    const _themeColor = config.theme.accentColor;
     const customContainer = config.theme.customClasses?.container || '';
 
     return `${base} ${className} ${customContainer}`;
@@ -466,12 +466,12 @@ export const GrnDetailCard: React.FC<GrnDetailCardPropsUnion> = props => {
       {labelMode === 'weight' && (
         <div className='grid grid-cols-2 gap-3'>
           <PalletTypeSelector
-            palletType={palletType as any}
+            palletType={palletType}
             onChange={onPalletTypeChange}
             disabled={disabled}
           />
           <PackageTypeSelector
-            packageType={packageType as any}
+            packageType={packageType}
             onChange={onPackageTypeChange}
             disabled={disabled}
           />

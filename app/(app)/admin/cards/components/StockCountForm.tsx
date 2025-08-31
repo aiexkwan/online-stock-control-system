@@ -47,8 +47,8 @@ export default function StockCountForm({
       return;
     }
 
-    const quantity = formData.quantity ? parseInt(formData.quantity) : undefined;
-    if (formData.quantity && (isNaN(quantity!) || quantity! < 0)) {
+    const quantity = formData.quantity ? parseInt(formData.quantity, 10) : undefined;
+    if (formData.quantity && (quantity === undefined || isNaN(quantity) || quantity < 0)) {
       toast.error('Please enter a valid quantity');
       return;
     }
@@ -60,23 +60,23 @@ export default function StockCountForm({
     } = {
       pallet: formData.pallet.trim(),
     };
-    
+
     const trimmedProductCode = formData.productCode.trim();
     if (trimmedProductCode) {
       submitData.productCode = trimmedProductCode;
     }
-    
+
     if (quantity !== undefined) {
       submitData.quantity = quantity;
     }
-    
+
     onSubmit(submitData);
 
     // Reset form
     setFormData({ pallet: '', productCode: '', quantity: '' });
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: keyof typeof formData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 

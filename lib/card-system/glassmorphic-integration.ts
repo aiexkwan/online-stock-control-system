@@ -6,7 +6,7 @@
  * Purpose: Seamless integration of glassmorphic effects with the new card theme system
  */
 
-import { cardThemes } from './theme';
+import { cardThemes as _cardThemes } from './theme';
 
 /**
  * 純透明玻璃態效果配置

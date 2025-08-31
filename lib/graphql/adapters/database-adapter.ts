@@ -4,7 +4,9 @@
  */
 
 import { GraphQLError } from 'graphql';
-import { createClient } from '@/app/utils/supabase/server';
+import { createClient } from '../../../app/utils/supabase/server';
+import type { Database } from '../../database.types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { FieldMapper } from '../config/field-mappings';
 
 export interface QueryOptions {
@@ -64,13 +66,16 @@ interface ProductStockItem {
   type: string;
 }
 
+// Type alias for table names
+type TableName = keyof Database['public']['Tables'];
+
 /**
  * Base Database Adapter
  */
 export abstract class BaseDatabaseAdapter {
-  protected supabase: Awaited<ReturnType<typeof createClient>>;
+  protected supabase: SupabaseClient<Database>;
 
-  constructor(supabase: Awaited<ReturnType<typeof createClient>>) {
+  constructor(supabase: SupabaseClient<Database>) {
     this.supabase = supabase;
   }
 
@@ -86,8 +91,10 @@ export abstract class BaseDatabaseAdapter {
       // Map GraphQL fields to database columns
       const dbColumns = FieldMapper.mapSelectFields(tableName, graphqlFields);
 
-      // Build query
-      let query = this.supabase.from(tableName).select(dbColumns.join(', '), { count: 'exact' });
+      // Build query - use any to bypass strict typing for dynamic table access
+      let query = (this.supabase as any)
+        .from(tableName)
+        .select(dbColumns.join(', '), { count: 'exact' });
 
       // Apply filters
       if (options.filters) {

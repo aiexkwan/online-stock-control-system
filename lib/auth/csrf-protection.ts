@@ -6,9 +6,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-const CSRF_TOKEN_COOKIE = 'csrf-token';
-const CSRF_TOKEN_HEADER = 'x-csrf-token';
-const TOKEN_LENGTH = 32;
+const CSRF_TOKEN_COOKIE = 'csrf-token' as const;
+const CSRF_TOKEN_HEADER = 'x-csrf-token' as const;
+const TOKEN_LENGTH = 32 as const;
+
+// 類型定義
+export interface CSRFTokenResult {
+  token: string | null;
+  headers: HeadersInit;
+}
+
+export interface CSRFProtectionOptions {
+  exemptMethods?: readonly string[];
+  cookieName?: string;
+  headerName?: string;
+}
+
+export interface SecureFetchOptions extends RequestInit {
+  includeCsrfToken?: boolean;
+}
 
 /**
  * Generate cryptographically secure CSRF token
@@ -16,13 +32,16 @@ const TOKEN_LENGTH = 32;
 export function generateCSRFToken(): string {
   if (typeof window === 'undefined') {
     // Server-side
-    const crypto = require('crypto');
+    const crypto = require('crypto') as typeof import('crypto');
     return crypto.randomBytes(TOKEN_LENGTH).toString('hex');
   } else {
     // Client-side
     const array = new Uint8Array(TOKEN_LENGTH);
+    if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
+      throw new Error('Crypto API not available');
+    }
     crypto.getRandomValues(array);
-    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+    return Array.from(array, (byte: number) => byte.toString(16).padStart(2, '0')).join('');
   }
 }
 
@@ -47,41 +66,66 @@ function timingSafeEqual(a: string, b: string): boolean {
  */
 export async function csrfProtection(
   request: NextRequest,
-  handler: () => Promise<NextResponse>
+  handler: () => Promise<NextResponse>,
+  options: CSRFProtectionOptions = {}
 ): Promise<NextResponse> {
+  const {
+    exemptMethods = ['GET', 'HEAD', 'OPTIONS'] as const,
+    cookieName = CSRF_TOKEN_COOKIE,
+    headerName = CSRF_TOKEN_HEADER,
+  } = options;
+
   // Skip CSRF for safe methods
-  if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
+  if (exemptMethods.includes(request.method)) {
     return handler();
   }
 
-  // Get token from cookie
-  const cookieStore = await cookies();
-  const cookieToken = cookieStore.get(CSRF_TOKEN_COOKIE)?.value;
+  try {
+    // Get token from cookie
+    const cookieStore = await cookies();
+    const cookieToken = cookieStore.get(cookieName)?.value;
 
-  // Get token from header or body
-  const headerToken = request.headers.get(CSRF_TOKEN_HEADER);
+    // Get token from header or body
+    const headerToken = request.headers.get(headerName);
 
-  // Validate tokens
-  if (!cookieToken || !headerToken) {
-    return NextResponse.json({ error: 'CSRF token missing' }, { status: 403 });
+    // Validate tokens
+    if (!cookieToken || !headerToken) {
+      return NextResponse.json(
+        { error: 'CSRF token missing', code: 'CSRF_TOKEN_MISSING' },
+        { status: 403 }
+      );
+    }
+
+    if (!timingSafeEqual(cookieToken, headerToken)) {
+      return NextResponse.json(
+        { error: 'Invalid CSRF token', code: 'CSRF_TOKEN_INVALID' },
+        { status: 403 }
+      );
+    }
+
+    // Token is valid, proceed with request
+    return handler();
+  } catch (error) {
+    console.error('CSRF protection error:', error);
+    return NextResponse.json(
+      { error: 'CSRF protection failed', code: 'CSRF_PROTECTION_ERROR' },
+      { status: 500 }
+    );
   }
-
-  if (!timingSafeEqual(cookieToken, headerToken)) {
-    return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
-  }
-
-  // Token is valid, proceed with request
-  return handler();
 }
 
 /**
  * Set CSRF token cookie
  */
-export function setCSRFCookie(response: NextResponse, token?: string): void {
+export function setCSRFCookie(
+  response: NextResponse,
+  token?: string,
+  cookieName: string = CSRF_TOKEN_COOKIE
+): string {
   const csrfToken = token || generateCSRFToken();
 
   response.cookies.set({
-    name: CSRF_TOKEN_COOKIE,
+    name: cookieName,
     value: csrfToken,
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
@@ -89,54 +133,93 @@ export function setCSRFCookie(response: NextResponse, token?: string): void {
     path: '/',
     maxAge: 60 * 60 * 24, // 24 hours
   });
+
+  return csrfToken;
 }
 
 /**
  * Get CSRF token from request
  */
-export function getCSRFToken(request: NextRequest): string | null {
-  return request.cookies.get(CSRF_TOKEN_COOKIE)?.value || null;
+export function getCSRFToken(
+  request: NextRequest,
+  cookieName: string = CSRF_TOKEN_COOKIE
+): string | null {
+  return request.cookies.get(cookieName)?.value || null;
 }
 
 /**
  * React hook for CSRF protection
  */
-export function useCSRFToken(): {
-  token: string | null;
-  headers: HeadersInit;
-} {
+export function useCSRFToken(
+  cookieName: string = CSRF_TOKEN_COOKIE,
+  headerName: string = CSRF_TOKEN_HEADER
+): CSRFTokenResult {
   if (typeof window === 'undefined') {
     return { token: null, headers: {} };
   }
 
-  // Get token from cookie
-  const token =
-    document.cookie
-      .split('; ')
-      .find(row => row.startsWith(CSRF_TOKEN_COOKIE))
-      ?.split('=')[1] || null;
+  // Get token from cookie with proper parsing
+  const getCookieValue = (name: string): string | null => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) {
+      const cookieValue = parts.pop()?.split(';').shift();
+      return cookieValue || null;
+    }
+    return null;
+  };
+
+  const token = getCookieValue(cookieName);
 
   return {
     token,
-    headers: token ? { [CSRF_TOKEN_HEADER]: token } : {},
+    headers: token ? { [headerName]: token } : {},
   };
 }
 
 /**
  * Fetch wrapper with CSRF protection
  */
-export async function secureFetch(url: string, options: RequestInit = {}): Promise<Response> {
-  const token = document.cookie
-    .split('; ')
-    .find(row => row.startsWith(CSRF_TOKEN_COOKIE))
-    ?.split('=')[1];
+export async function secureFetch(
+  url: string,
+  options: SecureFetchOptions = {}
+): Promise<Response> {
+  const {
+    includeCsrfToken = true,
+    method = 'GET',
+    headers: originalHeaders = {},
+    ...restOptions
+  } = options;
 
-  if (token && !['GET', 'HEAD'].includes(options.method || 'GET')) {
-    options.headers = {
-      ...options.headers,
-      [CSRF_TOKEN_HEADER]: token,
-    };
+  // Helper function to get cookie value
+  const getCookieValue = (name: string): string | null => {
+    if (typeof document === 'undefined') return null;
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) {
+      const cookieValue = parts.pop()?.split(';').shift();
+      return cookieValue || null;
+    }
+    return null;
+  };
+
+  const token = getCookieValue(CSRF_TOKEN_COOKIE);
+  const needsToken =
+    includeCsrfToken && token && !['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase());
+
+  const headers: HeadersInit = {
+    ...originalHeaders,
+    ...(needsToken ? { [CSRF_TOKEN_HEADER]: token } : {}),
+  };
+
+  try {
+    return await fetch(url, {
+      ...restOptions,
+      method,
+      headers,
+    });
+  } catch (error) {
+    console.error('Secure fetch error:', error);
+    throw error;
   }
-
-  return fetch(url, options);
 }

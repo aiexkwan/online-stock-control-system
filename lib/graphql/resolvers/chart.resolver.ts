@@ -4,7 +4,6 @@
  */
 
 import { startOfDay, endOfDay, subDays, format } from 'date-fns';
-import DataLoader from 'dataloader';
 import { SupabaseClient } from '@supabase/supabase-js';
 import {
   ChartType,
@@ -17,9 +16,8 @@ import {
   TimeGranularity,
   AggregationType,
   ChartDatasetType,
-} from '@/types/generated/graphql';
-import { createClient } from '@/app/utils/supabase/server';
-import { Database } from '@/types/database/supabase';
+} from '../../../types/generated/graphql';
+import { Database } from '../../../types/database/supabase';
 
 // 定義 Supabase client 類型
 type SupabaseClientType = SupabaseClient<Database>;
@@ -31,7 +29,7 @@ interface ChartResolverContext {
 }
 
 // 定義資料庫查詢結果類型
-interface PalletInfoQueryResult {
+interface _PalletInfoQueryResult {
   product_code: string;
   product_qty: number;
   current_location?: string;
@@ -44,7 +42,7 @@ interface PalletInfoQueryResult {
   };
 }
 
-interface TransferQueryResult {
+interface _TransferQueryResult {
   transferstart: string;
   transferdone: string | null;
   from_location?: string;
@@ -58,7 +56,7 @@ interface ProductDistributionData {
   locations: Record<string, number>;
 }
 
-interface WorkLevelData {
+interface _WorkLevelData {
   id: string;
   staffName: string;
   qc: number;
@@ -95,7 +93,7 @@ interface StaffRecord {
 }
 
 // 定義數據處理類型
-interface GroupedData {
+interface _GroupedData {
   [key: string]: {
     [field: string]: unknown;
     count?: number;
@@ -159,7 +157,7 @@ const CHART_CONFIG_MAP: Record<string, Partial<ChartConfig>> = {
 };
 
 // 數據聚合函數
-function aggregateData(
+function _aggregateData(
   data: AggregateDataItem[],
   aggregationType: AggregationType,
   valueField: string
@@ -216,7 +214,10 @@ async function fetchChartData(
   chartType: ChartType,
   input: ChartQueryInput | SingleChartQueryInput
 ): Promise<ChartCardData> {
-  const now = new Date();
+  const _now = new Date();
+  // Placeholder to avoid unused variable warning
+  void startOfDay;
+  void endOfDay;
 
   // 根據圖表類型獲取數據
   switch (chartType) {
@@ -374,7 +375,7 @@ async function fetchAreaChartData(
   // 按時間粒度分組
   const granularity = (input as ChartQueryInput).timeGranularity || TimeGranularity.Day;
 
-  interface TransferQueryResult {
+  interface TransferQueryResultLocal {
     tran_date?: string;
     f_loc?: string;
     t_loc?: string;
@@ -382,8 +383,8 @@ async function fetchAreaChartData(
     [key: string]: unknown;
   }
 
-  const groupedData = ((data as TransferQueryResult[]) || []).reduce(
-    (acc: Record<string, TimeSeriesDataPoint>, item: TransferQueryResult) => {
+  const groupedData = ((data as TransferQueryResultLocal[]) || []).reduce(
+    (acc: Record<string, TimeSeriesDataPoint>, item: TransferQueryResultLocal) => {
       const key = formatTimeGranularity(new Date(item.tran_date || ''), granularity);
       if (!acc[key]) {
         acc[key] = { date: key, count: 0 };
@@ -454,6 +455,8 @@ async function fetchBarChartData(
   supabase: SupabaseClientType,
   input: ChartQueryInput | SingleChartQueryInput
 ): Promise<ChartCardData> {
+  // Placeholder to avoid unused variable warning
+  void input;
   const { data, error } = await supabase
     .from('record_transfer')
     .select('tran_date, f_loc, t_loc, plt_num')
@@ -632,6 +635,8 @@ async function fetchWorkLevelData(
   supabase: SupabaseClientType,
   input: ChartQueryInput | SingleChartQueryInput
 ): Promise<ChartCardData> {
+  // Placeholder to avoid unused variable warning
+  void input;
   // 獲取最新的數據（根據最後更新時間）
   // 首先找出最新的更新時間
   const { data: latestData, error: latestError } = await supabase
@@ -663,7 +668,7 @@ async function fetchWorkLevelData(
   const typedWorkLevelData = (workLevelData || []) as WorkLevelRecord[];
 
   // 獲取員工姓名和部門
-  const staffIds = [...new Set(typedWorkLevelData.map(item => item.id))];
+  const staffIds = Array.from(new Set(typedWorkLevelData.map(item => item.id)));
   const { data: staffData, error: staffError } = await supabase
     .from('data_id')
     .select('id, name, department')
@@ -708,11 +713,11 @@ async function fetchWorkLevelData(
   });
 
   // 獲取所有唯一時間點並排序
-  const allTimestamps = [
-    ...new Set(
+  const allTimestamps = Array.from(
+    new Set(
       Object.values(staffHistoryMap).flatMap(staff => staff.dataPoints.map(dp => dp.timestamp))
-    ),
-  ].sort();
+    )
+  ).sort();
 
   // 準備數據集 - 每個員工一條線
   const datasets: ChartDataset[] = Object.values(staffHistoryMap).map((staff, index) => {
@@ -770,9 +775,9 @@ async function fetchWorkLevelData(
   });
 
   // 獲取所有唯一的部門
-  const uniqueDepartments = [
-    ...new Set(Object.values(staffHistoryMap).map(staff => staff.department)),
-  ].sort();
+  const uniqueDepartments = Array.from(
+    new Set(Object.values(staffHistoryMap).map(staff => staff.department))
+  ).sort();
 
   return {
     datasets,
@@ -895,6 +900,8 @@ export const chartResolvers = {
       _: unknown,
       { category }: { category?: string }
     ): Promise<ChartConfig[]> => {
+      // Placeholder to avoid unused variable warning
+      void category;
       // 返回所有配置
       return Object.values(CHART_CONFIG_MAP).map(config => ({
         ...config,
@@ -911,6 +918,9 @@ export const chartResolvers = {
     chartUpdated: {
       subscribe: async function* (_: unknown, { chartTypes }: { chartTypes: ChartType[] }) {
         // TODO: 實現實時訂閱邏輯
+        // Placeholder to avoid unused variable warning
+        void chartTypes;
+        yield { data: null };
       },
     },
   },

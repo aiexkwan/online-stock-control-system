@@ -129,8 +129,8 @@ class UnifiedPrintService extends EventEmitter {
   private async mergePdfs(pdfBlobs: Blob[]): Promise<Blob> {
     try {
       // 動態導入 pdf-lib 以減少初始載入大小
-      const pdfLib = await import('@/lib/services/unified-pdf-service');
-      const { PDFDocument } = await pdfLib.getPDFLib();
+      const { getPDFLib } = await import('../services/unified-pdf-service');
+      const { PDFDocument } = await getPDFLib();
       const mergedPdf = await PDFDocument.create();
 
       for (const pdfBlob of pdfBlobs) {
@@ -150,7 +150,7 @@ class UnifiedPrintService extends EventEmitter {
       }
 
       const mergedPdfBytes = await mergedPdf.save();
-      return new Blob([mergedPdfBytes as unknown as ArrayBuffer], { type: 'application/pdf' });
+      return new Blob([new Uint8Array(mergedPdfBytes)], { type: 'application/pdf' });
     } catch (error) {
       console.error('[UnifiedPrintService] PDF merge failed:', error);
       throw new Error('Failed to merge PDFs');
@@ -243,7 +243,7 @@ class UnifiedPrintService extends EventEmitter {
   }
 
   private generateJobId(): string {
-    return `job-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `job-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
   }
 
   // 隊列管理方法

@@ -112,7 +112,7 @@ export const PackageTypeSchema = z
 /**
  * Label mode validation
  */
-export const LabelModeSchema = z.enum(['qty', 'weight'] as const);
+export const _LabelModeSchema = z.enum(['qty', 'weight'] as const);
 
 /**
  * Gross weights validation schema
@@ -137,7 +137,7 @@ export const ProgressStateSchema = z.object({
  */
 export const GrnStateSchema = z.object({
   formData: GrnFormDataSchema,
-  labelMode: LabelModeSchema,
+  labelMode: _LabelModeSchema,
   palletType: PalletTypeSchema,
   packageType: PackageTypeSchema,
   grossWeights: GrossWeightsSchema,

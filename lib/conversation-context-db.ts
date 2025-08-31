@@ -3,7 +3,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/app/utils/supabase/server';
-import { DatabaseRecord } from '@/types/database/tables';
+import { DatabaseRecord as _DatabaseRecord } from '@/types/database/tables';
 
 export interface Entity {
   type: 'product' | 'order' | 'pallet' | 'location' | 'customer' | 'date';

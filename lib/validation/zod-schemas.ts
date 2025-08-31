@@ -262,7 +262,7 @@ export const OrderItemSchema = z.object({
 export type SafeDatabaseValue = z.infer<typeof SafeDatabaseValueSchema>;
 export type RelationResult = z.infer<typeof RelationResultSchema>;
 // DatabaseValue is already defined as interface above
-export type DatabaseRecord = { [key: string]: DatabaseValue };
+export type DatabaseRecord = z.infer<typeof DatabaseRecordSchema>;
 export type LegacyDatabaseRecord = z.infer<typeof LegacyDatabaseRecordSchema>;
 export type DataCode = z.infer<typeof DataCodeSchema>;
 export type DataId = z.infer<typeof DataIdSchema>;
@@ -563,9 +563,13 @@ export function convertLegacyDatabaseRecord(legacy: Record<string, unknown>): Da
     if (parsedValue !== null) {
       converted[key] = parsedValue;
     } else {
-      // 對於無法解析的值，保持原樣但記錄警告
-      console.warn(`Unable to parse value for key "${key}", keeping as unknown:`, value);
-      converted[key] = value as DatabaseValue;
+      // 對於無法解析的值，嘗試轉換為基礎類型或跳過
+      console.warn(`Unable to parse value for key "${key}", skipping:`, value);
+      // 只保留可以安全轉換的基礎類型
+      const basicValue = safeParseBasicValue(value);
+      if (basicValue !== null) {
+        converted[key] = basicValue;
+      }
     }
   }
 

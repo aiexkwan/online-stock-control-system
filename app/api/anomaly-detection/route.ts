@@ -1,28 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { DatabaseRecord } from '@/types/database/tables';
 import { createClient } from '@/app/utils/supabase/server';
-import type { Database } from '@/types/database/supabase';
-import { getErrorMessage } from '@/lib/types/error-handling';
-import { safeGet, toRecordArray, isRecord, safeNumber , toSupabaseResponse } from '@/types/database/helpers';
+import type { Database } from '@/lib/database.types';
+// getErrorMessage 未使用，已移除導入以減少 bundle 大小
+import { safeGet, toRecordArray, isRecord, safeNumber } from '@/types/database/helpers';
 
-// Type alias for Supabase client (Strategy 3: Supabase codegen)
+// Type alias for Supabase client with explicit typing to avoid deep instantiation
 type TypedSupabaseClient = SupabaseClient<Database>;
 
-// Interface for overdue order data
-interface OverdueOrderData {
-  order_ref: string;
-  product_code: string;
-  product_name: string;
-  ordered_qty: number;
-  loaded_qty: number;
-  remaining_qty: number;
-  created_at: string;
-  days_overdue: number;
-  customer: string;
-}
+// 異常檢測類型定義已整合至內聯使用，移除未使用的介面
 
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
 
@@ -48,8 +36,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
 }
 
-async function detectAllAnomalies(supabase: TypedSupabaseClient) {
-  const anomalies = [];
+// 異常檢測結果類型
+interface AnomalyResult {
+  type: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  title: string;
+  description: string;
+  count: number;
+  data: Record<string, unknown>[];
+  suggestedAction: string;
+  detectedAt: string;
+}
+
+async function detectAllAnomalies(supabase: TypedSupabaseClient): Promise<AnomalyResult[]> {
+  const anomalies: AnomalyResult[] = [];
 
   try {
     // 並行執行所有檢測
@@ -70,7 +70,7 @@ async function detectAllAnomalies(supabase: TypedSupabaseClient) {
 }
 
 // 1. 檢測超過30日未移動的棧板
-async function detectStuckPallets(supabase: TypedSupabaseClient) {
+async function detectStuckPallets(supabase: TypedSupabaseClient): Promise<AnomalyResult | null> {
   try {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -82,7 +82,7 @@ async function detectStuckPallets(supabase: TypedSupabaseClient) {
     p.product_qty,
     dc.description as product_name,
     COALESCE(
-      (SELECT MAX(time)
+      (SELECT MAX(_time)
        FROM record_history h
        WHERE h.plt_num = p.plt_num
          AND h.action IN ('Move', 'Stock Transfer', 'QC Done', 'GRN Received', 'Order Load')
@@ -138,7 +138,7 @@ LIMIT 50`;
         title: `${formattedData.length} Pallets Stuck Over 30 Days`,
         description: `Found ${formattedData.length} pallets that haven't moved in over 30 days. This may indicate forgotten inventory or process issues.`,
         count: formattedData.length,
-        data: formattedData.slice(0, 10),
+        data: formattedData.slice(0, 10) as Record<string, unknown>[],
         suggestedAction: 'Review and relocate these pallets, or mark for disposal if damaged.',
         detectedAt: new Date().toISOString(),
       };
@@ -152,7 +152,9 @@ LIMIT 50`;
 }
 
 // 2. 檢測庫存數量異常
-async function detectInventoryMismatch(supabase: TypedSupabaseClient) {
+async function detectInventoryMismatch(
+  supabase: TypedSupabaseClient
+): Promise<AnomalyResult | null> {
   try {
     const query = `WITH inventory_totals AS (
   SELECT
@@ -215,7 +217,7 @@ LIMIT 20`;
         title: `${formattedData.length} Products with Inventory Discrepancies`,
         description: `Found ${formattedData.length} products where physical count doesn't match system records. ${criticalCount} have variance over 20%.`,
         count: formattedData.length,
-        data: formattedData.slice(0, 10),
+        data: formattedData.slice(0, 10) as Record<string, unknown>[],
         suggestedAction:
           'Perform physical stock count for these products and update system records.',
         detectedAt: new Date().toISOString(),
@@ -230,7 +232,7 @@ LIMIT 20`;
 }
 
 // 3. 檢測超時訂單
-async function detectOverdueOrders(supabase: TypedSupabaseClient) {
+async function detectOverdueOrders(supabase: TypedSupabaseClient): Promise<AnomalyResult | null> {
   try {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -278,7 +280,7 @@ LIMIT 50`;
         title: `${formattedData.length} Overdue Orders`,
         description: `Found ${formattedData.length} orders that are overdue. ${criticalOrders} are over 14 days old and require immediate attention.`,
         count: formattedData.length,
-        data: formattedData.slice(0, 10),
+        data: formattedData.slice(0, 10) as Record<string, unknown>[],
         suggestedAction: 'Contact customers for critical orders and expedite fulfillment.',
         detectedAt: new Date().toISOString(),
       };

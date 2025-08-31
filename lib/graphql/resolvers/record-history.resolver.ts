@@ -200,7 +200,7 @@ function mergeRecords(
 function createMergedGroup(
   records: RawRecordHistoryEntry[],
   operators: Map<number, OperatorInfo>,
-  config: MergingConfig
+  _config: MergingConfig
 ): MergedGroup {
   const firstRecord = records[0];
   const lastRecord = records[records.length - 1];
@@ -289,7 +289,7 @@ function calculateEfficiencyMetrics(group: MergedGroup) {
 /**
  * Fetch operators information from data_id table
  */
-async function fetchOperators(
+async function _fetchOperators(
   supabase: SupabaseClient,
   operatorIds: number[]
 ): Promise<Map<number, OperatorInfo>> {
@@ -433,7 +433,7 @@ export const recordHistoryResolvers: IResolvers = {
           mergingConfig = DEFAULT_MERGING_CONFIG,
         } = args;
 
-        const startTime = Date.now();
+        const _startTime = Date.now();
 
         // Build and execute query using Supabase query builder instead of raw SQL
         let query = context.supabase.from('record_history').select(`
@@ -599,9 +599,10 @@ export const recordHistoryResolvers: IResolvers = {
           totalOperations: transformedRecords.length,
           totalMergedRecords: totalCount,
           uniqueOperators: operators.size,
-          uniqueActions: [...new Set(transformedRecords.map(r => r.action))].length,
-          uniqueLocations: [...new Set(transformedRecords.map(r => r.loc).filter(Boolean))].length,
-          uniquePallets: [...new Set(transformedRecords.map(r => r.plt_num).filter(Boolean))]
+          uniqueActions: Array.from(new Set(transformedRecords.map(r => r.action))).length,
+          uniqueLocations: Array.from(new Set(transformedRecords.map(r => r.loc).filter(Boolean)))
+            .length,
+          uniquePallets: Array.from(new Set(transformedRecords.map(r => r.plt_num).filter(Boolean)))
             .length,
           timeSpan:
             transformedRecords.length > 0
@@ -653,7 +654,7 @@ export const recordHistoryResolvers: IResolvers = {
           },
         };
 
-        const queryTime = Date.now() - startTime;
+        const queryTime = Date.now() - _startTime;
 
         return {
           mergedRecords,

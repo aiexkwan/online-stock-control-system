@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { PALLET_TYPE_OPTIONS, type PalletTypeKey } from '@/app/constants/grnConstants';
 
 interface PalletTypeData {
@@ -22,10 +22,10 @@ export const PalletTypeSelector: React.FC<PalletTypeSelectorProps> = ({
   palletType,
   onChange,
   disabled = false,
-}) => {
+}): React.JSX.Element => {
   // 找出當前選中的托盤類型
   const selectedType = Object.entries(palletType).find(
-    ([_, value]) => value && parseInt(value) > 0
+    ([, value]) => value && parseInt(value) > 0
   )?.[0] as PalletTypeKey | undefined;
 
   const selectedQuantity = selectedType ? palletType[selectedType] : '';
@@ -51,22 +51,24 @@ export const PalletTypeSelector: React.FC<PalletTypeSelectorProps> = ({
         <label className='mb-1 block text-xs font-medium text-slate-300 transition-colors duration-200 group-focus-within:text-orange-400'>
           Pallet Type
         </label>
-        <select
-          value={selectedType || ''}
-          onChange={e => handleTypeChange(e.target.value)}
-          className='w-full cursor-pointer appearance-none rounded-xl border border-slate-600/50 bg-slate-800/50 px-3 py-2 text-sm text-white placeholder-slate-400 backdrop-blur-sm transition-all duration-300 ease-out hover:border-orange-500/50 hover:bg-slate-800/60 focus:border-orange-400/70 focus:bg-slate-800/70 focus:outline-none focus:ring-2 focus:ring-orange-400/30'
-          disabled={disabled}
-        >
-          <option value='' className='bg-slate-800'>
-            Select pallet type...
-          </option>
-          {PALLET_TYPE_OPTIONS.map(option => (
-            <option key={option.key} value={option.key} className='bg-slate-800'>
-              {option.label}
+        <div className='relative'>
+          <select
+            value={selectedType || ''}
+            onChange={e => handleTypeChange(e.target.value)}
+            className='w-full cursor-pointer appearance-none rounded-xl border border-slate-600/50 bg-slate-800/50 px-3 py-2 text-sm text-white placeholder-slate-400 backdrop-blur-sm transition-all duration-300 ease-out hover:border-orange-500/50 hover:bg-slate-800/60 focus:border-orange-400/70 focus:bg-slate-800/70 focus:outline-none focus:ring-2 focus:ring-orange-400/30'
+            disabled={disabled}
+          >
+            <option value='' className='bg-slate-800'>
+              Select pallet type...
             </option>
-          ))}
-        </select>
-        <div className='pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-r from-orange-500/5 via-transparent to-amber-500/5 opacity-0 transition-opacity duration-300 group-focus-within:opacity-100'></div>
+            {PALLET_TYPE_OPTIONS.map(option => (
+              <option key={option.key} value={option.key} className='bg-slate-800'>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <div className='pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-r from-orange-500/5 via-transparent to-amber-500/5 opacity-0 transition-opacity duration-300 group-focus-within:opacity-100'></div>
+        </div>
       </div>
 
       {selectedType && (

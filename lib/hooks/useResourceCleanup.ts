@@ -406,7 +406,7 @@ export function useResourceCleanup(componentName?: string, debug = false) {
   useEffect(() => {
     if (!debug) return;
 
-    const checkInterval = setInterval(() => {
+    const checkInterval = globalThis.setInterval(() => {
       const leakCheck = checkForLeaks();
       if (leakCheck.hasLeaks) {
         console.table(leakCheck.metrics);
@@ -414,9 +414,9 @@ export function useResourceCleanup(componentName?: string, debug = false) {
     }, 30000); // Check every 30 seconds
 
     return () => {
-      clearInterval(checkInterval);
+      globalThis.clearInterval(checkInterval);
     };
-  }, [debug, checkForLeaks, clearInterval]);
+  }, [debug, checkForLeaks]);
 
   return {
     // Resource creation methods

@@ -1,11 +1,13 @@
 /**
- * Unified Export All Data Dialog
- * Integrated with the unified report framework
+ * @fileoverview Unified Export All Data Dialog Component
+ * @description Enterprise-grade data export dialog integrated with unified report framework
+ * @version 1.0.0
+ * @author TypeScript Architect
  */
 
 'use client';
 
-import React, { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { UnifiedReportDialog } from '@/app/components/reports/core/UnifiedReportDialog';
 import { useToast } from '@/components/ui/use-toast';
 import { Label } from '@/components/ui/label';
@@ -14,43 +16,82 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { createClient } from '@/app/utils/supabase/client';
 import { format } from 'date-fns';
 
+/**
+ * @interface UnifiedExportAllDataDialogProps
+ * @description Props interface for UnifiedExportAllDataDialog component
+ */
 interface UnifiedExportAllDataDialogProps {
-  isOpen: boolean;
-  onClose: () => void;
+  /** Dialog open state */
+  readonly isOpen: boolean;
+  /** Dialog close handler */
+  readonly onClose: () => void;
 }
 
+/**
+ * @interface TableOption
+ * @description Configuration interface for exportable table options
+ */
 interface TableOption {
-  name: string;
-  tableName: string;
-  requiresDateRange: boolean;
+  /** Display name for the table */
+  readonly name: string;
+  /** Database table name */
+  readonly tableName: string;
+  /** Whether table requires date range filtering */
+  readonly requiresDateRange: boolean;
 }
 
-const tableOptions: TableOption[] = [
+/**
+ * @constant tableOptions
+ * @description Available table export configurations
+ */
+const tableOptions: readonly TableOption[] = [
   { name: 'Pallet Information', tableName: 'record_palletinfo', requiresDateRange: false },
   { name: 'Code List', tableName: 'data_code', requiresDateRange: false },
   { name: 'Voided Inventory', tableName: 'report_void', requiresDateRange: false },
   { name: 'Operation History', tableName: 'record_history', requiresDateRange: true },
   { name: 'Full Inventory', tableName: 'record_inventory', requiresDateRange: true },
-];
+] as const;
 
-export function UnifiedExportAllDataDialog({ isOpen, onClose }: UnifiedExportAllDataDialogProps) {
+/**
+ * @component UnifiedExportAllDataDialog
+ * @description Enterprise-grade dialog for exporting multiple database tables as CSV files
+ * @param {UnifiedExportAllDataDialogProps} props - Component props
+ * @returns {JSX.Element} Rendered export dialog component
+ */
+export function UnifiedExportAllDataDialog({
+  isOpen,
+  onClose,
+}: UnifiedExportAllDataDialogProps): JSX.Element {
   const { toast } = useToast();
-  const [selectedTables, setSelectedTables] = useState<string[]>([]);
+  const [selectedTables, setSelectedTables] = useState<readonly string[]>([]);
   const [startDate, setStartDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<boolean>(false);
 
-  const handleTableToggle = (tableName: string) => {
+  /**
+   * @method handleTableToggle
+   * @description Toggles table selection state
+   * @param {string} tableName - Name of table to toggle
+   */
+  const handleTableToggle = (tableName: string): void => {
     setSelectedTables(prev =>
       prev.includes(tableName) ? prev.filter(t => t !== tableName) : [...prev, tableName]
     );
   };
 
+  /**
+   * @method exportTableAsCsv
+   * @description Exports a single table as CSV file with error handling
+   * @param {string} tableName - Database table name
+   * @param {string} displayName - Human-readable table name
+   * @param {boolean} requiresDateRange - Whether to apply date filtering
+   * @throws {Error} When export fails
+   */
   const exportTableAsCsv = async (
     tableName: string,
     displayName: string,
     requiresDateRange: boolean
-  ) => {
+  ): Promise<void> => {
     const supabase = createClient();
     let query = supabase.from(tableName).select('*');
 
@@ -69,9 +110,7 @@ export function UnifiedExportAllDataDialog({ isOpen, onClose }: UnifiedExportAll
     }
 
     if (!data || data.length === 0) {
-      (process.env.NODE_ENV as string) !== 'production' &&
-        (process.env.NODE_ENV as string) !== 'production' &&
-        console.log(`No data found for ${tableName}`);
+      process.env.NODE_ENV !== 'production' && console.log(`No data found for ${tableName}`);
       return;
     }
 
@@ -114,7 +153,13 @@ export function UnifiedExportAllDataDialog({ isOpen, onClose }: UnifiedExportAll
     document.body.removeChild(link);
   };
 
-  const handleGenerateReport = async (format: 'pdf' | 'excel') => {
+  /**
+   * @method handleGenerateReport
+   * @description Handles report generation for selected tables
+   * @param {('pdf' | 'excel')} format - Report format (only 'excel' supported for CSV)
+   * @throws {Error} When export fails
+   */
+  const handleGenerateReport = async (format: 'pdf' | 'excel'): Promise<void> => {
     if (selectedTables.length === 0) {
       toast({
         title: 'No Tables Selected',
@@ -160,8 +205,16 @@ export function UnifiedExportAllDataDialog({ isOpen, onClose }: UnifiedExportAll
     }
   };
 
-  const requiresDateRange = selectedTables.some(
-    tableName => tableOptions.find(t => t.tableName === tableName)?.requiresDateRange
+  /**
+   * @constant requiresDateRange
+   * @description Computed value indicating if any selected table requires date range filtering
+   */
+  const requiresDateRange = useMemo(
+    () =>
+      selectedTables.some(
+        tableName => tableOptions.find(t => t.tableName === tableName)?.requiresDateRange
+      ),
+    [selectedTables]
   );
 
   return (
@@ -206,7 +259,7 @@ export function UnifiedExportAllDataDialog({ isOpen, onClose }: UnifiedExportAll
                 id='start-date'
                 type='date'
                 value={startDate}
-                onChange={e => setStartDate(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStartDate(e.target.value)}
                 className='border-slate-600 bg-slate-800 text-white'
               />
             </div>
@@ -216,7 +269,7 @@ export function UnifiedExportAllDataDialog({ isOpen, onClose }: UnifiedExportAll
                 id='end-date'
                 type='date'
                 value={endDate}
-                onChange={e => setEndDate(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEndDate(e.target.value)}
                 className='border-slate-600 bg-slate-800 text-white'
               />
             </div>

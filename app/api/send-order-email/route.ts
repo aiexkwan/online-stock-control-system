@@ -168,7 +168,7 @@ export async function POST(request: Request) {
     }
 
     // 生成郵件內容 - 策略 4: 類型安全的郵件數據處理
-    const orderRefs = [...new Set(orderData.map((item: OrderItem) => item.order_ref))];
+    const orderRefs = Array.from(new Set(orderData.map((item: OrderItem) => item.order_ref)));
 
     const orderSummaryHtml = orderData
       .map(
@@ -354,7 +354,7 @@ This is an automated notification from the Pennine Stock Control System.
       {
         success: true,
         message: `Order created email sent for ${orderRefs.length} order(s)`,
-        emailId: result.id || result.data?.id || 'unknown',
+        emailId: (result as any).id || (result as any).data?.id || 'unknown',
         recipients: {
           to: toEmails,
           cc: ccEmails,

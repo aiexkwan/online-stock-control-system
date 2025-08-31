@@ -31,7 +31,7 @@ const EmailConfirmation = dynamic(() => import('../components/EmailConfirmation'
 });
 
 export default function RegisterPage() {
-  const _router = useRouter();
+  const router = useRouter();
   const [isRegistered, setIsRegistered] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
 

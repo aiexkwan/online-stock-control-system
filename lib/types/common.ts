@@ -25,9 +25,9 @@ export interface FormDataBase {
 }
 
 /**
- * 用戶相關類型 (基於 Supabase User 擴展)
+ * 用戶相關類型 (基於 Supabase _User 擴展)
  */
-export interface AppUser {
+export interface App_User {
   id: string;
   email?: string;
   user_metadata?: {

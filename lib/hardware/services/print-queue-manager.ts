@@ -7,6 +7,18 @@ import { EventEmitter } from 'events';
 import { PrintJob, PrintResult, QueueStatus, RetryPolicy } from '../types';
 import { DefaultPrinterService } from './printer-service';
 
+// Event types for documentation and type safety
+type PrintQueueEventName =
+  | 'job.added'
+  | 'job.removed'
+  | 'job.prioritized'
+  | 'job.processing'
+  | 'job.completed'
+  | 'job.failed'
+  | 'job.retry'
+  | 'queue.updated'
+  | 'queue.cleared';
+
 interface QueuedJob {
   job: PrintJob;
   addedAt: string;
@@ -37,19 +49,18 @@ export class PrintQueueManager extends EventEmitter {
    * Add a job to the queue
    */
   async addToQueue(job: PrintJob): Promise<string> {
-    if (!job.id) {
-      job.id = this.generateJobId();
-    }
+    const jobId = job.id || this.generateJobId();
+    const jobWithId = { ...job, id: jobId };
 
     const queuedJob: QueuedJob = {
-      job,
+      job: jobWithId,
       addedAt: new Date().toISOString(),
       attempts: 0,
       status: 'pending',
     };
 
     // Add based on priority
-    if (job.priority === 'high') {
+    if (jobWithId.priority === 'high') {
       // Find first non-high priority job
       const index = this.queue.findIndex(q => q.job.priority !== 'high');
       if (index === -1) {
@@ -57,7 +68,7 @@ export class PrintQueueManager extends EventEmitter {
       } else {
         this.queue.splice(index, 0, queuedJob);
       }
-    } else if (job.priority === 'normal') {
+    } else if (jobWithId.priority === 'normal') {
       // Add after high priority jobs
       const index = this.queue.findIndex(q => q.job.priority === 'low');
       if (index === -1) {
@@ -70,10 +81,10 @@ export class PrintQueueManager extends EventEmitter {
       this.queue.push(queuedJob);
     }
 
-    this.emit('job.added', job);
+    this.emit('job.added', jobWithId);
     this.emit('queue.updated', this.getQueueStatus());
 
-    return job.id;
+    return jobId;
   }
 
   /**
@@ -130,7 +141,10 @@ export class PrintQueueManager extends EventEmitter {
     await new Promise<void>(resolve => {
       const checkCompletion = () => {
         const pending = this.queue.filter(
-          q => jobIds.includes(q.job.id!) && (q.status === 'pending' || q.status === 'processing')
+          q =>
+            q.job.id &&
+            jobIds.includes(q.job.id) &&
+            (q.status === 'pending' || q.status === 'processing')
         );
 
         if (pending.length === 0) {
@@ -143,6 +157,8 @@ export class PrintQueueManager extends EventEmitter {
               } else {
                 failed.push(jobId);
               }
+            } else {
+              failed.push(jobId);
             }
           });
           resolve();
@@ -171,7 +187,15 @@ export class PrintQueueManager extends EventEmitter {
   /**
    * Get queue details
    */
-  getQueueDetails() {
+  getQueueDetails(): Array<{
+    jobId: string | undefined;
+    type: PrintJob['type'];
+    priority: PrintJob['priority'];
+    status: QueuedJob['status'];
+    addedAt: string;
+    attempts: number;
+    error?: string;
+  }> {
     return this.queue.map(q => ({
       jobId: q.job.id,
       type: q.job.type,
@@ -234,7 +258,7 @@ export class PrintQueueManager extends EventEmitter {
 
   // Private methods
   private generateJobId(): string {
-    return `job-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `job-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
   }
 
   private startQueueProcessor(): void {
@@ -312,9 +336,10 @@ export class PrintQueueManager extends EventEmitter {
 
       this.emit('queue.updated', this.getQueueStatus());
 
+      const resultJobId = queuedJob.job.id || this.generateJobId();
       return {
         success: false,
-        jobId: queuedJob.job.id!,
+        jobId: resultJobId,
         error: errorMessage,
       };
     }

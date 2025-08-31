@@ -59,6 +59,8 @@ try {
 const nextConfig = {
   // 基本配置
   reactStrictMode: false,
+  // 頁面擴展配置，排除 archon 目錄
+  pageExtensions: ['tsx', 'ts', 'jsx', 'js', 'mdx'],
   // 抑制開發環境的棄用警告
   onDemandEntries: {
     // 抑制 Next.js 內部警告

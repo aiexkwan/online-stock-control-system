@@ -1,4 +1,4 @@
-import { DatabaseRecord } from '@/types/database/tables';
+import { DatabaseRecord } from '../../../../types/database/tables';
 
 /**
  * 統一報表框架配置介面
@@ -9,7 +9,7 @@ import { DatabaseRecord } from '@/types/database/tables';
 // 報表配置主介面
 export interface ReportConfig {
   id: string;
-  name: string;
+  _name: string;
   description: string;
   category: 'operational' | 'inventory' | 'financial' | 'quality';
   formats: ReportFormat[];
@@ -36,7 +36,7 @@ export interface FilterConfig {
   // 動態數據源（如從數據庫獲取選項）
   dataSource?: {
     type: 'rpc' | 'table';
-    name: string;
+    _name: string;
     params?: Record<string, string | number | boolean>;
   };
   validation?: {
@@ -70,6 +70,8 @@ export interface SectionConfig {
     customComponent?: string;
     // 保持現有報表的樣式
     legacyStyles?: boolean;
+    // 是否顯示統計行
+    showTotals?: boolean;
   };
 }
 
@@ -175,14 +177,14 @@ export interface ReportDataSource {
 // 報表生成器介面
 export interface ReportGenerator {
   format: ReportFormat;
-  generate(data: ProcessedReportData, config: ReportConfig): Promise<Blob>;
+  generate(data: ProcessedReportData, _config: ReportConfig): Promise<Blob>;
   // 確保與現有報表兼容
   supportLegacyMode?: boolean;
 }
 
 // 報表註冊資訊
 export interface RegisteredReport {
-  config: ReportConfig;
+  _config: ReportConfig;
   dataSources: Map<string, ReportDataSource>;
   generators?: Map<ReportFormat, ReportGenerator>;
 }

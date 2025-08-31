@@ -11,7 +11,7 @@ import React, { useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { LoadingOverlayProps, PerformanceMetrics } from '../types';
+import type { LoadingOverlayProps, PerformanceMetrics } from '../types';
 import { useSmartLoading } from '../hooks/useSmartLoading';
 import { SmartLoadingSpinner } from './SmartLoadingSpinner';
 import { ProgressIndicator } from './ProgressIndicator';
@@ -33,6 +33,10 @@ interface LoadingOverlayExtendedProps extends LoadingOverlayProps {
   showCloseButton?: boolean;
   /** 最小顯示時間 (ms) */
   minShowTime?: number;
+  /** 完成回調（內部使用） */
+  _onComplete?: () => void;
+  /** 錯誤回調（內部使用） */
+  _onError?: (error: string) => void;
 }
 
 export function LoadingOverlay({
@@ -47,8 +51,8 @@ export function LoadingOverlay({
   opacity = 0.8,
   cancellable = false,
   onCancel,
-  onComplete,
-  onError,
+  _onComplete,
+  _onError,
   children,
   enablePerformanceAware = true,
   performanceMetrics,
@@ -133,7 +137,7 @@ export function LoadingOverlay({
       exit: {},
       transition: { duration: 0 },
     },
-  };
+  } as const;
 
   const currentVariants = animationVariants[animation] || animationVariants.fade;
 
@@ -229,7 +233,7 @@ export function LoadingOverlay({
   const contentContainer = (
     <div
       className='mx-auto flex max-w-md flex-col items-center justify-center p-6'
-      onClick={e => e.stopPropagation()}
+      onClick={(e: React.MouseEvent) => e.stopPropagation()}
     >
       {/* 關閉按鈕 */}
       {(showCloseButton || cancellable) && (

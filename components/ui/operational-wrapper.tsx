@@ -3,10 +3,12 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
+type VariantType = 'default' | 'card' | 'section' | 'highlight';
+
 interface OperationalWrapperProps {
   children: React.ReactNode;
   className?: string;
-  variant?: 'default' | 'card' | 'section' | 'highlight';
+  variant?: VariantType;
   glow?: boolean;
   title?: string;
   titleIcon?: React.ReactNode;
@@ -44,14 +46,14 @@ export function OperationalWrapper({
   }
 
   // Full wrapper mode (only when title/actions are provided)
-  const borderStyles = {
+  const borderStyles: Record<VariantType, string> = {
     default: 'border-slate-700/50',
     card: 'border-slate-700/50',
     section: 'border-slate-600/30',
     highlight: 'border-blue-500/30',
   };
 
-  const backgroundStyles = {
+  const backgroundStyles: Record<VariantType, string> = {
     default: 'bg-slate-800/50',
     card: 'bg-slate-800/50',
     section: 'bg-slate-700/30',
@@ -94,15 +96,14 @@ export function OperationalWrapper({
   );
 }
 
+interface OperationalGridProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
 /**
  * Specialized wrapper for grid-based operational layouts
  */
-export function OperationalGrid({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
+export function OperationalGrid({ children, className }: OperationalGridProps) {
   return <div className={cn('grid gap-4 lg:gap-6', className)}>{children}</div>;
 }

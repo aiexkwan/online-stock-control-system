@@ -51,7 +51,7 @@ export const UniversalCard = forwardRef<HTMLDivElement, UniversalCardProps>(
       padding = 'md',
       className = '',
       onClick,
-      legacy = false,
+      legacy: _legacy = false,
     },
     ref
   ) => {

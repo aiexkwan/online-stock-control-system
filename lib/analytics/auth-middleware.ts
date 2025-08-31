@@ -76,7 +76,7 @@ function createSuccessResponse<T>(data: T): NextResponse {
  *     OutputRatioRequestSchema,
  *     async (supabase, { timeRange }) => {
  *       // Business logic here
- *       const data = await fetchData(supabase, timeRange);
+ *       const _data = await fetchData(supabase, timeRange);
  *       return data;
  *     }
  *   );
@@ -121,10 +121,10 @@ export async function withAnalyticsAuth<TInput, TOutput>(
     }
 
     // 4. Execute business logic
-    const result = await handler(supabase, validationResult.data);
+    const _result = await handler(supabase, validationResult.data);
 
     // 5. Return success response
-    return createSuccessResponse(result);
+    return createSuccessResponse(_result);
   } catch (error) {
     // Handle unexpected errors
     console.error('Analytics API error:', error);
@@ -181,10 +181,10 @@ export async function withAnalyticsValidation<TInput, TOutput>(
     }
 
     // Execute business logic
-    const result = await handler(validationResult.data);
+    const _result = await handler(validationResult.data);
 
     // Return success response
-    return createSuccessResponse(result);
+    return createSuccessResponse(_result);
   } catch (error) {
     console.error('Analytics API error:', error);
     return createErrorResponse(

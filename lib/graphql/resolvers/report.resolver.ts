@@ -24,12 +24,9 @@ import {
   ReportGenerationProgress,
   ReportSearchResult,
   BatchReportResult,
-  // ReportField, // Commented out - TableDataType dependency removed
   ReportOperation,
-  AggregationFunction,
-  // TableDataType, // Commented out - type removed from schema
-} from '@/types/generated/graphql';
-import { createClient } from '@/app/utils/supabase/server';
+} from '../../../types/generated/graphql';
+import { createClient } from '../../../app/utils/supabase/server';
 import { GraphQLContext } from './index';
 
 // 報表類型配置映射
@@ -146,7 +143,7 @@ async function generateReportFile(input: ReportGenerationInput): Promise<Generat
     recordsProcessed: 0,
     totalRecords: 1000, // 模擬數據
     startedAt: new Date().toISOString(),
-    userId: input.userId,
+    userId: input.userId || 'system',
   };
 
   activeGenerations.set(generationId, progress);
@@ -183,7 +180,7 @@ async function generateReportFile(input: ReportGenerationInput): Promise<Generat
       Date.now() + REPORT_CONFIGS[input.reportType].retentionDays * 24 * 60 * 60 * 1000
     ).toISOString(),
     generatedAt: new Date().toISOString(),
-    generatedBy: input.userId,
+    generatedBy: input.userId || 'system',
     generationTime: REPORT_CONFIGS[input.reportType].estimatedGenerationTime,
     recordCount: 1000,
     filters: input.filters ? JSON.stringify(input.filters) : undefined,
@@ -212,10 +209,10 @@ export const reportResolvers = {
     reportCardData: async (
       _parent: undefined,
       { input }: { input: ReportCardInput },
-      context: GraphQLContext
+      _context: GraphQLContext
     ): Promise<ReportCardData> => {
-      const supabase = createClient();
-      const startTime = performance.now();
+      const _supabase = createClient();
+      const _startTime = performance.now();
 
       try {
         const reportType = input.reportType || ReportType.TransactionReport;
@@ -378,7 +375,7 @@ export const reportResolvers = {
     searchReports: async (
       _parent: undefined,
       { input }: { input: ReportSearchInput },
-      context: GraphQLContext
+      _context: GraphQLContext
     ): Promise<ReportSearchResult> => {
       // 這裡應該從數據庫搜索，現在返回模擬數據
       const mockReports: GeneratedReport[] = [
@@ -419,7 +416,7 @@ export const reportResolvers = {
     reportDetails: async (
       _parent: undefined,
       { reportId }: { reportId: string },
-      context: GraphQLContext
+      _context: GraphQLContext
     ): Promise<GeneratedReport | null> => {
       // 模擬從數據庫獲取報表詳情
       return {
@@ -489,7 +486,7 @@ export const reportResolvers = {
     generateReport: async (
       _parent: undefined,
       { input }: { input: ReportGenerationInput },
-      context: GraphQLContext
+      _context: GraphQLContext
     ): Promise<ReportGenerationResult> => {
       try {
         // 啟動非同步報表生成
@@ -550,7 +547,7 @@ export const reportResolvers = {
     deleteReport: async (
       _parent: undefined,
       { reportId }: { reportId: string },
-      context: GraphQLContext
+      _context: GraphQLContext
     ): Promise<boolean> => {
       // 這裡應該從數據庫和文件系統刪除報表
       console.log(`Deleting report: ${reportId}`);
@@ -561,7 +558,7 @@ export const reportResolvers = {
     batchReportOperation: async (
       _parent: undefined,
       { input }: { input: BatchReportOperationInput },
-      context: GraphQLContext
+      _context: GraphQLContext
     ): Promise<BatchReportResult> => {
       const successful: string[] = [];
       const failed: BatchOperationError[] = [];
@@ -606,7 +603,7 @@ export const reportResolvers = {
     extendReportExpiry: async (
       _parent: undefined,
       { reportId, days }: { reportId: string; days: number },
-      context: GraphQLContext
+      _context: GraphQLContext
     ): Promise<GeneratedReport> => {
       // 這裡應該更新數據庫中的過期時間
       const newExpiryDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
@@ -635,7 +632,7 @@ export const reportResolvers = {
     createReportTemplate: async (
       _parent: undefined,
       { input }: { input: CreateReportTemplateInput },
-      context: GraphQLContext
+      _context: GraphQLContext
     ): Promise<ReportTemplate> => {
       const templateId = `template_${Date.now()}`;
 
@@ -658,7 +655,7 @@ export const reportResolvers = {
     updateReportTemplate: async (
       _parent: undefined,
       { templateId, input }: { templateId: string; input: UpdateReportTemplateInput },
-      context: GraphQLContext
+      _context: GraphQLContext
     ): Promise<ReportTemplate> => {
       // 這裡應該更新數據庫中的模板
       return {
@@ -680,7 +677,7 @@ export const reportResolvers = {
     deleteReportTemplate: async (
       _parent: undefined,
       { templateId }: { templateId: string },
-      context: GraphQLContext
+      _context: GraphQLContext
     ): Promise<boolean> => {
       // 這裡應該從數據庫刪除模板
       console.log(`Deleting template: ${templateId}`);
@@ -691,7 +688,7 @@ export const reportResolvers = {
     shareReport: async (
       _parent: undefined,
       { reportId, emails, message }: { reportId: string; emails: string[]; message?: string },
-      context: GraphQLContext
+      _context: GraphQLContext
     ): Promise<boolean> => {
       // 這裡應該發送郵件通知
       console.log(`Sharing report ${reportId} to ${emails.join(', ')}`);
@@ -702,7 +699,7 @@ export const reportResolvers = {
     regenerateReport: async (
       _parent: undefined,
       { reportId }: { reportId: string },
-      context: GraphQLContext
+      _context: GraphQLContext
     ): Promise<ReportGenerationResult> => {
       // 這裡應該重新啟動報表生成
       return {

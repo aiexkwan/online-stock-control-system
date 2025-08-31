@@ -5,7 +5,7 @@ import { createClient } from '@/app/utils/supabase/server';
 import { getErrorMessage } from '@/lib/types/error-handling';
 
 import {
-  CACHE_CONTROL_TIMEOUT,
+  _CACHE_CONTROL_TIMEOUT as CACHE_CONTROL_TIMEOUT,
   MAX_DUPLICATE_CHECK_ATTEMPTS,
   DUPLICATE_CHECK_DELAY_BASE,
   ONE_HOUR_CACHE,

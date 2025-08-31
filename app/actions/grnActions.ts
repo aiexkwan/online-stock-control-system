@@ -1,14 +1,14 @@
 'use server';
 
 import { z } from 'zod';
-import { revalidatePath } from 'next/cache';
+// import { revalidatePath } from 'next/cache';
 import type { PostgrestError } from '@supabase/supabase-js';
 import { getErrorMessage } from '@/lib/types/error-handling';
 import { createClient } from '@/app/utils/supabase/server';
 // 移除 TransactionLogService - 簡化實現
 import {
   SupplierInfo,
-  DatabaseSupplierInfo,
+  // DatabaseSupplierInfo,
   convertDatabaseSupplierInfo,
 } from '@/lib/types/supplier-types';
 
@@ -183,7 +183,7 @@ export async function createGrnDatabaseEntries(
     }
 
     // Type assert the result to the expected shape
-    const typedResult = rpcResult as GrnRpcResponse | null;
+    const typedResult = rpcResult as unknown as GrnRpcResponse | null;
 
     if (!typedResult || !typedResult.success) {
       const errorMsg = typedResult?.message || 'Unknown error from unified RPC';
@@ -321,7 +321,7 @@ export async function createGrnDatabaseEntriesBatch(
     }
 
     // Type assert the result to the expected shape
-    const typedResult = rpcResult as GrnRpcResponse | null;
+    const typedResult = rpcResult as unknown as GrnRpcResponse | null;
 
     if (!typedResult || !typedResult.success) {
       const errorMsg = typedResult?.message || 'Unknown error from unified RPC';

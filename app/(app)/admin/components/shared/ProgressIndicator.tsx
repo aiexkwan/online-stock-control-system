@@ -15,7 +15,7 @@
 'use client';
 
 import React from 'react';
-import { Loader2, CheckCircle, XCircle, AlertCircle, Info } from 'lucide-react';
+import { CheckCircle, XCircle, AlertCircle, Info, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export type ProgressStatus = 'idle' | 'loading' | 'success' | 'error' | 'warning' | 'info';

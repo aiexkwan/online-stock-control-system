@@ -131,6 +131,8 @@ export interface StockItem {
   stockLevel: number;
   updateTime: Date;
   type?: string;
+  realTimeLevel?: number;
+  lastStockUpdate?: Date;
 }
 
 export interface StockLevelRecord {

@@ -28,7 +28,6 @@ interface ErrorBoundaryState {
 // Enhanced Error Boundary Class Component
 class ErrorBoundaryClass extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   private retryTimeout: NodeJS.Timeout | null = null;
-  private errorHandler?: ReturnType<typeof useError>;
 
   constructor(props: ErrorBoundaryProps) {
     super(props);

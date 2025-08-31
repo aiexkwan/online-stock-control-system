@@ -15,8 +15,8 @@ import { ValidationRule, DocumentNode } from 'graphql';
 // import costAnalysis from 'graphql-cost-analysis';
 
 // Fallback implementations for missing packages
-const depthLimit = (maxDepth: number) => () => {};
-const costAnalysis = (options: Record<string, unknown>) => () => {};
+const _depthLimit = (_maxDepth: number) => () => {};
+const _costAnalysis = (_options: Record<string, unknown>) => () => {};
 
 // Complexity scoring rules for different field types
 export const COMPLEXITY_SCORES = {
@@ -62,7 +62,7 @@ export const RATE_LIMITS = {
 /**
  * Custom complexity estimator for department queries
  */
-export function departmentComplexityEstimator(options: {
+export function departmentComplexityEstimator(_options: {
   scalarCost?: number;
   objectCost?: number;
   listFactor?: number;
@@ -142,9 +142,9 @@ export function createComplexityRule(maxComplexity: number): ValidationRule {
 /**
  * Create depth limit rule
  */
-export function createDepthRule(maxDepth: number = 10): ValidationRule {
+export function createDepthRule(_maxDepth: number = 10): ValidationRule {
   // Fallback implementation - returns a no-op validation rule
-  return (context => {
+  return (_context => {
     return {
       enter() {
         // No-op validation
@@ -176,14 +176,14 @@ export function createRateLimitRule(
     requestDidStart() {
       return {
         didResolveOperation(requestContext: { context: GraphQLContext }) {
-          const userId = getUserId(requestContext.context);
+          const _userId = getUserId(requestContext.context);
           const userType = getUserType(requestContext.context);
           const limit = RATE_LIMITS[userType];
 
           const now = Date.now();
           const windowMs = 60 * 1000; // 1 minute window
 
-          const userKey = `rate_limit:${userId}`;
+          const userKey = `rate_limit:${_userId}`;
           const current = rateLimitStore.get(userKey);
 
           if (!current || now > current.resetTime) {
@@ -312,8 +312,8 @@ export function createQueryMonitoringPlugin() {
 
         willSendResponse(requestContext: RequestContext) {
           try {
-            const endTime = Date.now();
-            const executionTime = endTime - startTime;
+            const _endTime = Date.now();
+            const executionTime = _endTime - startTime;
 
             const finalMetrics: QueryMetrics = {
               ...queryMetrics,

@@ -26,17 +26,17 @@ interface UnifiedLoadingReportDialogProps {
 export function UnifiedLoadingReportDialog({ isOpen, onClose }: UnifiedLoadingReportDialogProps) {
   const { toast } = useToast();
   const { generateReport } = useReportGeneration('order-loading-report', {
-    onSuccess: (blob, filename) => {
+    onSuccess: (blob, _filename) => {
       toast({
         title: 'Report Generated',
-        description: `${filename} has been downloaded successfully.`,
+        description: `${_filename} has been downloaded successfully.`,
       });
       onClose();
     },
-    onError: error => {
+    onError: _error => {
       toast({
         title: 'Report Generation Failed',
-        description: error.message,
+        description: _error.message,
         variant: 'destructive',
       });
     },
@@ -59,8 +59,8 @@ export function UnifiedLoadingReportDialog({ isOpen, onClose }: UnifiedLoadingRe
           retryCount: 3,
           retryDelay: 1000,
           fallbackDelay: 2000,
-          onError: error => {
-            console.error('Failed to load report registry:', error);
+          onError: _error => {
+            console.error('Failed to load report registry:', _error);
             setLoadingError('Failed to load report configuration');
           },
         }
@@ -68,14 +68,14 @@ export function UnifiedLoadingReportDialog({ isOpen, onClose }: UnifiedLoadingRe
         .then(({ ReportRegistry }) => {
           const report = ReportRegistry.getReport('order-loading-report');
           if (report) {
-            setReportConfig(report.config);
+            setReportConfig(report._config);
             setLoadingError(null);
           } else {
             setLoadingError('Report configuration not found');
           }
         })
-        .catch(error => {
-          console.error('Final error loading report registry:', error);
+        .catch(_error => {
+          console.error('Final error loading report registry:', _error);
           setLoadingError('Failed to load report configuration');
 
           // Attempt to recover after a delay
@@ -170,7 +170,7 @@ export function UnifiedLoadingReportDialog({ isOpen, onClose }: UnifiedLoadingRe
             Generate Order Loading Report
           </DialogTitle>
         </DialogHeader>
-        <ReportBuilder config={reportConfig} onGenerate={handleGenerate} />
+        <ReportBuilder _config={reportConfig} onGenerate={handleGenerate} />
       </DialogContent>
     </Dialog>
   );

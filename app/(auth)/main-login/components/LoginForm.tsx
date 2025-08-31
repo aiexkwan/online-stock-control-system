@@ -6,7 +6,7 @@ import { CompoundForm } from './compound/CompoundForm';
 
 interface LoginFormProps {
   onSuccess?: () => void;
-  onError?: (error: string) => void;
+  onError?: (_error: string) => void;
 }
 
 const LoginForm = memo(function LoginForm({ onSuccess, onError }: LoginFormProps) {

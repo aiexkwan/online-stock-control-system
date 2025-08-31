@@ -6,10 +6,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { FileText, Settings, Trash2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { FileText, Settings } from 'lucide-react';
+import { Button } from '../../button';
+import { Input } from '../../input';
+import { Label } from '../../label';
 import {
   Dialog,
   DialogContent,

@@ -472,7 +472,7 @@ export class GrnErrorHandler {
    * 生成唯一錯誤 ID
    */
   private generateErrorId(): string {
-    return `grn_err_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    return `grn_err_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
   }
 
   /**

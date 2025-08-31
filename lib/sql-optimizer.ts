@@ -186,7 +186,7 @@ function addGroupByIfNeeded(sql: string): string {
     !sqlLower.includes('group by')
   ) {
     // 嘗試智能添加 GROUP BY
-    const selectMatch = sql.match(/SELECT\s+(.*?)\s+FROM/is);
+    const selectMatch = sql.match(/SELECT\s+(.*?)\s+FROM/i);
     if (selectMatch) {
       const selectClause = selectMatch[1];
 
@@ -254,7 +254,7 @@ function detectQueryType(question: string): 'detail' | 'summary' | 'aggregate' |
     aggregate: [/count/i, /sum/i, /average/i, /total/i, /statistics/i],
     summary: [/summary/i, /report/i, /top\s+\d+/i, /overview/i, /distribution/i],
     search: [/find/i, /search/i, /where\s+is/i, /locate/i],
-    detail: [],
+    detail: [/detail/i],
   };
 
   for (const [type, patternList] of Object.entries(patterns)) {
@@ -286,8 +286,8 @@ function optimizeJoinOrder(sql: string): string {
     const fromMatch = sql.match(/FROM\s+(\w+)(?:\s+(\w+))?/i);
     if (!fromMatch) return sql;
 
-    const joinMatches = sql.matchAll(
-      /(?:LEFT\s+|RIGHT\s+|INNER\s+|OUTER\s+)?JOIN\s+(\w+)(?:\s+(\w+))?\s+ON/gi
+    const joinMatches = Array.from(
+      sql.matchAll(/(?:LEFT\s+|RIGHT\s+|INNER\s+|OUTER\s+)?JOIN\s+(\w+)(?:\s+(\w+))?\s+ON/gi)
     );
     const joins: Array<{
       type: string;
@@ -518,8 +518,8 @@ export async function analyzeQueryWithPlan(
     // 先進行 SQL 優化
     const optimizedQuery = question ? optimizeSQL(sql, question) : sql;
 
-    // 創建 Supabase 客戶端
-    const supabase = await createClient();
+    // 創建 Supabase 客戶端（暫時不使用）
+    // const supabase = await createClient();
 
     // 獲取執行計劃
     // Temporarily comment out analyze_query_performance as it's not in generated types
@@ -527,13 +527,13 @@ export async function analyzeQueryWithPlan(
     //   p_sql: optimizedQuery,
     // });
     const planData = null;
-    const error = null;
+    const _error: any = null;
 
-    if (error) {
+    if (_error) {
       queryLogger.error(
         {
           operation: 'analyzeQueryPlan',
-          error: 'Unknown error',
+          error: (_error as Error)?.message || 'Unknown error',
           code: 'ANALYSIS_ERROR',
           sql: optimizedQuery.substring(0, 200) + '...',
         },

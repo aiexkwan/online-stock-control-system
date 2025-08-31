@@ -4,8 +4,50 @@
  * 替代 OpenAI Assistant API 的文件處理
  */
 
-import pdf from 'pdf-parse';
-import { systemLogger } from '@/lib/logger';
+// PDF 解析庫類型定義
+interface PdfParseOptions {
+  pagerender?: (pageData: {
+    getTextContent: (options: Record<string, boolean>) => Promise<{
+      items: Array<{ str: string; transform: number[] }>;
+    }>;
+  }) => Promise<string>;
+  max?: number;
+}
+
+interface PdfParseResult {
+  text: string;
+  numpages: number;
+  info?: {
+    Title?: string;
+    Author?: string;
+    CreationDate?: string;
+  };
+}
+
+// PDF 解析庫動態導入
+let pdfParse: ((buffer: Buffer, options?: PdfParseOptions) => Promise<PdfParseResult>) | null =
+  null;
+
+// 延遲載入 pdf-parse (避免 SSR 問題)
+const loadPdfParse = async (): Promise<
+  (buffer: Buffer, options?: PdfParseOptions) => Promise<PdfParseResult>
+> => {
+  if (!pdfParse) {
+    try {
+      const pdfModule = await import('pdf-parse');
+      // pdf-parse 通常直接導出函數，不是 default export
+      pdfParse = pdfModule as unknown as (
+        buffer: Buffer,
+        options?: PdfParseOptions
+      ) => Promise<PdfParseResult>;
+    } catch (error) {
+      throw new Error('Failed to load pdf-parse module');
+    }
+  }
+  return pdfParse;
+};
+
+import { systemLogger } from '../../lib/logger';
 
 export interface ExtractedPDFData {
   text: string;
@@ -39,7 +81,7 @@ export class PDFExtractionService {
    */
   public async extractText(buffer: ArrayBuffer): Promise<ExtractedPDFData> {
     try {
-      const startTime = Date.now();
+      const _startTime = Date.now();
       const pdfBuffer = Buffer.from(buffer);
 
       systemLogger.info(
@@ -48,6 +90,9 @@ export class PDFExtractionService {
         },
         '[PDFExtractionService] Starting PDF extraction'
       );
+
+      // 載入 pdf-parse 模組
+      const pdf = await loadPdfParse();
 
       // 使用 pdf-parse 提取文本
       const data = await pdf(pdfBuffer, {
@@ -82,7 +127,7 @@ export class PDFExtractionService {
         pages,
       };
 
-      const processingTime = Date.now() - startTime;
+      const processingTime = Date.now() - _startTime;
 
       systemLogger.info(
         {
@@ -150,7 +195,7 @@ export class PDFExtractionService {
 
     // 方法1：尋找明顯的頁面標記
     // 例如 "Page X of Y" 或頁碼模式
-    const pagePatterns = [
+    const _pagePatterns = [
       /Page\s+\d+\s+of\s+\d+/gi,
       /\n\s*\d+\s*\n/g, // 獨立的頁碼
       /\f/g, // Form feed character
@@ -224,8 +269,8 @@ export class PDFExtractionService {
 
     // 清理多餘的空白
     processedText = processedText
-      .replace(/\n{4,}/g, '\n\n\n') // 最多3個連續換行
-      .replace(/[ \t]{2,}/g, ' ') // 多個空格替換為單個
+      .replace(/\n{4 }/g, '\n\n\n') // 最多3個連續換行
+      .replace(/[ \t]{2 }/g, ' ') // 多個空格替換為單個
       .trim();
 
     systemLogger.debug(
@@ -308,7 +353,7 @@ export class PDFExtractionService {
     }
 
     // 估算產品數量（通過計算產品代碼模式）
-    const productCodePattern = /^[A-Z][A-Z0-9]{2,}/gm;
+    const productCodePattern = /^[A-Z][A-Z0-9]{2 }/gm;
     const productMatches = text.match(productCodePattern);
     if (productMatches) {
       metadata.numProducts = productMatches.length;

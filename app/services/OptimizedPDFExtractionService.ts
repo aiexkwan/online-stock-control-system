@@ -6,8 +6,8 @@
 
 import * as crypto from 'crypto';
 import OpenAI from 'openai';
-import { EnhancedPDFCache } from '@/lib/cache/EnhancedPDFCache';
-import { systemLogger } from '@/lib/logger';
+import { EnhancedPDFCache } from '../../lib/cache/EnhancedPDFCache';
+import { systemLogger } from '../../lib/logger';
 import { PDFExtractionService, ExtractedPDFData } from './pdfExtractionService';
 
 // Performance metrics tracking
@@ -72,7 +72,7 @@ export class OptimizedPDFExtractionService {
   private cache: EnhancedPDFCache<OptimizedExtractionResult['data']>;
 
   // Performance configuration
-  private readonly config = {
+  private readonly _config = {
     maxTokensPerRequest: 1500, // Reduced from 8192
     maxResponseTokens: 1000, // Reduced from 4096
     temperature: 0.0, // Deterministic for caching
@@ -101,7 +101,7 @@ export class OptimizedPDFExtractionService {
 
     this.openai = new OpenAI({
       apiKey,
-      timeout: this.config.timeoutMs,
+      timeout: this._config.timeoutMs,
       maxRetries: 2,
     });
 
@@ -127,7 +127,7 @@ export class OptimizedPDFExtractionService {
     fileBuffer: ArrayBuffer,
     fileName: string
   ): Promise<OptimizedExtractionResult> {
-    const startTime = Date.now();
+    const _startTime = Date.now();
     const metrics: PerformanceMetrics = {
       extractionTime: 0,
       llmTime: 0,
@@ -142,12 +142,12 @@ export class OptimizedPDFExtractionService {
       const contentHash = this.generateContentHash(fileBuffer);
 
       // Step 2: Check cache first
-      if (this.config.cacheEnabled) {
+      if (this._config.cacheEnabled) {
         const cached = this.cache.get(contentHash);
         if (cached) {
           metrics.cacheHit = true;
           metrics.method = 'cache';
-          metrics.totalTime = Date.now() - startTime;
+          metrics.totalTime = Date.now() - _startTime;
 
           systemLogger.info(
             {
@@ -184,11 +184,11 @@ export class OptimizedPDFExtractionService {
       metrics.tokensUsed = result.tokensUsed || 0;
 
       // Step 6: Cache the result
-      if (this.config.cacheEnabled && result.data) {
+      if (this._config.cacheEnabled && result.data) {
         this.cache.set(contentHash, result.data, fileBuffer);
       }
 
-      metrics.totalTime = Date.now() - startTime;
+      metrics.totalTime = Date.now() - _startTime;
 
       systemLogger.info(
         {
@@ -207,7 +207,7 @@ export class OptimizedPDFExtractionService {
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      metrics.totalTime = Date.now() - startTime;
+      metrics.totalTime = Date.now() - _startTime;
 
       systemLogger.error(
         {
@@ -239,7 +239,7 @@ export class OptimizedPDFExtractionService {
     // Check if we need chunking
     const estimatedTokens = TokenEstimator.estimate(optimizedText);
 
-    if (estimatedTokens > this.config.maxTokensPerRequest && this.config.smartChunking) {
+    if (estimatedTokens > this._config.maxTokensPerRequest && this._config.smartChunking) {
       return await this.extractWithChunking(extractedData);
     }
 
@@ -259,8 +259,8 @@ export class OptimizedPDFExtractionService {
             content: optimizedText,
           },
         ],
-        temperature: this.config.temperature,
-        max_tokens: this.config.maxResponseTokens,
+        temperature: this._config.temperature,
+        max_tokens: this._config.maxResponseTokens,
         response_format: { type: 'json_object' },
         seed: 42, // For reproducibility
       });
@@ -323,7 +323,7 @@ export class OptimizedPDFExtractionService {
    */
   private createSmartChunks(extractedData: ExtractedPDFData): string[] {
     const chunks: string[] = [];
-    const maxChunkTokens = this.config.maxTokensPerRequest - 200; // Leave room for prompt
+    const maxChunkTokens = this._config.maxTokensPerRequest - 200; // Leave room for prompt
 
     // Always include header info in first chunk
     const header = this.extractHeaderInfo(extractedData.text);
@@ -407,7 +407,7 @@ export class OptimizedPDFExtractionService {
     // Truncate if needed
     optimized = TokenEstimator.truncateToTokenLimit(
       optimized,
-      this.config.maxTokensPerRequest - 200 // Leave room for system prompt
+      this._config.maxTokensPerRequest - 200 // Leave room for system prompt
     );
 
     return optimized;

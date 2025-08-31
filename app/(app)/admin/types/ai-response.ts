@@ -3,10 +3,10 @@
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant' | 'system';
-  content: string;
+  content: string | any;
   timestamp: Date | string;
   error?: boolean;
-  type?: string;
+  type: 'user' | 'ai' | 'error';
 }
 
 export interface AIListItem {

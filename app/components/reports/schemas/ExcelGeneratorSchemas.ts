@@ -2,6 +2,12 @@
  * Zod schemas for Excel Generator - Strategy 1: Runtime validation
  */
 import { z } from 'zod';
+import type {
+  ReportConfig,
+  ProcessedReportData,
+  ColumnConfig,
+  SectionConfig,
+} from '../core/ReportConfig';
 
 // ExcelJS 樣式相關 schemas
 const ExcelColorSchema = z.object({
@@ -90,8 +96,8 @@ export const SectionConfigSchema = z.object({
 
 export const ReportConfigSchema = z.object({
   id: z.string(),
-  name: z.string(),
-  description: z.string().optional(),
+  _name: z.string(),
+  description: z.string(),
   category: z.enum(['operational', 'inventory', 'financial', 'quality']),
   formats: z.array(z.enum(['pdf', 'excel', 'csv'])),
   defaultFormat: z.enum(['pdf', 'excel', 'csv']),
@@ -128,8 +134,14 @@ export const MetadataSchema = z.object({
 });
 
 export const ProcessedReportDataSchema = z.object({
-  metadata: MetadataSchema,
-  sections: z.record(z.array(z.record(z.unknown()))),
+  metadata: z.object({
+    generatedAt: z.string(),
+    filters: z.record(
+      z.union([z.string(), z.number(), z.boolean(), z.array(z.string()), z.date()])
+    ),
+    recordCount: z.number(),
+  }),
+  sections: z.record(z.unknown()),
   summary: z.record(z.unknown()).optional(),
 });
 
@@ -141,20 +153,24 @@ export type ValidatedProcessedReportData = z.infer<typeof ProcessedReportDataSch
 export type ValidatedMetadata = z.infer<typeof MetadataSchema>;
 
 // 驗證輔助函數
-export function validateAndParseReportConfig(data: unknown): ValidatedReportConfig {
-  return ReportConfigSchema.parse(data);
+export function validateAndParseReportConfig(data: unknown): ReportConfig {
+  ReportConfigSchema.parse(data);
+  return data as ReportConfig;
 }
 
-export function validateAndParseProcessedData(data: unknown): ValidatedProcessedReportData {
-  return ProcessedReportDataSchema.parse(data);
+export function validateAndParseProcessedData(data: unknown): ProcessedReportData {
+  ProcessedReportDataSchema.parse(data);
+  return data as ProcessedReportData;
 }
 
-export function validateColumnConfig(data: unknown): ValidatedColumnConfig {
-  return ColumnConfigSchema.parse(data);
+export function validateColumnConfig(data: unknown): ColumnConfig {
+  ColumnConfigSchema.parse(data);
+  return data as ColumnConfig;
 }
 
-export function validateSectionConfig(data: unknown): ValidatedSectionConfig {
-  return SectionConfigSchema.parse(data);
+export function validateSectionConfig(data: unknown): SectionConfig {
+  SectionConfigSchema.parse(data);
+  return data as SectionConfig;
 }
 
 // 安全類型保護函數

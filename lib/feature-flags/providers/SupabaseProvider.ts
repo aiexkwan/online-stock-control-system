@@ -1,9 +1,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { DatabaseRecord } from '@/types/database/tables';
-import { FeatureFlag, FeatureFlagStatus } from '../types';
+import type { Database } from '../../../types/database/supabase';
+import { FeatureFlag } from '../types';
 import {
-  FeatureFlagDbRecord,
-  RealtimePayload,
   FeatureFlagDbMapper,
   isValidRealtimePayload,
   isValidDbRecord,
@@ -15,7 +13,7 @@ import { BaseFeatureFlagProvider } from './BaseProvider';
  * 使用 Supabase 作為後端存儲
  */
 export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
-  private supabase: SupabaseClient;
+  private supabase: SupabaseClient<Database>;
   private tableName: string = 'feature_flags';
   private pollingInterval?: NodeJS.Timeout;
   private cacheTTL: number;
@@ -30,7 +28,7 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
     }
   ) {
     super();
-    this.supabase = createClient(supabaseUrl, supabaseKey);
+    this.supabase = createClient<Database>(supabaseUrl, supabaseKey);
     this.tableName = options?.tableName || this.tableName;
     this.cacheTTL = options?.cacheTTL || 60000; // 默認 1 分鐘
 
@@ -117,7 +115,10 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
   async updateFlag(key: string, updates: Partial<FeatureFlag>): Promise<void> {
     const dbRecord = FeatureFlagDbMapper.toDbRecord(key, updates);
 
-    const { error } = await this.supabase.from(this.tableName).update(dbRecord).eq('key', key);
+    const { error } = await this.supabase
+      .from(this.tableName)
+      .update(dbRecord as any)
+      .eq('key', key);
 
     if (error) {
       throw new Error(`Failed to update feature flag: ${error.message}`);
@@ -136,7 +137,7 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
   async createFlag(flag: FeatureFlag): Promise<void> {
     const dbRecord = FeatureFlagDbMapper.toDbRecord(flag.key, flag);
 
-    const { error } = await this.supabase.from(this.tableName).insert(dbRecord);
+    const { error } = await this.supabase.from(this.tableName).insert(dbRecord as any);
 
     if (error) {
       throw new Error(`Failed to create feature flag: ${error.message}`);
@@ -169,7 +170,7 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
     }
 
     // 取消實時訂閱
-    this.supabase.removeAllChannels();
+    this.supabase.removeChannel(this.supabase.channel('feature-flags-changes'));
   }
 
   /**
@@ -204,16 +205,19 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
     `;
 
     // 執行 SQL（需要適當權限）
+    // 注意：在生產環境中應該通過遷移腳本創建表，而非動態創建
     try {
-      const { error } = await this.supabase.rpc('exec_sql', {
-        sql: createTableSQL,
-      });
+      // 嘗試檢查表是否已存在，而不是創建表
+      const { data, error } = await this.supabase.from(this.tableName).select('*').limit(1);
 
-      if (error) {
-        console.warn('Could not create feature flags table:', error);
+      if (error && error.message?.includes('does not exist')) {
+        console.warn(
+          `Table ${this.tableName} does not exist. Please create it via database migration.`
+        );
+        console.info('Required table schema:', createTableSQL);
       }
     } catch (err) {
-      console.warn('Table creation skipped:', err);
+      console.warn('Table existence check failed:', err);
     }
   }
 
@@ -224,13 +228,13 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
     this.supabase
       .channel('feature-flags-changes')
       .on(
-        'postgres_changes',
+        'postgres_changes' as any,
         {
           event: '*',
           schema: 'public',
           table: this.tableName,
         },
-        payload => {
+        (payload: any) => {
           this.handleRealtimeUpdate(payload);
         }
       )
@@ -240,14 +244,16 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
   /**
    * 處理實時更新
    */
-  private handleRealtimeUpdate(payload: unknown): void {
+  private handleRealtimeUpdate(payload: any): void {
     // Strategy 3: Supabase codegen - 使用生成的類型進行驗證
     if (!isValidRealtimePayload(payload)) {
       console.warn('Invalid realtime payload received:', payload);
       return;
     }
 
-    const { eventType, new: newRecord, old: oldRecord } = payload;
+    const eventType = payload.eventType;
+    const newRecord = payload.new;
+    const oldRecord = payload.old;
 
     switch (eventType) {
       case 'INSERT':
@@ -282,8 +288,23 @@ export class SupabaseFeatureFlagProvider extends BaseFeatureFlagProvider {
    * 刷新緩存
    */
   private async refreshCache(): Promise<void> {
-    const flags = await this.getAllFlags();
-    this.updateCache(flags);
+    try {
+      // 直接從數據庫加載，避免循環調用 getAllFlags
+      const { data, error } = await this.supabase
+        .from(this.tableName)
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error refreshing cache:', error);
+        return;
+      }
+
+      const flags = FeatureFlagDbMapper.validateAndTransformArray(data || []);
+      this.updateCache(flags);
+    } catch (err) {
+      console.error('Cache refresh failed:', err);
+    }
   }
 
   /**

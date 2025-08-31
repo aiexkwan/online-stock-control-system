@@ -7,7 +7,7 @@ import { ReportConfig } from '../core/ReportConfig';
 
 export const orderLoadingReportConfig: ReportConfig = {
   id: 'order-loading-report',
-  name: 'Order Loading Report',
+  _name: 'Order Loading Report',
   description: 'Report of loading for orders',
   category: 'operational',
   formats: ['pdf', 'excel'],
@@ -49,7 +49,7 @@ export const orderLoadingReportConfig: ReportConfig = {
       placeholder: 'Select user',
       dataSource: {
         type: 'table',
-        name: 'data_id',
+        _name: 'data_id',
         params: { role: 'operator' },
       },
     },

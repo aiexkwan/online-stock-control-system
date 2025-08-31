@@ -4,7 +4,7 @@
  */
 
 import { jsPDF } from 'jspdf';
-import { DatabaseRecord } from '@/types/database/tables';
+import { DatabaseRecord } from '../../../../lib/types/database-types';
 import 'jspdf-autotable';
 import {
   ReportGenerator,
@@ -33,10 +33,10 @@ export class PdfGenerator implements ReportGenerator {
     this.useLegacyStyles = useLegacyStyles;
   }
 
-  async generate(data: ProcessedReportData, config: ReportConfig): Promise<Blob> {
+  async generate(data: ProcessedReportData, _config: ReportConfig): Promise<Blob> {
     // 如果報表要求使用舊版樣式，調用舊版生成方法
-    if (this.useLegacyStyles || config.styleOverrides?.pdf?.useLegacyStyles) {
-      return this.generateLegacyPdf(data, config);
+    if (this.useLegacyStyles || _config.styleOverrides?.pdf?.useLegacyStyles) {
+      return this.generateLegacyPdf(data, _config);
     }
 
     // 新版 PDF 生成
@@ -46,7 +46,7 @@ export class PdfGenerator implements ReportGenerator {
       format: 'a4',
     });
 
-    const margins = config.styleOverrides?.pdf?.margins || {
+    const margins = _config.styleOverrides?.pdf?.margins || {
       top: 20,
       right: 15,
       bottom: 20,
@@ -56,7 +56,7 @@ export class PdfGenerator implements ReportGenerator {
     let currentY = margins.top;
 
     // 添加報表標題
-    this.addHeader(doc, config, margins, currentY);
+    this.addHeader(doc, _config, margins, currentY);
     currentY += 20;
 
     // 添加元數據
@@ -64,7 +64,7 @@ export class PdfGenerator implements ReportGenerator {
     currentY += 15;
 
     // 添加各區段
-    for (const section of config.sections) {
+    for (const section of _config.sections) {
       // 檢查是否在 PDF 中隱藏此區段
       if (section.hideInFormats?.includes('pdf')) {
         continue;
@@ -104,7 +104,7 @@ export class PdfGenerator implements ReportGenerator {
     }
 
     // 添加頁尾
-    this.addFooter(doc, config);
+    this.addFooter(doc, _config);
 
     return doc.output('blob');
   }
@@ -112,18 +112,18 @@ export class PdfGenerator implements ReportGenerator {
   /**
    * 生成舊版格式 PDF（保持現有報表外觀）
    */
-  private async generateLegacyPdf(data: ProcessedReportData, config: ReportConfig): Promise<Blob> {
+  private async generateLegacyPdf(data: ProcessedReportData, _config: ReportConfig): Promise<Blob> {
     // 根據報表 ID 使用特定的舊版生成器
-    if (config.id === 'void-pallet-report') {
+    if (_config.id === 'void-pallet-report') {
       // 使用 Void Pallet 專用的舊版生成器
       const { LegacyVoidPalletAdapter } = await import('./LegacyVoidPalletAdapter');
-      return LegacyVoidPalletAdapter.generatePdf(data, config);
+      return LegacyVoidPalletAdapter.generatePdf(data, _config);
     }
 
-    if (config.id === 'order-loading-report') {
+    if (_config.id === 'order-loading-report') {
       // 使用 Order Loading 專用的舊版生成器
       const { LegacyOrderLoadingAdapter } = await import('./LegacyOrderLoadingAdapter');
-      return LegacyOrderLoadingAdapter.generatePdf(data, config);
+      return LegacyOrderLoadingAdapter.generatePdf(data, _config);
     }
 
     // 其他報表的舊版生成邏輯...
@@ -134,7 +134,7 @@ export class PdfGenerator implements ReportGenerator {
     doc.setFont('helvetica', 'normal');
 
     // 通用舊版佈局
-    doc.text(config.name, 20, 20);
+    doc.text(_config._name, 20, 20);
     doc.text('Legacy Format Report', 20, 30);
     doc.text(JSON.stringify(data.metadata.filters), 20, 40);
 
@@ -143,18 +143,18 @@ export class PdfGenerator implements ReportGenerator {
 
   private addHeader(
     doc: jsPDF,
-    config: ReportConfig,
+    _config: ReportConfig,
     margins: { top: number; right: number; bottom: number; left: number },
     y: number
   ): void {
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
-    doc.text(config.name, margins.left, y);
+    doc.text(_config._name, margins.left, y);
 
-    if (config.description) {
+    if (_config.description) {
       doc.setFontSize(10);
       doc.setFont('helvetica', 'normal');
-      doc.text(config.description, margins.left, y + 6);
+      doc.text(_config.description, margins.left, y + 6);
     }
   }
 
@@ -275,7 +275,7 @@ export class PdfGenerator implements ReportGenerator {
     return doc.lastAutoTable.finalY;
   }
 
-  private addFooter(doc: jsPDF, config: ReportConfig): void {
+  private addFooter(doc: jsPDF, _config: ReportConfig): void {
     const pageCount = doc.getNumberOfPages();
 
     for (let i = 1; i <= pageCount; i++) {
@@ -293,7 +293,7 @@ export class PdfGenerator implements ReportGenerator {
 
       // 報表 ID（用於追蹤）
       doc.setFontSize(8);
-      doc.text(`Report ID: ${config.id}`, 15, doc.internal.pageSize.height - 10);
+      doc.text(`Report ID: ${_config.id}`, 15, doc.internal.pageSize.height - 10);
     }
   }
 

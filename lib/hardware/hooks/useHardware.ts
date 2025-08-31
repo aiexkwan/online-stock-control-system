@@ -6,17 +6,23 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import { getHardwareAbstractionLayer } from '../hardware-abstraction-layer';
-import { createLogger } from '../../logger';
 import {
   PrintJob,
   PrintResult,
   ScanResult,
   DeviceStatus,
+  DeviceMetrics,
   HardwareAlert,
   QueueStatus,
 } from '../types';
 
-const logger = createLogger('hardware-hook');
+// Simple logger for hardware hook
+const logger = {
+  info: (message: string, data?: any) => console.info(`[hardware-hook] ${message}`, data),
+  error: (data: { err?: any }, message: string) =>
+    console.error(`[hardware-hook] ${message}`, data.err),
+  debug: (data: any, message: string) => console.debug(`[hardware-hook] ${message}`, data),
+};
 
 interface UseHardwareOptions {
   autoInitialize?: boolean;
@@ -43,10 +49,28 @@ interface UseHardwareReturn {
 
   // Monitoring methods
   getDeviceStatus: (deviceId: string) => DeviceStatus | undefined;
-  getDashboardData: () => Record<string, unknown> | null;
+  getDashboardData: () => {
+    totalDevices: number;
+    onlineDevices: number;
+    errorDevices: number;
+    overallMetrics: {
+      totalUsage: number;
+      totalErrors: number;
+      averageSuccessRate: number;
+    };
+    devices: Array<DeviceStatus & { metrics?: DeviceMetrics }>;
+  } | null;
 
   // Queue methods
-  getQueueDetails: () => Record<string, unknown>[];
+  getQueueDetails: () => Array<{
+    jobId: string | undefined;
+    type: PrintJob['type'];
+    priority: PrintJob['priority'];
+    status: 'pending' | 'processing' | 'completed' | 'failed';
+    addedAt: string;
+    attempts: number;
+    error?: string;
+  }>;
   clearPrintQueue: () => Promise<void>;
   retryFailedJobs: () => Promise<{ retried: number; successful: number }>;
 }
@@ -72,39 +96,53 @@ export function useHardware(options: UseHardwareOptions = {}): UseHardwareReturn
     if (!hal) return;
 
     const updateDeviceList = () => {
-      const printerDevices = (
-        hal.monitoring as unknown as { getDevices: (type: string) => DeviceStatus[] }
-      ).getDevices('printer');
-      const scannerDevices = (
-        hal.monitoring as unknown as { getDevices: (type: string) => DeviceStatus[] }
-      ).getDevices('scanner');
+      // Get all device statuses and filter by type
+      const allDevices = Array.from(hal.monitoring.getAllDevicesStatus().entries());
+      const printerDevices = allDevices
+        .map(([, device]) => device)
+        .filter(device => device.deviceType === 'printer');
+      const scannerDevices = allDevices
+        .map(([, device]) => device)
+        .filter(device => device.deviceType === 'scanner');
 
       setPrinters(printerDevices);
       setScanners(scannerDevices);
     };
 
     const setupListeners = () => {
-      // Alert listener
-      const unsubscribeAlerts = (
-        hal as unknown as {
-          alerts: { on: (event: string, callback: (alert: HardwareAlert) => void) => () => void };
+      // Queue status listener using direct method call
+      const pollQueueStatus = () => {
+        try {
+          const status = hal.queue.getQueueStatus();
+          setQueueStatus(status);
+        } catch (error) {
+          logger.error({ err: error }, 'Failed to get queue status');
         }
-      ).alerts.on('alert', (alert: HardwareAlert) => {
-        if (onAlert) {
-          onAlert(alert);
-        }
-      });
-      unsubscribesRef.current.push(unsubscribeAlerts);
+      };
 
-      // Queue status listener
-      hal.queue.on('queue.updated', (status: QueueStatus) => {
+      // Set up event listeners for queue updates
+      const handleQueueUpdated = (status: QueueStatus) => {
         setQueueStatus(status);
-      });
+      };
 
-      // Device status listener
-      hal.monitoring.on('statusChange', () => {
-        updateDeviceList();
-      });
+      hal.queue.on('queue.updated', handleQueueUpdated);
+      unsubscribesRef.current.push(() => hal.queue.off('queue.updated', handleQueueUpdated));
+
+      // Alert handling - if needed in future
+      if (onAlert) {
+        const handleAlert = (alert: HardwareAlert) => {
+          onAlert(alert);
+        };
+        // This would be implemented when alert system is added to HAL
+        // For now, we'll just set up a placeholder
+      }
+
+      // Initial queue status
+      pollQueueStatus();
+
+      // Monitor device status changes
+      const deviceStatusInterval = setInterval(updateDeviceList, 10000);
+      unsubscribesRef.current.push(() => clearInterval(deviceStatusInterval));
     };
 
     const initializeHAL = async () => {
@@ -254,7 +292,15 @@ export function useHardware(options: UseHardwareOptions = {}): UseHardwareReturn
   }, [initialized]);
 
   // Get queue details
-  const getQueueDetails = useCallback(() => {
+  const getQueueDetails = useCallback((): Array<{
+    jobId: string | undefined;
+    type: PrintJob['type'];
+    priority: PrintJob['priority'];
+    status: 'pending' | 'processing' | 'completed' | 'failed';
+    addedAt: string;
+    attempts: number;
+    error?: string;
+  }> => {
     if (!initialized) return [];
     return halRef.current.queue.getQueueDetails();
   }, [initialized]);

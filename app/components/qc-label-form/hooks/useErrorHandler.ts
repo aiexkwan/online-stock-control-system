@@ -33,9 +33,9 @@ export const useErrorHandler = ({ component, userId, defaultContext }: UseErrorH
 
   // API Error handler
   const handleApiError = useCallback(
-    (error: Error, action: string, userMessage?: string, additionalData?: QcErrorMetadata) => {
+    (_error: Error, action: string, userMessage?: string, additionalData?: QcErrorMetadata) => {
       errorHandler.handleApiError(
-        error,
+        _error,
         {
           ...baseContext,
           action,
@@ -49,8 +49,8 @@ export const useErrorHandler = ({ component, userId, defaultContext }: UseErrorH
 
   // Network Error handler
   const handleNetworkError = useCallback(
-    (error: Error, action: string, additionalData?: QcErrorMetadata) => {
-      errorHandler.handleNetworkError(error, {
+    (_error: Error, action: string, additionalData?: QcErrorMetadata) => {
+      errorHandler.handleNetworkError(_error, {
         ...baseContext,
         action,
         additionalData: { ...baseContext.additionalData, ...additionalData },
@@ -61,8 +61,8 @@ export const useErrorHandler = ({ component, userId, defaultContext }: UseErrorH
 
   // Auth Error handler
   const handleAuthError = useCallback(
-    (error: Error, action: string, additionalData?: QcErrorMetadata) => {
-      errorHandler.handleAuthError(error, {
+    (_error: Error, action: string, additionalData?: QcErrorMetadata) => {
+      errorHandler.handleAuthError(_error, {
         ...baseContext,
         action,
         additionalData: { ...baseContext.additionalData, ...additionalData },
@@ -73,9 +73,9 @@ export const useErrorHandler = ({ component, userId, defaultContext }: UseErrorH
 
   // PDF Error handler
   const handlePdfError = useCallback(
-    (error: Error, action: string, palletNumber?: string, additionalData?: QcErrorMetadata) => {
+    (_error: Error, action: string, palletNumber?: string, additionalData?: QcErrorMetadata) => {
       errorHandler.handlePdfError(
-        error,
+        _error,
         {
           ...baseContext,
           action,
@@ -92,7 +92,7 @@ export const useErrorHandler = ({ component, userId, defaultContext }: UseErrorH
   );
 
   // Success handler
-  const handleSuccess = useCallback(
+  const _handleSuccess = useCallback(
     (message: string, action: string, details?: string, additionalData?: QcErrorMetadata) => {
       errorHandler.handleSuccess(
         message,
@@ -153,18 +153,18 @@ export const useErrorHandler = ({ component, userId, defaultContext }: UseErrorH
   const handleValidationError = useCallback(
     (
       fieldName: string,
-      error: string,
+      _error: string,
       action: string = 'validation',
       additionalData?: QcErrorMetadata
     ) => {
-      errorHandler.handleValidationError(fieldName, error, {
+      errorHandler.handleValidationError(fieldName, _error, {
         ...baseContext,
         action,
         additionalData: {
           ...baseContext.additionalData,
           ...additionalData,
           fieldName,
-          validationError: error,
+          validationError: _error,
         },
       } as ErrorContext);
     },
@@ -173,17 +173,17 @@ export const useErrorHandler = ({ component, userId, defaultContext }: UseErrorH
 
   // Generic error handler with automatic error type detection
   const handleError = useCallback(
-    (error: Error, action: string, userMessage?: string, additionalData?: QcErrorMetadata) => {
-      const errorMessage = error.message.toLowerCase();
+    (_error: Error, action: string, userMessage?: string, additionalData?: QcErrorMetadata) => {
+      const errorMessage = _error.message.toLowerCase();
 
       if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
-        handleNetworkError(error, action, additionalData);
+        handleNetworkError(_error, action, additionalData);
       } else if (errorMessage.includes('auth') || errorMessage.includes('unauthorized')) {
-        handleAuthError(error, action, additionalData);
+        handleAuthError(_error, action, additionalData);
       } else if (errorMessage.includes('pdf') || errorMessage.includes('generation')) {
-        handlePdfError(error, action, additionalData?.palletNumber, additionalData);
+        handlePdfError(_error, action, additionalData?.palletNumber, additionalData);
       } else {
-        handleApiError(error, action, userMessage, additionalData);
+        handleApiError(_error, action, userMessage, additionalData);
       }
     },
     [handleNetworkError, handleAuthError, handlePdfError, handleApiError]
@@ -191,20 +191,20 @@ export const useErrorHandler = ({ component, userId, defaultContext }: UseErrorH
 
   // Batch error handler for bulk operations
   const handleBatchError = useCallback(
-    (errors: Error[], action: string, additionalData?: QcErrorMetadata) => {
+    (_errors: Error[], action: string, additionalData?: QcErrorMetadata) => {
       const batchId = additionalData?.batchId || `batch-${Date.now()}`;
 
-      errors.forEach((error, index) => {
+      _errors.forEach((error, index) => {
         handleError(error, `${action}-item-${index}`, undefined, {
           ...additionalData,
           batchId,
           batchIndex: index,
-          batchTotal: errors.length,
+          batchTotal: _errors.length,
         });
       });
 
       // Summary message
-      handleWarning(`${errors.length} errors occurred during batch operation`, action, true, {
+      handleWarning(`${_errors.length} errors occurred during batch operation`, action, true, {
         ...additionalData,
         batchId,
       });
@@ -222,20 +222,20 @@ export const useErrorHandler = ({ component, userId, defaultContext }: UseErrorH
     ) => {
       return async (): Promise<T | undefined> => {
         try {
-          const result = await operation();
+          const _result = await operation();
 
           if (successMessage) {
-            handleSuccess(successMessage, action);
+            _handleSuccess(successMessage, action);
           }
 
-          return result;
+          return _result;
         } catch (error) {
           handleError(error as Error, action, errorMessage);
           return undefined;
         }
       };
     },
-    [handleError, handleSuccess]
+    [handleError, _handleSuccess]
   );
 
   return {
@@ -244,7 +244,7 @@ export const useErrorHandler = ({ component, userId, defaultContext }: UseErrorH
     handleNetworkError,
     handleAuthError,
     handlePdfError,
-    handleSuccess,
+    _handleSuccess,
     handleWarning,
     handleInfo,
     handleValidationError,

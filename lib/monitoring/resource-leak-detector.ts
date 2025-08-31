@@ -51,7 +51,11 @@ class ResourceLeakDetector {
     {
       timeouts: Set<{ resource: NodeJS.Timeout; name?: string; created: number }>;
       intervals: Set<{ resource: NodeJS.Timeout; name?: string; created: number }>;
-      eventListeners: Set<{ resource: { target: EventTarget; type: string; listener: EventListener }; name?: string; created: number }>;
+      eventListeners: Set<{
+        resource: { target: EventTarget; type: string; listener: EventListener };
+        name?: string;
+        created: number;
+      }>;
       abortControllers: Set<{ resource: AbortController; name?: string; created: number }>;
       lastActivity: number;
       metrics: {
@@ -166,15 +170,27 @@ class ResourceLeakDetector {
         component.metrics.timeoutsCreated++;
         break;
       case 'interval':
-        component.intervals.add({ resource: resource as NodeJS.Timeout, name, created: Date.now() });
+        component.intervals.add({
+          resource: resource as NodeJS.Timeout,
+          name,
+          created: Date.now(),
+        });
         component.metrics.intervalsCreated++;
         break;
       case 'eventListener':
-        component.eventListeners.add({ resource: resource as { target: EventTarget; type: string; listener: EventListener }, name, created: Date.now() });
+        component.eventListeners.add({
+          resource: resource as { target: EventTarget; type: string; listener: EventListener },
+          name,
+          created: Date.now(),
+        });
         component.metrics.eventListenersCreated++;
         break;
       case 'abortController':
-        component.abortControllers.add({ resource: resource as AbortController, name, created: Date.now() });
+        component.abortControllers.add({
+          resource: resource as AbortController,
+          name,
+          created: Date.now(),
+        });
         component.metrics.abortControllersCreated++;
         break;
     }
@@ -228,6 +244,17 @@ class ResourceLeakDetector {
         }
         break;
     }
+  }
+
+  /**
+   * Release resource - alias for cleanupResource for consistency with hook API
+   */
+  releaseResource(
+    componentName: string,
+    resourceType: 'timeout' | 'interval' | 'eventListener' | 'abortController',
+    resource: NodeJS.Timeout | EventListener | AbortController | unknown
+  ) {
+    this.cleanupResource(componentName, resourceType, resource);
   }
 
   /**
@@ -309,8 +336,6 @@ class ResourceLeakDetector {
    * Perform leak detection analysis
    */
   private performLeakDetection() {
-    const now = Date.now();
-
     this.componentRegistry.forEach((data, componentName) => {
       // Check timeouts
       if (data.timeouts.size > this.THRESHOLDS.timeouts.medium) {
@@ -513,10 +538,15 @@ export function useResourceLeakDetector(componentName?: string): {
     getMetrics: () => detector.getGlobalMetrics(),
     getReports: () => detector.getLeakReports(),
     clearReports: () => detector.clearReports(),
-    trackResource: (type: 'timeout' | 'interval' | 'eventListener' | 'abortController', resource: unknown, name?: string) =>
-      componentName ? detector.trackResource(componentName, type, resource, name) : undefined,
-    releaseResource: (type: 'timeout' | 'interval' | 'eventListener' | 'abortController', resource: unknown) =>
-      componentName ? detector.releaseResource(componentName, type, resource) : undefined,
+    trackResource: (
+      type: 'timeout' | 'interval' | 'eventListener' | 'abortController',
+      resource: unknown,
+      name?: string
+    ) => (componentName ? detector.trackResource(componentName, type, resource, name) : undefined),
+    releaseResource: (
+      type: 'timeout' | 'interval' | 'eventListener' | 'abortController',
+      resource: unknown
+    ) => (componentName ? detector.releaseResource(componentName, type, resource) : undefined),
   };
 }
 

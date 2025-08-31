@@ -124,7 +124,7 @@ export class FocusManager {
       return false;
     }
 
-    const result = trap.deactivate();
+    const _result = trap.deactivate();
 
     // 恢復之前的焦點
     if (restoreFocus && this.activeElementBeforeTrap) {
@@ -132,7 +132,7 @@ export class FocusManager {
       this.activeElementBeforeTrap = null;
     }
 
-    return result;
+    return _result;
   }
 
   /**
@@ -556,8 +556,8 @@ export function createSimpleFocusTrap(
 export function autoFocusFirst(container: HTMLElement, delay: number = 0): Promise<boolean> {
   return new Promise(resolve => {
     const focus = () => {
-      const result = globalFocusManager.focusFirst(container);
-      resolve(result);
+      const _result = globalFocusManager.focusFirst(container);
+      resolve(_result);
     };
 
     if (delay > 0) {
@@ -577,8 +577,8 @@ export async function withFocusRestore<T>(action: () => Promise<T> | T): Promise
   const activeElement = document.activeElement as HTMLElement;
 
   try {
-    const result = await action();
-    return result;
+    const _result = await action();
+    return _result;
   } finally {
     if (activeElement && isElementFocusable(activeElement)) {
       globalFocusManager.setFocus(activeElement);

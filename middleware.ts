@@ -2,7 +2,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { DatabaseRecord } from '@/types/database/tables';
 import { safeGet, safeString } from '@/types/database/helpers';
-import { isDevelopment, isProduction } from '@/lib/utils/env';
+import { isDevelopment, isProduction } from '@/lib/schemas/env-validation';
 import {
   middlewareLogger,
   logMiddlewareRequest,
@@ -51,11 +51,6 @@ export async function middleware(request: NextRequest) {
     '/main-login', // 登入頁面
     '/change-password', // 密碼更新頁面需要公開，用戶通過電郵連結訪問
     '/new-password', // 密碼重設頁面需要公開，用戶通過電郵連結訪問
-    '/api/health', // Health check API
-    '/api/metrics', // Consolidated metrics API (2025-08-11)
-    '/api/v1/health', // v1 健康檢查 API (deprecated, redirects)
-    '/api/v2/health', // v2 健康檢查 API (deprecated, redirects)
-    '/api/v1/metrics', // v1 監控統計 API (deprecated, redirects)
     '/api/auth', // 認證相關 API
     '/api/send-order-email', // 訂單郵件發送 API（用於內部調用）
     '/api/pdf-extract', // PDF 提取 API（用於內部 Server Action 調用）

@@ -34,7 +34,7 @@ export const ResponsiveLayout: React.FC<ResponsiveLayoutProps> = React.memo(
 
     return (
       <div
-        className={`min-h-screen w-full ${isMobile ? 'px-4 py-6' : isTablet ? 'px-6 py-8' : 'px-8 py-10'} ${className} `}
+        className={`min-h-screen w-full ${isMobile ? 'px-4 py-6' : isTablet ? 'px-6 py-8' : 'px-8 py-10'} ${className}`}
       >
         {children}
       </div>
@@ -55,7 +55,7 @@ export const ResponsiveGrid: React.FC<ResponsiveGridProps> = React.memo(
 
     return (
       <div
-        className={`grid ${gridCols[columns.sm || 1] || 'grid-cols-1'} ${columns.md ? `md:${gridCols[columns.md] || 'grid-cols-1'}` : ''} ${columns.lg ? `lg:${gridCols[columns.lg] || 'grid-cols-1'}` : ''} ${columns.xl ? `xl:${gridCols[columns.xl] || 'grid-cols-1'}` : ''} ${gapClass} ${className} `}
+        className={`grid ${gridCols[columns.sm || 1] || 'grid-cols-1'} ${columns.md ? `md:${gridCols[columns.md] || 'grid-cols-1'}` : ''} ${columns.lg ? `lg:${gridCols[columns.lg] || 'grid-cols-1'}` : ''} ${columns.xl ? `xl:${gridCols[columns.xl] || 'grid-cols-1'}` : ''} ${gapClass} ${className}`}
       >
         {children}
       </div>
@@ -76,7 +76,7 @@ export const ResponsiveContainer: React.FC<ResponsiveContainerProps> = React.mem
 
     return (
       <div
-        className={`mx-auto w-full ${maxWidthClasses[maxWidth]} ${padding ? 'px-4 sm:px-6 lg:px-8' : ''} ${className} `}
+        className={`mx-auto w-full ${maxWidthClasses[maxWidth]} ${padding ? 'px-4 sm:px-6 lg:px-8' : ''} ${className}`}
       >
         {children}
       </div>
@@ -163,7 +163,7 @@ export const ResponsiveStack: React.FC<{
 
     return (
       <div
-        className={`flex ${directionClasses[direction]} ${alignClasses[align]} ${spacingClass} ${className} `}
+        className={`flex ${directionClasses[direction]} ${alignClasses[align]} ${spacingClass} ${className}`}
       >
         {children}
       </div>

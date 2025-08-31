@@ -61,8 +61,8 @@ export async function getAcoPalletCount(
 
     // 返回下一個卡板編號
     return (data?.length || 0) + DEFAULT_ACO_PALLET_START_COUNT;
-  } catch (error) {
-    console.error('Error in getAcoPalletCount:', error);
+  } catch {
+    console.error('Error in getAcoPalletCount: Unexpected error');
     return DEFAULT_ACO_PALLET_START_COUNT; // 如果出錯則從 1 開始
   }
 }

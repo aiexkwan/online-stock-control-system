@@ -196,7 +196,7 @@
     "deny": []
   },
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": ["supabase", "sequential-thinking", "context7", "playwright"],
+  "enabledMcpjsonServers": ["supabase", "sequential-thinking", "context7", "archon"],
   "hooks": {
     "SessionStart": [
       {

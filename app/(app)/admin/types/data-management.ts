@@ -67,8 +67,8 @@ export interface InventoryRecord {
 }
 
 export interface OperationChildProps {
-  onVoidComplete: (palletId: string, result: VoidResult) => void;
-  onError: (error: Error) => void;
+  onVoidComplete: (palletId: string, _result: VoidResult) => void;
+  onError: (_error: Error) => void;
   initialPalletId?: string;
   mode?: VoidMode;
   onExecute?: () => void;
@@ -107,7 +107,7 @@ export interface UploadRecord {
   uploadedBy?: string;
 }
 
-export interface DocUploadRecord extends UploadRecord {
+export interface _DocUploadRecord extends UploadRecord {
   uuid: string;
   doc_name: string;
   upload_by: string;
@@ -141,7 +141,7 @@ export interface UploadToastState {
 export interface VoidPalletCardProps {
   className?: string;
   title?: string;
-  onVoidComplete?: (palletId: string, result: VoidResult) => void;
+  onVoidComplete?: (palletId: string, _result: VoidResult) => void;
   initialPalletId?: string;
   mode?: VoidMode;
   isEditMode?: boolean;

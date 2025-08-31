@@ -3,13 +3,13 @@
 // import { supabase } from '@/lib/supabase'; // 舊的全局客戶端，將被替換
 import { createClient as createAdminSupabaseClient } from '@supabase/supabase-js'; // 用於 Admin Client
 import type { SupabaseClient } from '@supabase/supabase-js'; // 只導入類型
-import bcrypt from 'bcryptjs';
+import _bcrypt from 'bcryptjs';
 import { createClient as createServerSupabaseClient } from '@/app/utils/supabase/server'; // 新的服務器客戶端
 
 import { getErrorMessage } from '@/lib/types/error-handling';
 
 // Admin client 保持不變，它用於特殊權限操作，不依賴用戶會話
-const getAdminClient = () => {
+const _getAdminClient = () => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -84,7 +84,7 @@ export async function updatePasswordWithSupabaseAuth(
 
     // 移除舊系統 data_id 表的密碼更新邏輯 (如果需要保留，請確保使用正確的 client 和邏輯)
     // 例如，如果之前有這樣的代碼：
-    // const { error: dbError } = await supabaseAdmin // 或其他 client
+    // const { _error: dbError } = await supabaseAdmin // 或其他 client
     //   .from('data_id')
     //   .update({ password_hash: newPasswordHash }) // 注意：這裡需要正確的哈希
     //   .eq('id', clockNumber);

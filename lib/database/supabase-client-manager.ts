@@ -6,7 +6,7 @@
 
 import { createBrowserClient } from '@supabase/ssr';
 import { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@/types/database/supabase';
+import type { Database } from '../../types/database/supabase';
 import {
   DatabaseQueryResult,
   DatabaseError,
@@ -16,12 +16,7 @@ import {
   DatabaseQueryFunction,
   CacheEntry,
   QueryInterceptor,
-  PerformanceMetrics as DbPerformanceMetrics,
-  ConnectionConfig as DbConnectionConfig,
-  CacheConfig as DbCacheConfig,
-  AnyCacheEntry,
-  AnyDatabaseResult,
-} from '@/lib/types/database-operations';
+} from '../types/database-operations';
 
 // Performance monitoring configuration
 interface PerformanceMetrics {
@@ -200,7 +195,7 @@ class SupabaseClientManager {
     if (!this.client) return;
 
     // Monitor auth state changes
-    this.client.auth.onAuthStateChange((event, session) => {
+    this.client.auth.onAuthStateChange((event, _session) => {
       if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
         // Clear cache on auth state changes
         this.clearCache();
@@ -282,13 +277,10 @@ class SupabaseClientManager {
       queries.map(q => this.executeQuery<T>(q.queryFn, q.cacheKey, q.options))
     );
     return results.map((result, index) => ({
-      data: result.data,
-      error: result.error || undefined,
       success: !result.error,
-      index,
-      ...(result.count !== undefined && { count: result.count }),
-      ...(result.status !== undefined && { status: result.status }),
-      ...(result.statusText !== undefined && { statusText: result.statusText }),
+      result: result,
+      error: result.error || undefined,
+      executionTime: undefined,
     }));
   }
 
@@ -312,7 +304,7 @@ class SupabaseClientManager {
   /**
    * Set cached query result
    */
-  private setCachedQuery<T>(key: string, data: T, ttl?: number): void {
+  private setCachedQuery<T>(key: string, data: T, _ttl?: number): void {
     // Implement cache size limit with LRU eviction
     if (this.queryCache.size >= this.cacheConfig.maxSize) {
       this.evictCache();
@@ -334,7 +326,8 @@ class SupabaseClientManager {
       let lruKey: string | null = null;
       let minAccess = Infinity;
 
-      for (const [key, entry] of this.queryCache.entries()) {
+      const entries = Array.from(this.queryCache.entries());
+      for (const [key, entry] of entries) {
         if (entry.accessCount < minAccess) {
           minAccess = entry.accessCount;
           lruKey = key;
@@ -365,7 +358,8 @@ class SupabaseClientManager {
    */
   public clearCacheByPattern(pattern: string | RegExp): void {
     const regex = typeof pattern === 'string' ? new RegExp(pattern) : pattern;
-    for (const key of this.queryCache.keys()) {
+    const keys = Array.from(this.queryCache.keys());
+    for (const key of keys) {
       if (regex.test(key)) {
         this.queryCache.delete(key);
       }
@@ -437,7 +431,7 @@ class SupabaseClientManager {
       this.metrics.connectionStatus = 'connected';
       this.reconnectAttempts = 0;
       return true;
-    } catch (error) {
+    } catch {
       this.metrics.connectionStatus = 'disconnected';
       if (this.config.enableAutoReconnect) {
         await this.reconnect();

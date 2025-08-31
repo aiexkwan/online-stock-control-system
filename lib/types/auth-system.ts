@@ -6,12 +6,23 @@
  * Provides all authentication-related type definitions including form data, event handlers and component types
  */
 
-import React from 'react';
-import { LoginFormData, RegisterFormData } from '../../app/(auth)/main-login/context/LoginContext';
+import * as React from 'react';
 
 // =============================================================================
 // 基礎表單數據類型 / Base Form Data Types
 // =============================================================================
+
+// Local type definitions to avoid JSX dependency issues
+export interface LoginFormData {
+  email: string;
+  password: string;
+}
+
+export interface RegisterFormData {
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
 
 export interface BaseFormData {
   [key: string]: unknown;

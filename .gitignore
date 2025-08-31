@@ -136,3 +136,6 @@ credentials*
 /logs/
 *.log
 !.gitkeep
+
+# Archon project directory (separate project)
+.archon/

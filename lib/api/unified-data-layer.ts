@@ -9,12 +9,19 @@ import {
   gql,
   NormalizedCacheObject,
   OperationVariables,
+  FetchPolicy,
 } from '@apollo/client';
 import { apolloClient } from '@/lib/graphql/apollo-client';
 import { restRequest } from '@/lib/api/unified-api-client';
 import { dataSourceConfig } from '@/lib/data/data-source-config';
+import {
+  type ValidatedQueryOptions,
+  type ValidatedMutationOptions,
+  type ValidatedWidgetParameters,
+  type ValidatedDataLayerResponse,
+} from './unified-data-layer.schemas';
 // WidgetCategory type removed - using Card architecture
-type WidgetCategory = 'stats' | 'chart' | 'table' | 'analysis' | 'unknown';
+type _WidgetCategory = 'stats' | 'chart' | 'table' | 'analysis' | 'unknown';
 
 // Type-safe alternatives to 'any'
 type GraphQLVariables = Record<string, unknown>;
@@ -22,20 +29,8 @@ type RequestBody = Record<string, unknown> | FormData | string | null;
 type DataTransformer<TInput = unknown, TOutput = unknown> = (data: TInput) => TOutput;
 type DefaultApiResponse = Record<string, unknown>;
 
-// Card parameter types based on existing GraphQL queries
-interface WidgetParameters {
-  warehouse?: string;
-  dateRange?: {
-    start: string;
-    end: string;
-  };
-  limit?: number;
-  chartType?: string;
-  timeRange?: string;
-  widgetId?: string;
-  widgetCategory?: string;
-  [key: string]: unknown;
-}
+// Use the validated type from schemas instead
+type WidgetParameters = ValidatedWidgetParameters;
 
 export enum DataSourceType {
   GRAPHQL = 'graphql',
@@ -51,7 +46,7 @@ export interface QueryOptions<TVariables = GraphQLVariables> {
   endpoint?: string;
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
   fallbackEnabled?: boolean;
-  cachePolicy?: 'cache-first' | 'network-only' | 'no-cache';
+  cachePolicy?: FetchPolicy;
   serverAction?: (variables?: TVariables) => Promise<unknown>;
 }
 
@@ -213,9 +208,13 @@ export class UnifiedDataLayer {
     let fallbackEnabled = options.fallbackEnabled ?? this.fallbackEnabled;
 
     if (source === DataSourceType.AUTO) {
+      const variablesAsWidgetParams = options.variables as Record<string, unknown> | undefined;
+      const cardId = variablesAsWidgetParams?.widgetId as string | undefined;
+      const cardCategory = variablesAsWidgetParams?.widgetCategory as string | undefined;
+
       const decision = await dataSourceConfig.determineDataSource({
-        cardId: (options.variables as WidgetParameters)?.widgetId as string,
-        cardCategory: (options.variables as WidgetParameters)?.widgetCategory as string,
+        cardId,
+        cardCategory,
         performanceMetrics: this.getPerformanceMetrics(),
       });
 
@@ -447,8 +446,7 @@ export class UnifiedDataLayer {
     const result = await this.apolloClient.query<T, TVariables>({
       query,
       variables: options.variables,
-      fetchPolicy:
-        (options.cachePolicy as 'cache-first' | 'network-only' | 'no-cache') || 'cache-first',
+      fetchPolicy: (options.cachePolicy as FetchPolicy) || 'cache-first',
     });
 
     return {
@@ -485,7 +483,9 @@ export class UnifiedDataLayer {
   /**
    * Execute REST query
    */
-  private async executeRESTQuery<T>(options: QueryOptions): Promise<DataLayerResponse<T>> {
+  private async executeRESTQuery<T>(
+    options: QueryOptions<GraphQLVariables>
+  ): Promise<DataLayerResponse<T>> {
     if (!options.endpoint) {
       throw new Error('REST endpoint is required');
     }
@@ -511,7 +511,9 @@ export class UnifiedDataLayer {
   /**
    * Execute REST mutation
    */
-  private async executeRESTMutation<T>(options: MutationOptions): Promise<DataLayerResponse<T>> {
+  private async executeRESTMutation<T>(
+    options: MutationOptions<GraphQLVariables>
+  ): Promise<DataLayerResponse<T>> {
     if (!options.endpoint) {
       throw new Error('REST endpoint is required');
     }
@@ -602,7 +604,15 @@ export class UnifiedDataLayer {
   /**
    * 獲取性能指標
    */
-  private getPerformanceMetrics() {
+  private getPerformanceMetrics(): {
+    restSuccessRate: number;
+    graphqlSuccessRate: number;
+    serverActionSuccessRate: number;
+    restAvgResponseTime: number;
+    graphqlAvgResponseTime: number;
+    serverActionAvgResponseTime: number;
+    lastUpdated: Date;
+  } {
     const {
       restTotal,
       restSuccess,

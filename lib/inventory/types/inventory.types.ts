@@ -3,7 +3,7 @@
  * Consolidates all inventory-related types to ensure consistency
  */
 
-import { Database } from '@/lib/database.types';
+import { Database } from '../../database.types';
 import { DatabaseLocationColumn, StandardLocation } from '../utils/locationMapper';
 
 // Base types from database
@@ -19,6 +19,7 @@ export type StockLevel = Database['public']['Tables']['stock_level']['Row'];
 export interface PalletInfoWithLocation extends PalletInfo {
   location?: StandardLocation | DatabaseLocationColumn;
   locationDisplay?: string;
+  is_voided?: boolean;
 }
 
 /**

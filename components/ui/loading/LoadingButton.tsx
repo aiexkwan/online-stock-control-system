@@ -10,10 +10,10 @@ import { Loader2 } from 'lucide-react';
 import { Button, ButtonProps } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
-interface LoadingButtonProps extends ButtonProps {
+interface LoadingButtonProps extends Omit<ButtonProps, 'loading' | 'loadingText'> {
   isLoading?: boolean;
   loadingText?: string;
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 export const LoadingButton: React.FC<LoadingButtonProps> = ({
@@ -28,7 +28,7 @@ export const LoadingButton: React.FC<LoadingButtonProps> = ({
     <Button disabled={isLoading || disabled} className={cn(className)} {...props}>
       {isLoading ? (
         <>
-          <div className='mr-2 h-1 w-4 rounded-full bg-current opacity-75' />
+          <Loader2 className='mr-2 h-4 w-4 animate-spin' />
           {loadingText || children}
         </>
       ) : (

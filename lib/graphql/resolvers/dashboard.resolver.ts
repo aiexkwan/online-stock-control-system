@@ -1,8 +1,22 @@
 import { GraphQLError } from 'graphql';
 import { GraphQLContext } from './index';
 
+// 圖表資料點介面
+interface ChartDataPoint {
+  label: string;
+  value: number;
+  category?: string;
+}
+
+// 圖表回傳資料介面
+interface ChartData {
+  title: string;
+  data: ChartDataPoint[];
+  type: 'BAR' | 'LINE' | 'PIE';
+}
+
 interface ChartDataArgs {
-  chartType: string;
+  chartType: 'production' | 'inventory' | 'distribution';
   filter?: {
     dateRange?: {
       startDate?: string;
@@ -15,8 +29,11 @@ interface ChartDataArgs {
 
 export const dashboardResolvers = {
   Query: {
-    chartData: async (_: unknown, args: ChartDataArgs, context: GraphQLContext) => {
-      const startTime = Date.now();
+    chartData: async (
+      _: unknown,
+      args: ChartDataArgs,
+      context: GraphQLContext
+    ): Promise<ChartData> => {
       const requestId = Math.random().toString(36).substring(7);
 
       try {
@@ -30,9 +47,9 @@ export const dashboardResolvers = {
         console.log(`[GraphQL-${requestId}] chartData called with args:`, args);
 
         // 根據 chartType 返回不同的數據
-        let data = [];
+        let data: ChartDataPoint[] = [];
         let title = '';
-        let type = 'BAR';
+        let type: 'BAR' | 'LINE' | 'PIE' = 'BAR';
 
         switch (args.chartType) {
           case 'production':
@@ -44,7 +61,7 @@ export const dashboardResolvers = {
               { label: 'Wednesday', value: 180, category: 'weekday' },
               { label: 'Thursday', value: 140, category: 'weekday' },
               { label: 'Friday', value: 200, category: 'weekday' },
-            ] as unknown[];
+            ];
             break;
 
           case 'inventory':
@@ -70,16 +87,17 @@ export const dashboardResolvers = {
             break;
 
           default:
-            throw new GraphQLError(`Unknown chart type: ${args.chartType}`, {
+            // This should never happen due to TypeScript union type checking
+            const exhaustiveCheck: never = args.chartType;
+            throw new GraphQLError(`Unknown chart type: ${exhaustiveCheck}`, {
               extensions: { code: 'BAD_REQUEST' },
             });
         }
 
         // 應用篩選條件
         if (args.filter?.category) {
-          data = data.filter((item: unknown) => {
-            const record = item as Record<string, unknown>;
-            return record.category === args.filter?.category;
+          data = data.filter((item: ChartDataPoint) => {
+            return item.category === args.filter?.category;
           });
         }
 

@@ -372,7 +372,7 @@ export class TransactionService implements ITransactionService {
    * Private helper methods
    */
   private generateTransactionId(): string {
-    return `TX-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    return `TX-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
   }
 
   private async logTransactionStart(txId: string, description?: string): Promise<void> {
@@ -458,7 +458,7 @@ export class TransactionService implements ITransactionService {
 
   // 實現接口方法
   async beginTransaction(): Promise<TransactionContext> {
-    const transactionId = `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const transactionId = `tx_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
     return {
       transactionId,
       userId: 'system',

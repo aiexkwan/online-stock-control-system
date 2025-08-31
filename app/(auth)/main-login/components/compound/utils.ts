@@ -5,8 +5,9 @@
  * in the authentication system.
  */
 
-import React, { isValidElement } from 'react';
-import { ComponentPropsBase } from '@/lib/types/common';
+import * as React from 'react';
+const { isValidElement } = React;
+import { ComponentPropsBase } from '../../../../../lib/types/common';
 import { ComponentRegistry, ThemeContext, ComponentState } from './types';
 
 /**
@@ -18,7 +19,7 @@ class CompoundComponentRegistry implements ComponentRegistry {
   register<P = Record<string, unknown>>(
     name: string,
     component: React.ComponentType<P>,
-    _metadata?: import('@/lib/types/auth-system').ComponentMetadata
+    metadata?: import('../../../../../lib/types/auth-system').ComponentMetadata
   ): void {
     this.components.set(name, component as React.ComponentType<Record<string, unknown>>);
   }
@@ -29,7 +30,7 @@ class CompoundComponentRegistry implements ComponentRegistry {
 
   get<P = Record<string, unknown>>(
     name: string
-  ): import('@/lib/types/auth-system').RegisteredComponent<P> | undefined {
+  ): import('../../../../../lib/types/auth-system').RegisteredComponent<P> | undefined {
     const component = this.components.get(name);
     if (component) {
       return {
@@ -40,8 +41,11 @@ class CompoundComponentRegistry implements ComponentRegistry {
     return undefined;
   }
 
-  getAll(): Record<string, import('@/lib/types/auth-system').RegisteredComponent> {
-    const result: Record<string, import('@/lib/types/auth-system').RegisteredComponent> = {};
+  getAll(): Record<string, import('../../../../../lib/types/auth-system').RegisteredComponent> {
+    const result: Record<
+      string,
+      import('../../../../../lib/types/auth-system').RegisteredComponent
+    > = {};
     this.components.forEach((component, name) => {
       result[name] = {
         component,

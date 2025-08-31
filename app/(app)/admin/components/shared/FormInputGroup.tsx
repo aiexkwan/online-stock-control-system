@@ -14,7 +14,7 @@
 
 'use client';
 
-import React, { useCallback, useId } from 'react'; // Removed unused useMemo
+import React, { useCallback, useId } from 'react'; // Removed unused _useMemo
 import { AlertCircle, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
@@ -106,7 +106,7 @@ export const FormInputGroup = React.forwardRef<HTMLDivElement, FormInputGroupPro
       className,
       optionClassName,
       size = 'md',
-      _multiple = false,
+      multiple = false,
       showValidationIcons = false,
     },
     ref

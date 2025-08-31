@@ -5,41 +5,63 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { isTest } from '@/lib/utils/env';
+import type { FC, ComponentType } from 'react';
+import { isTest } from '../../utils/env';
 import { shouldRunTests, getCurrentCoverageTarget } from '../configs/phase4-rollout';
-import { KnownFeatureFlags } from '../types';
-import { useFeatureFlag, useFeatureFlags } from './useFeatureFlag';
+import { useFeatureFlags } from './useFeatureFlag';
+import type { FeatureEvaluation } from '../types';
 
-interface TestingFeatures {
-  // Feature 狀態
-  isTestingEnabled: boolean;
-  isJestEnabled: boolean;
-  isCIEnabled: boolean;
-  isE2EEnabled: boolean;
-  isCoverageEnforced: boolean;
-  isPerformanceMonitoringEnabled: boolean;
+/**
+ * E2E 測試模式類型
+ */
+type E2EMode = 'disabled' | 'smoke_tests' | 'full_suite';
 
-  // 配置
-  e2eMode: 'disabled' | 'smoke_tests' | 'full_suite';
-  performanceMode: 'disabled' | 'basic' | 'advanced';
-  coverageTarget: number;
+/**
+ * 性能監控模式類型
+ */
+type PerformanceMode = 'disabled' | 'basic' | 'advanced';
 
-  // 功能檢查
-  shouldRunUnitTests: () => boolean;
-  shouldRunE2ETests: () => boolean;
-  shouldEnforceCoverage: () => boolean;
+/**
+ * 測試類型
+ */
+type TestType = 'unit' | 'e2e';
 
-  // 性能監控
-  trackTestExecution: (testName: string, duration: number) => void;
-  getTestMetrics: () => TestMetrics;
+/**
+ * 測試指標接口
+ */
+interface TestMetrics {
+  readonly totalTests: number;
+  readonly passedTests: number;
+  readonly failedTests: number;
+  readonly averageDuration: number;
+  readonly slowestTest: { name: string; duration: number } | null;
 }
 
-interface TestMetrics {
-  totalTests: number;
-  passedTests: number;
-  failedTests: number;
-  averageDuration: number;
-  slowestTest: { name: string; duration: number } | null;
+/**
+ * 測試功能主接口
+ */
+interface TestingFeatures {
+  // Feature 狀態
+  readonly isTestingEnabled: boolean;
+  readonly isJestEnabled: boolean;
+  readonly isCIEnabled: boolean;
+  readonly isE2EEnabled: boolean;
+  readonly isCoverageEnforced: boolean;
+  readonly isPerformanceMonitoringEnabled: boolean;
+
+  // 配置
+  readonly e2eMode: E2EMode;
+  readonly performanceMode: PerformanceMode;
+  readonly coverageTarget: number;
+
+  // 功能檢查
+  readonly shouldRunUnitTests: () => boolean;
+  readonly shouldRunE2ETests: () => boolean;
+  readonly shouldEnforceCoverage: () => boolean;
+
+  // 性能監控
+  readonly trackTestExecution: (testName: string, duration: number) => void;
+  readonly getTestMetrics: () => TestMetrics;
 }
 
 export function useTestingFeatures(): TestingFeatures {
@@ -69,15 +91,10 @@ export function useTestingFeatures(): TestingFeatures {
   const isCoverageEnforced = flags.test_coverage_enforcement?.enabled || false;
   const isPerformanceMonitoringEnabled = flags.performance_monitoring?.enabled || false;
 
-  // 獲取變體配置
-  const e2eMode = (flags.e2e_testing?.variant || 'disabled') as
-    | 'disabled'
-    | 'smoke_tests'
-    | 'full_suite';
-  const performanceMode = (flags.performance_monitoring?.variant || 'basic') as
-    | 'disabled'
-    | 'basic'
-    | 'advanced';
+  // 獲取變體配置 - 確保類型安全
+  const e2eMode: E2EMode = (flags.e2e_testing?.variant as E2EMode) || 'disabled';
+  const performanceMode: PerformanceMode =
+    (flags.performance_monitoring?.variant as PerformanceMode) || 'basic';
 
   // 獲取當前覆蓋率目標
   const coverageTarget = getCurrentCoverageTarget();
@@ -195,11 +212,11 @@ export function useTestingFeatures(): TestingFeatures {
  *
  * 只在 feature flag 啟用時運行測試
  */
-export function withTestingFeature<P extends object>(
-  Component: React.ComponentType<P>,
-  testType: 'unit' | 'e2e' = 'unit'
-): React.ComponentType<P> {
-  return function TestingFeatureWrapper(props: P) {
+export function withTestingFeature<P extends Record<string, any>>(
+  Component: ComponentType<P>,
+  testType: TestType = 'unit'
+): ComponentType<P> {
+  const TestingFeatureWrapper = (props: P) => {
     const { shouldRunUnitTests, shouldRunE2ETests } = useTestingFeatures();
 
     const shouldRun = testType === 'unit' ? shouldRunUnitTests() : shouldRunE2ETests();
@@ -208,15 +225,45 @@ export function withTestingFeature<P extends object>(
       return null;
     }
 
-    return <Component {...props} />;
+    return <Component {...(props as P)} />;
+  };
+
+  // 設定 displayName 以便於開發時除錯
+  TestingFeatureWrapper.displayName = `withTestingFeature(${Component.displayName || Component.name || 'Component'})`;
+
+  return TestingFeatureWrapper as ComponentType<P>;
+}
+
+/**
+ * Jest 覆蓋率閾值類型定義
+ */
+interface JestCoverageThreshold {
+  readonly global: {
+    readonly branches: number;
+    readonly functions: number;
+    readonly lines: number;
+    readonly statements: number;
   };
 }
 
 /**
- * Jest 測試配置助手
- * 不使用 React Hook，直接獲取特徵標誌值
+ * Jest 配置返回類型
  */
-export function getJestConfig() {
+interface JestConfig {
+  readonly collectCoverage: boolean;
+  readonly coverageThreshold?: JestCoverageThreshold;
+  readonly testTimeout: number;
+}
+
+/**
+ * Jest 測試配置助手
+ *
+ * 不依賴 React Hook，可以在任何地方使用
+ * 直接獲取特徵標誌值並生成 Jest 配置
+ *
+ * @returns Jest 配置物件或 null（如果不應啟用）
+ */
+export function getJestConfig(): JestConfig | null {
   // 直接檢查特徵標誌而不使用 Hook
   const jestEnabled = isTest() || process.env.JEST_WORKER_ID !== undefined;
 
@@ -227,18 +274,25 @@ export function getJestConfig() {
   const coverageTarget = 80; // 默認覆蓋率目標
   const shouldEnforce = isTest();
 
-  return {
+  const baseConfig: JestConfig = {
     collectCoverage: true,
-    coverageThreshold: shouldEnforce
-      ? {
-          global: {
-            branches: coverageTarget,
-            functions: coverageTarget,
-            lines: coverageTarget,
-            statements: coverageTarget,
-          },
-        }
-      : undefined,
     testTimeout: process.env.CI ? 30000 : 10000,
   };
+
+  if (shouldEnforce) {
+    const configWithCoverage: JestConfig = {
+      ...baseConfig,
+      coverageThreshold: {
+        global: {
+          branches: coverageTarget,
+          functions: coverageTarget,
+          lines: coverageTarget,
+          statements: coverageTarget,
+        },
+      },
+    };
+    return configWithCoverage;
+  }
+
+  return baseConfig;
 }

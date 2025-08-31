@@ -1,5 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr';
-import type { Database } from '@/types/database/supabase';
+import type { Database } from '../../../types/database/supabase';
 
 export function createClient() {
   // 添加安全檢查避免 webpack 載入時崩潰
@@ -25,17 +25,17 @@ export function createClient() {
       flowType: 'pkce',
     },
     cookies: {
-      get(name: string) {
+      get(_name: string) {
         if (typeof document !== 'undefined') {
           const value = `; ${document.cookie}`;
-          const parts = value.split(`; ${name}=`);
+          const parts = value.split(`; ${_name}=`);
           if (parts.length === 2) return parts.pop()?.split(';').shift();
         }
         return undefined;
       },
-      set(name: string, value: string, options: Record<string, unknown>) {
+      set(_name: string, value: string, options: Record<string, unknown>) {
         if (typeof document !== 'undefined') {
-          let cookieString = `${name}=${value}`;
+          let cookieString = `${_name}=${value}`;
           if (options?.maxAge) cookieString += `; max-age=${options.maxAge}`;
           if (options?.path) cookieString += `; path=${options.path}`;
           if (options?.domain) cookieString += `; domain=${options.domain}`;
@@ -45,9 +45,9 @@ export function createClient() {
           document.cookie = cookieString;
         }
       },
-      remove(name: string, options: Record<string, unknown>) {
+      remove(_name: string, options: Record<string, unknown>) {
         if (typeof document !== 'undefined') {
-          let cookieString = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+          let cookieString = `${_name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
           if (options?.path) cookieString += `; path=${options.path}`;
           if (options?.domain) cookieString += `; domain=${options.domain}`;
           document.cookie = cookieString;

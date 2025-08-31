@@ -9,7 +9,7 @@ import { createClient } from '@/lib/supabase';
 // Dashboard configuration types (updated to Card architecture)
 export interface DashboardConfig {
   id?: string;
-  name: string;
+  _name: string;
   description?: string;
   cards: DashboardCard[];
   layouts: {
@@ -28,7 +28,7 @@ export interface DashboardCard {
   id: string;
   type: string;
   title: string;
-  config: {
+  _config: {
     refreshInterval?: number;
     dataSource?: string;
     theme?: string;
@@ -57,7 +57,7 @@ export interface DashboardSettings {
   user_id: string;
   email: string;
   dashboard_name: string;
-  config: DashboardConfig;
+  _config: DashboardConfig;
   is_default: boolean;
   created_at?: string;
   updated_at?: string;
@@ -110,8 +110,8 @@ class DashboardSettingsService {
       }
 
       return data as unknown as DashboardSettings;
-    } catch (error) {
-      console.error('Error fetching dashboard settings:', error);
+    } catch (err) {
+      console.error('Error fetching dashboard settings:', err);
       return null;
     }
   }
@@ -120,7 +120,7 @@ class DashboardSettingsService {
    * 保存用戶的儀表板設定
    */
   async saveDashboardSettings(
-    config: DashboardConfig,
+    _config: DashboardConfig,
     dashboardName: string = 'custom'
   ): Promise<DashboardSettings | null> {
     try {
@@ -134,7 +134,7 @@ class DashboardSettingsService {
         const { data, error } = await this.getSupabase()
           .from('user_dashboard_settings')
           .update({
-            config,
+            _config,
             updated_at: new Date().toISOString(),
           })
           .eq('id', existing.id!)
@@ -151,7 +151,7 @@ class DashboardSettingsService {
             user_id: user.id,
             email: user.email || '',
             dashboard_name: dashboardName,
-            config,
+            _config,
             is_default: true,
           })
           .select()
@@ -160,9 +160,9 @@ class DashboardSettingsService {
         if (error) throw error;
         return data as unknown as DashboardSettings;
       }
-    } catch (error) {
-      console.error('Error saving dashboard settings:', error);
-      throw error;
+    } catch (err) {
+      console.error('Error saving dashboard settings:', err);
+      throw err;
     }
   }
 
@@ -181,8 +181,8 @@ class DashboardSettingsService {
 
       if (error) throw error;
       return true;
-    } catch (error) {
-      console.error('Error deleting dashboard settings:', error);
+    } catch (err) {
+      console.error('Error deleting dashboard settings:', err);
       return false;
     }
   }
@@ -202,15 +202,15 @@ class DashboardSettingsService {
       const localConfig = localStorage.getItem('dashboard_config');
       if (!localConfig) return false;
 
-      const config = JSON.parse(localConfig) as DashboardConfig;
-      await this.saveDashboardSettings(config);
+      const _config = JSON.parse(localConfig) as DashboardConfig;
+      await this.saveDashboardSettings(_config);
 
       // 成功遷移後刪除 localStorage 中的設定
       localStorage.removeItem('dashboard_config');
 
       return true;
-    } catch (error) {
-      console.error('Error migrating from localStorage:', error);
+    } catch (err) {
+      console.error('Error migrating from localStorage:', err);
       return false;
     }
   }

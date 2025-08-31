@@ -2279,7 +2279,7 @@ type Query {
   health: SystemStatus!
   
   # Card data sources
-  cardData(dataSource: String!, params: JSON, timeFrame: DateRangeInput): JSON!
+  cardData(dataSource: String!, _params: JSON, timeFrame: DateRangeInput): JSON!
   batchCardData(requests: [CardDataRequest!]!): [CardDataResponse!]!
   
   # Products
@@ -2483,12 +2483,12 @@ type Mutation {
   
   # Products
   createProduct(input: CreateProductInput!): Product!
-  updateProduct(code: ID!, input: UpdateProductInput!): Product!
+  updateProduct(code: ID!, _input: UpdateProductInput!): Product!
   deactivateProduct(code: ID!): Product!
   
   # Suppliers
   createSupplier(input: CreateSupplierInput!): Supplier!
-  updateSupplier(code: String!, input: UpdateSupplierInput!): Supplier!
+  updateSupplier(code: String!, _input: UpdateSupplierInput!): Supplier!
   deactivateSupplier(code: String!): Supplier!
   
   # Operations
@@ -2499,27 +2499,27 @@ type Mutation {
   # 新增的4個表變更操作
   # 歷史記錄變更
   createHistoryRecord(input: CreateHistoryRecordInput!): HistoryRecord!
-  updateHistoryRecord(uuid: ID!, input: UpdateHistoryRecordInput!): HistoryRecord!
+  updateHistoryRecord(uuid: ID!, _input: UpdateHistoryRecordInput!): HistoryRecord!
   deleteHistoryRecord(uuid: ID!): Boolean!
   batchCreateHistoryRecords(records: [CreateHistoryRecordInput!]!): [HistoryRecord!]!
   
   # 文件信息變更
   createFileInfo(input: CreateFileInfoInput!): FileInfo!
-  updateFileInfo(uuid: ID!, input: UpdateFileInfoInput!): FileInfo!
+  updateFileInfo(uuid: ID!, _input: UpdateFileInfoInput!): FileInfo!
   deleteFileInfo(uuid: ID!): Boolean!
   updateFileAnalysis(uuid: ID!, analysisData: JSON!): FileInfo!
   batchDeleteFiles(uuids: [ID!]!): Boolean!
   
   # 工作量級變更
   createWorkLevel(input: CreateWorkLevelInput!): WorkLevel!
-  updateWorkLevel(uuid: ID!, input: UpdateWorkLevelInput!): WorkLevel!
+  updateWorkLevel(uuid: ID!, _input: UpdateWorkLevelInput!): WorkLevel!
   incrementWorkLevel(userId: Int!, operationType: WorkOperationType!, count: Int = 1): WorkLevel!
   resetWorkLevel(uuid: ID!): WorkLevel!
   batchUpdateWorkLevels(updates: [BatchWorkLevelUpdateInput!]!): [WorkLevel!]!
   
   # 收貨記錄變更
   createGRNRecord(input: CreateGRNRecordInput!): GRNRecord!
-  updateGRNRecord(uuid: ID!, input: UpdateGRNRecordInput!): GRNRecord!
+  updateGRNRecord(uuid: ID!, _input: UpdateGRNRecordInput!): GRNRecord!
   verifyGRNRecord(uuid: ID!, verifiedBy: String!): GRNRecord!
   reportDiscrepancy(uuid: ID!, discrepancy: String!, reportedBy: String!): GRNRecord!
   correctGRNRecord(uuid: ID!, corrections: GRNRecordCorrectionInput!): GRNRecord!
@@ -2528,19 +2528,19 @@ type Mutation {
   # 核心業務表變更操作
   # 石板信息變更
   createSlateInfo(input: CreateSlateInfoInput!): SlateInfo!
-  updateSlateInfo(productCode: String!, input: UpdateSlateInfoInput!): SlateInfo!
+  updateSlateInfo(productCode: String!, _input: UpdateSlateInfoInput!): SlateInfo!
   deleteSlateInfo(productCode: String!): Boolean!
   
   # ACO記錄變更
   createAcoRecord(input: CreateAcoRecordInput!): AcoRecord!
-  updateAcoRecord(uuid: ID!, input: UpdateAcoRecordInput!): AcoRecord!
+  updateAcoRecord(uuid: ID!, _input: UpdateAcoRecordInput!): AcoRecord!
   updateAcoRecordProgress(uuid: ID!, finishedQty: Int!): AcoRecord!
   deleteAcoRecord(uuid: ID!): Boolean!
   completeAcoRecord(uuid: ID!): AcoRecord!
   
   # 盤點記錄變更
   createStocktakeRecord(input: CreateStocktakeRecordInput!): StocktakeRecord!
-  updateStocktakeRecord(uuid: ID!, input: UpdateStocktakeRecordInput!): StocktakeRecord!
+  updateStocktakeRecord(uuid: ID!, _input: UpdateStocktakeRecordInput!): StocktakeRecord!
   approveStocktakeRecord(uuid: ID!, approvedBy: String!): StocktakeRecord!
   rejectStocktakeRecord(uuid: ID!, reason: String!, rejectedBy: String!): StocktakeRecord!
   batchUpdateStocktakeRecords(records: [BatchStocktakeUpdateInput!]!): BatchStocktakeResult!
@@ -2551,7 +2551,7 @@ type Mutation {
   
   # GRN層級變更
   createGrnLevel(input: CreateGrnLevelInput!): GrnLevel!
-  updateGrnLevel(uuid: ID!, input: UpdateGrnLevelInput!): GrnLevel!
+  updateGrnLevel(uuid: ID!, _input: UpdateGrnLevelInput!): GrnLevel!
   deleteGrnLevel(uuid: ID!): Boolean!
   
   # =============================================================================
@@ -2560,19 +2560,19 @@ type Mutation {
   
   # 報廢記錄變更
   createReportVoid(input: CreateReportVoidInput!): ReportVoid!
-  updateReportVoid(uuid: ID!, input: UpdateReportVoidInput!): ReportVoid!
+  updateReportVoid(uuid: ID!, _input: UpdateReportVoidInput!): ReportVoid!
   deleteReportVoid(uuid: ID!): Boolean!
   
   # 庫存水平變更
   createStockLevel(input: CreateStockLevelInput!): StockLevel!
-  updateStockLevel(uuid: ID!, input: UpdateStockLevelInput!): StockLevel!
+  updateStockLevel(uuid: ID!, _input: UpdateStockLevelInput!): StockLevel!
   updateStockLevelQuantity(uuid: ID!, stockLevel: Int!): StockLevel!
   deleteStockLevel(uuid: ID!): Boolean!
   bulkUpdateStockLevels(updates: [BulkStockLevelUpdateInput!]!): [StockLevel!]!
   
   # 托盤編號緩衝區變更
   createPalletNumberBuffer(input: CreatePalletNumberBufferInput!): PalletNumberBuffer!
-  updatePalletNumberBuffer(id: Int!, input: UpdatePalletNumberBufferInput!): PalletNumberBuffer!
+  updatePalletNumberBuffer(id: Int!, _input: UpdatePalletNumberBufferInput!): PalletNumberBuffer!
   markPalletNumberAsUsed(id: Int!): PalletNumberBuffer!
   markPalletNumberAsUnused(id: Int!): PalletNumberBuffer!
   deletePalletNumberBuffer(id: Int!): Boolean!
@@ -2587,7 +2587,7 @@ type Mutation {
   
   # API配置變更
   createAPIConfig(input: CreateAPIConfigInput!): APIConfig!
-  updateAPIConfig(uuid: ID!, input: UpdateAPIConfigInput!): APIConfig!
+  updateAPIConfig(uuid: ID!, _input: UpdateAPIConfigInput!): APIConfig!
   deleteAPIConfig(uuid: ID!): Boolean!
   activateAPIConfig(uuid: ID!): APIConfig!
   deactivateAPIConfig(uuid: ID!): APIConfig!
@@ -2613,7 +2613,7 @@ type Mutation {
   
   # 威脅統計變更
   createThreatStat(input: CreateThreatStatInput!): ThreatStat!
-  updateThreatStat(id: Int!, input: UpdateThreatStatInput!): ThreatStat!
+  updateThreatStat(id: Int!, _input: UpdateThreatStatInput!): ThreatStat!
   incrementThreatOccurrence(id: Int!): ThreatStat!
   deleteThreatStat(id: Int!): Boolean!
   blockIpAddress(ipAddress: String!, reason: String!): Boolean!
@@ -3282,7 +3282,7 @@ extend type Subscription {
 `;
 
 // Table Schema (embedded)
-const tableSchema = `
+const _tableSchema = `
 enum ExportFormat {
   CSV
   EXCEL
@@ -3833,7 +3833,7 @@ extend type Mutation {
   createReportTemplate(input: CreateReportTemplateInput!): ReportTemplate!
   
   # 更新報表模板
-  updateReportTemplate(templateId: ID!, input: UpdateReportTemplateInput!): ReportTemplate!
+  updateReportTemplate(templateId: ID!, _input: UpdateReportTemplateInput!): ReportTemplate!
   
   # 刪除報表模板
   deleteReportTemplate(templateId: ID!): Boolean!
@@ -4396,7 +4396,7 @@ extend type Mutation {
   batchAcknowledgeAlerts(alertIds: [ID!]!, note: String): BatchAlertResult!
   batchResolveAlerts(alertIds: [ID!]!, resolution: String!): BatchAlertResult!
   createCustomAlert(input: CreateAlertInput!): Alert!
-  updateAlertRule(ruleId: ID!, input: UpdateAlertRuleInput!): AlertRule!
+  updateAlertRule(ruleId: ID!, _input: UpdateAlertRuleInput!): AlertRule!
   testAlertChannel(channelId: ID!): Boolean!
 }
 
@@ -5168,6 +5168,7 @@ export const typeDefs = `
   ${analyticsSchema}
   ${chartSchema}
   ${statsSchema}
+  ${_tableSchema}
   ${reportSchema}
   ${uploadSchema}
   ${alertSchema}

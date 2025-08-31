@@ -1,4 +1,4 @@
-import { DatabaseRecord } from './types/database';
+import { DatabaseRecord } from './types/database-types';
 
 // Unified Error Handler - 整合所有錯誤處理功能
 // 支持客戶端和服務端使用，簡化錯誤分類和恢復策略

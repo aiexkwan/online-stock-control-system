@@ -8,23 +8,11 @@ import { middlewareLogger } from '@/lib/logger';
 
 // Redirect mapping from old paths to new paths
 const API_REDIRECT_MAP: Record<string, string> = {
-  // v1 health endpoints - redirect to main health endpoint
-  '/api/v1/health': '/api/health',
-  '/api/v1/health/deep': '/api/health', // Deep health check removed
-
-  // v2 health endpoint - redirect to main health endpoint
-  '/api/v2/health': '/api/health',
-
   // v1 alerts endpoints
   '/api/v1/alerts/config': '/api/alerts/config',
   '/api/v1/alerts/history': '/api/alerts/history',
   '/api/v1/alerts/notifications': '/api/alerts/notifications',
   '/api/v1/alerts/rules': '/api/alerts/rules',
-
-  // v1 metrics endpoints
-  '/api/v1/metrics': '/api/metrics',
-  '/api/v1/metrics/business': '/api/metrics/business',
-  '/api/v1/metrics/database': '/api/metrics/database',
 
   // v1 cache endpoints
   '/api/v1/cache/metrics': '/api/cache/metrics',

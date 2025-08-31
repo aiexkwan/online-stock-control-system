@@ -1,18 +1,92 @@
 /**
  * 未知類型處理器
  * 提供安全的未知類型處理和轉換工具
- * 從 lib/types/unknown-handlers.ts 遷移
+ * 整合 Zod 進行運行時類型驗證
  */
+
+import { z } from 'zod';
+// import { validateField, validateMultiple  } // Unused from '../schemas/form-validation-enhanced';
+import { DatabaseValueSchema, SafeDatabaseValueSchema } from '../validation/zod-schemas';
+
+// ===== Zod 整合的類型安全處理 =====
+
+/**
+ * 使用 Zod Schema 驗證和轉換未知資料
+ */
+export function validateWithZod<T extends z.ZodTypeAny>(
+  data: unknown,
+  schema: T
+): { success: true; data: z.infer<T> } | { success: false; error: string } {
+  const result = schema.safeParse(data);
+
+  if (result.success) {
+    return { success: true, data: result.data };
+  }
+
+  return {
+    success: false,
+    error: result.error.issues.map(issue => issue.message).join('; '),
+  };
+}
+
+/**
+ * 安全轉換為資料庫值類型
+ */
+export function toDatabaseValue(value: unknown): z.infer<typeof DatabaseValueSchema> | null {
+  const result = DatabaseValueSchema.safeParse(value);
+  return result.success ? result.data : null;
+}
+
+/**
+ * 安全轉換為基礎資料庫值類型
+ */
+export function toSafeDatabaseValue(
+  value: unknown
+): z.infer<typeof SafeDatabaseValueSchema> | null {
+  const result = SafeDatabaseValueSchema.safeParse(value);
+  return result.success ? result.data : null;
+}
+
+/**
+ * 批量 Zod 驗證
+ */
+export function batchValidateWithZod<T extends Record<string, z.ZodTypeAny>>(
+  data: Record<string, unknown>,
+  schemas: T
+): {
+  success: boolean;
+  results: { [K in keyof T]: { success: boolean; data?: z.infer<T[K]>; error?: string } };
+} {
+  const results = {} as any;
+  let allSuccess = true;
+
+  for (const [key, schema] of Object.entries(schemas)) {
+    const validation = validateWithZod(data[key], schema);
+    results[key] = validation;
+
+    if (!validation.success) {
+      allSuccess = false;
+    }
+  }
+
+  return { success: allSuccess, results };
+}
 
 export class UnknownTypeHandler {
   /**
-   * 安全的屬性訪問
+   * 安全的屬性訪問 (增強版 - 支援 Zod 驗證)
    * @param obj 未知對象
    * @param path 屬性路徑 (支援 'a.b.c' 格式)
    * @param defaultValue 默認值
+   * @param schema 可選的 Zod Schema 驗證
    * @returns 安全提取的值或默認值
    */
-  static safeGet<T = unknown>(obj: unknown, path: string, defaultValue: T): T {
+  static safeGet<T = unknown>(
+    obj: unknown,
+    path: string,
+    defaultValue: T,
+    schema?: z.ZodTypeAny
+  ): T {
     if (typeof obj !== 'object' || obj === null) {
       return defaultValue;
     }
@@ -28,19 +102,44 @@ export class UnknownTypeHandler {
       }
     }
 
-    return (current ?? defaultValue) as T;
+    const value = current ?? defaultValue;
+
+    // 如果提供了 Schema，進行驗證
+    if (schema) {
+      const validation = validateWithZod(value, schema);
+      return validation.success ? validation.data : defaultValue;
+    }
+
+    return value as T;
   }
 
   /**
-   * 批量數據轉換
+   * 批量數據轉換 (增強版 - 支援 Zod 驗證)
    * @param data 未知數據
    * @param transformer 轉換函數
+   * @param schema 可選的項目 Zod Schema 驗證
    * @returns 轉換後的有效數據陣列
    */
-  static transformUnknownArray<T>(data: unknown, transformer: (item: unknown) => T | null): T[] {
+  static transformUnknownArray<T>(
+    data: unknown,
+    transformer: (item: unknown) => T | null,
+    schema?: z.ZodTypeAny
+  ): T[] {
     if (!Array.isArray(data)) return [];
 
-    return data.map(transformer).filter((item): item is T => item !== null);
+    return data
+      .map(item => {
+        // 如果提供了 Schema，先驗證
+        if (schema) {
+          const validation = validateWithZod(item, schema);
+          if (!validation.success) {
+            return null;
+          }
+          return transformer(validation.data);
+        }
+        return transformer(item);
+      })
+      .filter((item): item is T => item !== null);
   }
 
   /**
@@ -158,19 +257,30 @@ export class UnknownTypeHandler {
   }
 
   /**
-   * 類型斷言工具
+   * 類型斷言工具 (增強版 - 支援 Zod 驗證)
    * @param value 未知值
-   * @param predicate 斷言函數
+   * @param predicate 斷言函數或 Zod Schema
    * @param errorMessage 錯誤訊息
    * @returns 斷言成功的值
    * @throws 斷言失敗時拋出錯誤
    */
   static assert<T>(
     value: unknown,
-    predicate: (value: unknown) => value is T,
+    predicate: ((value: unknown) => value is T) | z.ZodTypeAny,
     errorMessage: string = 'Type assertion failed'
   ): T {
-    if (!predicate(value)) {
+    // 檢查是否為 Zod Schema
+    if (typeof predicate === 'object' && predicate && '_def' in predicate) {
+      const validation = validateWithZod(value, predicate as z.ZodTypeAny);
+      if (!validation.success) {
+        throw new Error(`${errorMessage}: ${(validation as any).error}`);
+      }
+      return validation.data;
+    }
+
+    // 原始斷言函數
+    const predicateFunc = predicate as (value: unknown) => value is T;
+    if (!predicateFunc(value)) {
       throw new Error(errorMessage);
     }
     return value;
@@ -420,7 +530,7 @@ export function safeJsonStringify(
   space?: string | number
 ): string {
   try {
-    return JSON.stringify(value, replacer as any, space);
+    return JSON.stringify(value, replacer as unknown as (string | number)[] | null, space);
   } catch {
     return fallback;
   }

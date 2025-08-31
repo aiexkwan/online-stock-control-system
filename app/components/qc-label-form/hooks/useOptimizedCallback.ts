@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useMemo, useState, useEffect } from 'react';
+import { useCallback, useRef, useState, useEffect } from 'react';
 
 // Generic function type for callbacks
 type CallbackFunction = (...args: unknown[]) => unknown;
@@ -83,7 +83,7 @@ export const useStableCallback = <T extends CallbackFunction>(callback: T): T =>
 // Memoized event handler hook
 export const useMemoizedEventHandler = <T extends CallbackFunction>(
   handler: T,
-  deps: React.DependencyList
+  _deps: React.DependencyList
 ): T => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   return useCallback(handler, [handler]) as T;

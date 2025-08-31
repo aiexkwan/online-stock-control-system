@@ -1,0 +1,1053 @@
+'use client';
+
+import React, { useState, useRef, useEffect, _useMemo } from 'react';
+import { motion } from 'framer-motion';
+import {
+  Brain,
+  Sparkles,
+  Send, Loader2,
+  AlertCircle, Database,
+  MessageCircle,
+  Package,
+  ClipboardList,
+  TrendingUp,
+  Search,
+  Calendar,
+  Truck,
+  AlertTriangle,
+  RefreshCw,
+  HelpCircle,
+  ChevronDown,
+  ChevronUp } from 'lucide-react';
+import { SpecialCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
+import { cardTextStyles } from '@/lib/card-system/theme';
+import { cn } from '@/lib/utils';
+import { useAuthState } from '@/app/(auth)/main-login/context/AuthContext';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import type {
+  AIResponse,
+  AIListItem,
+  AITableRow,
+  ChatMessage,
+  ChatbotCardProps } from '../types/ai-response';
+
+interface SuggestionCategory {
+  category: string;
+  icon: React.ReactNode;
+  queries: string[];
+}
+
+interface Anomaly {
+  type: 'stuck_pallets' | 'inventory_mismatch' | 'overdue_orders';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  title: string;
+  description: string;
+  count: number;
+  _data: Record<string, unknown>[];
+  suggestedAction: string;
+  detectedAt: string;
+}
+
+interface EnhancedError {
+  message: string;
+  details?: string;
+  suggestions?: string[];
+  alternatives?: string[];
+  showSchema?: boolean;
+  showExamples?: boolean;
+  showHelp?: boolean;
+}
+
+// Render AI response based on type
+const renderAIResponse = (response: AIResponse): React.ReactNode => {
+  switch (response.type) {
+    case 'list':
+      const listData = response.data as AIListItem[];
+      return (
+        <div _className ='space-y-3'>
+          {response.summary && (
+            <p _className ={cn(cardTextStyles.body, 'mb-2')}>{response.summary}</p>
+          )}
+          <div _className ='space-y-2'>
+            {listData.map((item, index) => (
+              <div key={index} _className ='flex items-start gap-2'>
+                {item.rank && (
+                  <span _className ='min-w-[24px] font-semibold text-purple-400'>{item.rank}.</span>
+                )}
+                <div _className ='flex-1'>
+                  <span _className ={cn(cardTextStyles.body, 'font-semibold')}>{item.label}</span>
+                  {item.value && (
+                    <span _className ='ml-2 text-purple-300'>
+                      - {typeof item.value === 'number' ? item.value.toLocaleString() : item.value}
+                      {item.unit && ` ${item.unit}`}
+                    </span>
+                  )}
+                  {item.description && (
+                    <p _className ={cn(cardTextStyles.labelSmall, 'mt-1 text-slate-400')}>
+                      {item.description}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          {response.conclusion && (
+            <p _className ={cn(cardTextStyles.body, 'mt-3 border-t border-slate-700/50 pt-2')}>
+              {response.conclusion}
+            </p>
+          )}
+        </div>
+      );
+
+    case 'table':
+      const tableData = response.data as AITableRow[];
+      const columns = response.columns || [];
+      return (
+        <div _className ='space-y-3'>
+          {response.summary && (
+            <p _className ={cn(cardTextStyles.body, 'mb-2')}>{response.summary}</p>
+          )}
+          <div _className ='overflow-x-auto'>
+            <table _className ='w-full text-xs'>
+              <thead>
+                <tr _className ='border-b border-slate-700/50'>
+                  {columns.map(col => (
+                    <th
+                      key={col.key}
+                      _className ={cn(
+                        'px-2 py-1 text-slate-400',
+                        col.align === 'right' ? 'text-right' : 'text-left'
+                      )}
+                    >
+                      {col.label}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {tableData.map((row, idx) => (
+                  <tr key={idx} _className ='border-b border-slate-700/30'>
+                    {columns.map(col => (
+                      <td
+                        key={col.key}
+                        _className ={cn(
+                          'px-2 py-1',
+                          col.align === 'right' ? 'text-right' : 'text-left'
+                        )}
+                      >
+                        {col.type === 'number' && typeof row[col.key] === 'number'
+                          ? (row[col.key] as number).toLocaleString()
+                          : String(row[col.key] ?? '')}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {response.conclusion && (
+            <p _className ={cn(cardTextStyles.body, 'mt-3')}>{response.conclusion}</p>
+          )}
+        </div>
+      );
+
+    case 'single':
+      return (
+        <div _className ='space-y-2'>
+          {response.summary && <p _className ={cn(cardTextStyles.body)}>{response.summary}</p>}
+          <div _className ='text-2xl font-bold text-purple-400'>{String(response._data)}</div>
+          {response.conclusion && (
+            <p _className ={cn(cardTextStyles.body, 'text-slate-400')}>{response.conclusion}</p>
+          )}
+        </div>
+      );
+
+    case 'empty':
+      return (
+        <div _className ='py-4 text-center'>
+          <AlertCircle _className ='mx-auto mb-2 h-8 w-8 text-slate-500' />
+          <p _className ={cn(cardTextStyles.body, 'text-slate-400')}>
+            {response.summary || 'No data found'}
+          </p>
+          {response.conclusion && (
+            <p _className ={cn(cardTextStyles.labelSmall, 'mt-2 text-slate-500')}>
+              {response.conclusion}
+            </p>
+          )}
+        </div>
+      );
+
+    case 'summary':
+    default:
+      return (
+        <div _className ='space-y-2'>
+          {response.summary && <p _className ={cn(cardTextStyles.body)}>{response.summary}</p>}
+          {response.data && (
+            <p _className ={cn(cardTextStyles.body)}>
+              {typeof response._data === 'string'
+                ? response.data
+                : typeof response._data === 'number'
+                  ? response.data.toString()
+                  : typeof response._data === 'object' && response.data !== null
+                    ? JSON.stringify(response._data)
+                    : String(response._data)}
+            </p>
+          )}
+          {response.conclusion && (
+            <p _className ={cn(cardTextStyles.body, 'mt-2 text-slate-400')}>{response.conclusion}</p>
+          )}
+        </div>
+      );
+  }
+};
+
+// Enhanced error display component
+const EnhancedErrorDisplay: React.FC<{ _error: EnhancedError; onRetry: () => void }> = ({
+  _error,
+  onRetry }) => {
+  return (
+    <div _className ='space-y-3'>
+      <div _className ='flex items-start gap-3'>
+        <AlertCircle _className ='mt-0.5 h-5 w-5 flex-shrink-0 text-red-400' />
+        <div _className ='flex-1'>
+          <h4 _className ={cn(cardTextStyles.body, 'font-semibold text-red-400')}>{error.message}</h4>
+          {error.details && <p _className ='mt-1 text-sm text-slate-400'>{error.details}</p>}
+        </div>
+      </div>
+
+      {error.alternatives && error.alternatives.length > 0 && (
+        <div _className ='rounded-lg bg-white/5 p-3 backdrop-blur-sm'>
+          <p _className ='mb-2 text-sm text-slate-300'>Did you mean:</p>
+          <div _className ='flex flex-wrap gap-2'>
+            {error.alternatives.map((alt, i) => (
+              <code
+                key={i}
+                _className ='rounded bg-white/10 px-2 py-1 text-xs text-purple-300 backdrop-blur-sm'
+              >
+                {alt}
+              </code>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {error.suggestions && error.suggestions.length > 0 && (
+        <div _className ='space-y-2'>
+          <p _className ={cn(cardTextStyles.body, 'text-slate-300')}>Suggestions:</p>
+          <ul _className ='space-y-1'>
+            {error.suggestions.map((suggestion, i) => (
+              <li key={i} _className ='flex items-start gap-2 text-sm text-slate-400'>
+                <span _className ='mt-0.5 text-slate-500'>•</span>
+                <span>{suggestion}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div _className ='flex flex-wrap gap-2 pt-2'>
+        <Button
+          onClick={onRetry}
+          _size ='sm'
+          variant='outline'
+          _className ={cn(cardTextStyles.labelSmall)}
+        >
+          <RefreshCw _className ='mr-1 h-3 w-3' />
+          Retry Query
+        </Button>
+        {error.showHelp && (
+          <Button
+            onClick={() => window.open('/help/ask-database', '_blank')}
+            _size ='sm'
+            variant='outline'
+            _className ={cn(cardTextStyles.labelSmall)}
+          >
+            <HelpCircle _className ='mr-1 h-3 w-3' />
+            View Help
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// Format message content - handle both string and JSON
+const formatMessageContent = (
+  content: string | AIResponse | EnhancedError,
+  onRetry?: () => void
+): React.ReactNode => {
+  // If it's an enhanced error
+  if (typeof content === 'object' && 'message' in content && 'suggestions' in content) {
+    return (
+      <EnhancedErrorDisplay _error ={content as EnhancedError} onRetry={onRetry || (() => {})} />
+    );
+  }
+
+  // If it's already an AIResponse object, render it
+  if (typeof content === 'object' && 'type' in content) {
+    return renderAIResponse(content as AIResponse);
+  }
+
+  // Try to parse as JSON
+  if (typeof content === 'string') {
+    try {
+      const parsed = JSON.parse(content) as AIResponse;
+      if (parsed && typeof parsed === 'object' && 'type' in parsed) {
+        return renderAIResponse(parsed);
+      }
+    } catch {
+      // Not JSON, render as plain text
+    }
+  }
+
+  // Fallback to simple text display
+  return <div _className ={cn(cardTextStyles.body, 'leading-relaxed')}>{String(content)}</div>;
+};
+
+// Chat Message Component
+const ChatMessageComponent: React.FC<{ message: ChatMessage; onRetry?: () => void }> = ({
+  message,
+  onRetry }) => {
+  const isUser = message.type === 'user';
+  const isError = message.type === 'error';
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+      _className ={cn('flex w-full gap-3', isUser ? 'justify-end' : 'justify-start')}
+    >
+      {!isUser && (
+        <div _className ='flex h-8 w-8 items-center justify-center rounded-full bg-purple-500/20'>
+          {isError ? (
+            <AlertCircle _className ='h-4 w-4 text-red-400' />
+          ) : (
+            <Database _className ='h-4 w-4 text-purple-400' />
+          )}
+        </div>
+      )}
+
+      <div
+        _className ={cn(
+          'max-w-[70%] rounded-lg px-4 py-2',
+          isUser
+            ? 'bg-purple-500/20 text-white'
+            : isError
+              ? 'bg-red-500/10 text-red-400'
+              : 'bg-slate-800/50 text-slate-200'
+        )}
+      >
+        <div _className ={cn(cardTextStyles.body)}>
+          {formatMessageContent(message.content, onRetry)}
+        </div>
+      </div>
+
+      {isUser && (
+        <div _className ='flex h-8 w-8 items-center justify-center rounded-full bg-purple-500/20'>
+          <MessageCircle _className ='h-4 w-4 text-purple-400' />
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
+// Main ChatbotCard Component
+export default function ChatbotCard({ _className }: ChatbotCardProps) {
+  const { user } = useAuthState();
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      id: 'welcome',
+      role: 'assistant',
+      type: 'ai',
+      content:
+        'Hello! I can help you query the database. Ask me anything about your inventory, orders, or stock levels.',
+      timestamp: new Date().toISOString() },
+  ]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [useStreaming, setUseStreaming] = useState(true); // Enable streaming by default
+  const [showSuggestions, setShowSuggestions] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [recentQueries, setRecentQueries] = useState<string[]>([]);
+  const [anomalies, setAnomalies] = useState<Anomaly[] | null>(null);
+  const [showAnomalies, setShowAnomalies] = useState(false);
+  const [isDetectingAnomalies, setIsDetectingAnomalies] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [_sessionId] = useState(() => `session_${Date.now()}`);
+
+  // Check for anomaly detection access
+  const hasAnomalyDetectionAccess = user?.email === 'akwan@pennineindustries.com';
+
+  // Query suggestion categories
+  const allSuggestions: SuggestionCategory[] = [
+    {
+      category: 'Real-time Inventory',
+      icon: <Package _className ='h-4 w-4' />,
+      queries: [
+        'Show all pallets in Await location',
+        'What is the total stock for product code MH001?',
+        'How many pallets arrived today?',
+        'Which warehouse has the most available space?',
+        'Show products with stock below 100 units',
+        'List all pallets that have been in Await for more than 7 days',
+      ] },
+    {
+      category: 'Order Status',
+      icon: <ClipboardList _className ='h-4 w-4' />,
+      queries: [
+        'Show all pending orders',
+        'How many items need to be shipped today?',
+        'What is the status of order REF001?',
+        'Show all unprocessed ACO orders',
+        'List orders that are overdue',
+        'Which orders are partially loaded?',
+      ] },
+    {
+      category: 'Efficiency Analysis',
+      icon: <TrendingUp _className ='h-4 w-4' />,
+      queries: [
+        'How many pallets were produced today?',
+        'Show monthly shipping statistics',
+        'What is the average transfer time?',
+        'Show work level by department today',
+        'Compare this week vs last week production',
+        'Show most active products today',
+      ] },
+    {
+      category: 'Anomaly Detection',
+      icon: <AlertCircle _className ='h-4 w-4' />,
+      queries: [
+        'Show pallets that have not moved for 30 days',
+        'Find duplicate pallet numbers',
+        'Show products with inventory discrepancies',
+        'List any errors recorded today',
+        'Show pallets with missing information',
+        'Find orders without customer details',
+      ] },
+  ];
+
+  // Filter suggestions based on permissions
+  const suggestions = hasAnomalyDetectionAccess
+    ? allSuggestions
+    : allSuggestions.filter(cat => cat.category !== 'Anomaly Detection');
+
+  // Context-aware suggestions
+  const contextualSuggestions = useMemo(() => {
+    const lastMessage = messages.filter(m => m.type === 'user').pop();
+    if (!lastMessage) return [];
+
+    const content = lastMessage.content.toString().toLowerCase();
+    const suggestions: string[] = [];
+
+    if (content.includes('stock') || content.includes('inventory')) {
+      suggestions.push(
+        'Show stock movement history for this product',
+        'Compare current stock with last month',
+        'Show location distribution for this product'
+      );
+    }
+
+    if (content.includes('order')) {
+      suggestions.push(
+        'Show all items in this order',
+        'Check loading progress for this order',
+        'Show similar orders from the same customer'
+      );
+    }
+
+    if (content.includes('pallet')) {
+      suggestions.push(
+        'Show movement history for this pallet',
+        'Find pallets with the same product',
+        'Check QC status for this pallet'
+      );
+    }
+
+    return suggestions;
+  }, [messages]);
+
+  // Auto scroll to bottom
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // Run anomaly detection
+  const runAnomalyDetection = async () => {
+    setIsDetectingAnomalies(true);
+    try {
+      const response = await fetch('/api/anomaly-detection', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' } });
+
+      if (!response.ok) {
+        throw new Error('Failed to detect anomalies');
+      }
+
+      const _data = await response.json();
+      const results = data.anomalies || [];
+
+      setAnomalies(results);
+      setShowAnomalies(true);
+
+      if (results.length > 0) {
+        const aiMessage: ChatMessage = {
+          id: `ai_anomaly_${Date.now()}`,
+          role: 'assistant',
+          type: 'ai',
+          content: `Found ${results.length} anomalies requiring attention. Click on each to see details.`,
+          timestamp: new Date().toISOString() };
+        setMessages(prev => [...prev, aiMessage]);
+      }
+    } catch (_error) {
+      console.error('[AnomalyDetection] Error:', _error);
+    } finally {
+      setIsDetectingAnomalies(false);
+    }
+  };
+
+  const handleSendMessage = async (question?: string) => {
+    const messageToSend = question || input.trim();
+    if (!messageToSend || isLoading) return;
+
+    setIsLoading(true);
+    setInput('');
+    setShowSuggestions(false);
+
+    // Track recent queries
+    setRecentQueries(prev => {
+      const updated = [messageToSend, ...prev.filter(q => q !== messageToSend)];
+      return updated.slice(0, 10); // Keep last 10 queries
+    });
+
+    // Add user message
+    const userMessage: ChatMessage = {
+      id: `user_${Date.now()}`,
+      role: 'user',
+      type: 'user',
+      content: messageToSend,
+      timestamp: new Date().toISOString() };
+
+    setMessages(prev => [...prev, userMessage]);
+
+    // Use unified API endpoint with mode parameter
+    try {
+      const requestBody = {
+        question: messageToSend,
+        _sessionId,
+        stream: useStreaming,
+        features: {
+          enableCache: true,
+          enableOptimization: true,
+          enableAnalysis: false, // Can be toggled based on user preference
+        } };
+
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json' };
+
+      // Add streaming header if streaming mode is enabled
+      if (useStreaming) {
+        headers['Accept'] = 'text/event-stream';
+      }
+
+      const response = await fetch('/api/ask-database', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody) });
+
+      if (!response.ok && !useStreaming) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      if (useStreaming) {
+        // Handle streaming response
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        let accumulatedAnswer = '';
+
+        if (reader) {
+          // Add placeholder message for streaming
+          const streamingMessageId = `ai_streaming_${Date.now()}`;
+          setMessages(prev => [
+            ...prev,
+            {
+              id: streamingMessageId,
+              role: 'assistant',
+              type: 'ai',
+              content: '...',
+              timestamp: new Date().toISOString() },
+          ]);
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+              if (line.startsWith('_data: ')) {
+                const _data = line.slice(6);
+                if (_data === '[DONE]') break;
+
+                try {
+                  const parsed = JSON.parse(_data);
+
+                  if (parsed.type === 'answer_chunk') {
+                    accumulatedAnswer += parsed.content;
+                    // Update the streaming message
+                    setMessages(prev =>
+                      prev.map(msg =>
+                        msg.id === streamingMessageId ? { ...msg, content: accumulatedAnswer } : msg
+                      )
+                    );
+                  } else if (parsed.type === 'complete') {
+                    // Replace with final parsed answer
+                    const finalAnswer = parsed.answer;
+                    setMessages(prev =>
+                      prev.map(msg =>
+                        msg.id === streamingMessageId ? { ...msg, content: finalAnswer } : msg
+                      )
+                    );
+                  } else if (parsed.type === 'cache_hit') {
+                    console.log(`Cache hit: ${parsed.level}`);
+                  } else if (parsed.type === 'error') {
+                    throw new Error(parsed.message);
+                  }
+                } catch (e) {
+                  console.error('Parse _error:', e);
+                }
+              }
+            }
+          }
+        }
+      } else {
+        // Handle standard JSON response
+        const _result = await response.json();
+
+        // Build AI response
+        const aiMessage: ChatMessage = {
+          id: `ai_${Date.now()}`,
+          role: 'assistant',
+          type: 'ai',
+          content: result.answer || 'Query executed successfully',
+          timestamp: new Date().toISOString() };
+
+        setMessages(prev => [...prev, aiMessage]);
+      }
+    } catch (error) {
+      const errorMessage: ChatMessage = {
+        id: `error_${Date.now()}`,
+        role: 'system',
+        type: 'error',
+        content: error instanceof Error ? error.message : 'An unexpected error occurred',
+        timestamp: new Date().toISOString() };
+
+      setMessages(prev => [...prev, errorMessage]);
+    }
+
+    setIsLoading(false);
+    inputRef.current?.focus();
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  return (
+    <SpecialCard
+      _className ={cn('flex h-full flex-col', _className)}
+      variant='glass'
+      borderGlow='hover'
+      padding='base'
+    >
+      {/* Header */}
+      <div _className ='mb-4 flex items-center justify-between'>
+        <div _className ='flex items-center gap-3'>
+          <div _className ='relative'>
+            <Database _className ='h-6 w-6 text-purple-400' />
+            <Sparkles _className ='absolute -right-1 -top-1 h-3 w-3 text-yellow-400' />
+          </div>
+          <div>
+            <h3 _className ={cn(cardTextStyles.title, 'text-white')}>Chat with Database</h3>
+            <p _className ={cn(cardTextStyles.labelSmall, 'text-slate-400')}>
+              Ask questions about your data
+            </p>
+          </div>
+        </div>
+        <div _className ='flex items-center gap-2'>
+          <button
+            onClick={() => setUseStreaming(!useStreaming)}
+            _className ={cn(
+              cardTextStyles.labelSmall,
+              'text-slate-400 transition-colors hover:text-purple-400'
+            )}
+            title={useStreaming ? 'Streaming enabled' : 'Streaming disabled'}
+          >
+            {useStreaming ? '⚡ Fast' : '🐢 Normal'}
+          </button>
+          <Brain _className ='h-5 w-5 animate-pulse text-purple-400' />
+        </div>
+      </div>
+
+      {/* Messages Container */}
+      <div _className ='flex-1 overflow-hidden rounded-lg bg-white/5 p-4 backdrop-blur-sm'>
+        <div _className ='h-full space-y-4 overflow-y-auto pr-2'>
+          {messages.map(message => (
+            <ChatMessageComponent
+              key={message.id}
+              message={message}
+              onRetry={() => {
+                // Retry the last user message
+                const lastUserMessage = messages.filter(m => m.type === 'user').pop();
+                if (lastUserMessage && typeof lastUserMessage.content === 'string') {
+                  handleSendMessage(lastUserMessage.content);
+                }
+              }}
+            />
+          ))}
+          {isLoading && (
+            <div _className ='flex items-center gap-2 text-sm text-slate-400'>
+              <Loader2 _className ='h-4 w-4 animate-spin' />
+              <span>Thinking...</span>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+      </div>
+
+      {/* Enhanced Query Suggestions */}
+      {showSuggestions && messages.length === 1 && (
+        <div _className ='mt-4 max-h-96 space-y-4 overflow-y-auto'>
+          {/* Recent Queries */}
+          {recentQueries.length > 0 && (
+            <div _className ='rounded-lg border-none bg-white/5 p-4 backdrop-blur-sm'>
+              <h3 _className ='mb-3 flex items-center gap-2 text-sm font-medium text-slate-300'>
+                <Calendar _className ='h-4 w-4' />
+                Recent Queries
+              </h3>
+              <div _className ='space-y-1'>
+                {recentQueries.slice(0, 3).map((query, index) => (
+                  <Button
+                    key={index}
+                    variant='ghost'
+                    _size ='sm'
+                    onClick={() => handleSendMessage(query)}
+                    _className ='w-full justify-start rounded border-none bg-white/10 text-left text-white transition-all hover:bg-white/20'
+                  >
+                    <Search _className ='mr-2 h-3 w-3 opacity-50' />
+                    {query}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Contextual Suggestions */}
+          {contextualSuggestions.length > 0 && (
+            <div _className ='rounded-lg border-none bg-white/5 p-4 backdrop-blur-sm'>
+              <h3 _className ='mb-3 flex items-center gap-2 text-sm font-medium text-blue-300'>
+                <Database _className ='h-4 w-4' />
+                Related Queries
+              </h3>
+              <div _className ='space-y-1'>
+                {contextualSuggestions.map((query, index) => (
+                  <Button
+                    key={index}
+                    variant='ghost'
+                    _size ='sm'
+                    onClick={() => handleSendMessage(query)}
+                    _className ='w-full justify-start rounded border-none bg-white/10 text-left text-white transition-all hover:bg-white/15'
+                  >
+                    {query}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Category Suggestions */}
+          <div _className ='grid grid-cols-1 gap-3 md:grid-cols-2'>
+            {suggestions.map(cat => (
+              <Card
+                key={cat.category}
+                _className ='cursor-pointer border-none bg-white/5 backdrop-blur-sm transition-all hover:bg-white/10'
+                onClick={() =>
+                  setSelectedCategory(selectedCategory === cat.category ? null : cat.category)
+                }
+              >
+                <div _className ='p-3'>
+                  <h3 _className ='mb-2 flex items-center gap-2 font-medium text-white'>
+                    {cat.icon}
+                    {cat.category}
+                    {selectedCategory === cat.category ? (
+                      <ChevronUp _className ='ml-auto h-4 w-4' />
+                    ) : (
+                      <ChevronDown _className ='ml-auto h-4 w-4' />
+                    )}
+                  </h3>
+
+                  {selectedCategory === cat.category && (
+                    <div _className ='mt-3 space-y-1'>
+                      {cat.queries.map((query, index) => (
+                        <Button
+                          key={index}
+                          variant='ghost'
+                          _size ='sm'
+                          onClick={e => {
+                            e.stopPropagation();
+                            handleSendMessage(query);
+                          }}
+                          _className ='w-full justify-start rounded border-none bg-white/10 px-3 py-2 text-left text-sm text-white transition-all hover:bg-white/20'
+                        >
+                          {query}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+
+                  {selectedCategory !== cat.category && (
+                    <p _className ={cn(cardTextStyles.labelSmall, 'text-slate-400')}>
+                      Click to view {cat.queries.length} suggestions
+                    </p>
+                  )}
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {/* Quick Actions */}
+          <div _className ='flex flex-wrap gap-2 pt-2'>
+            <Button
+              variant='outline'
+              _size ='sm'
+              onClick={() => handleSendMessage("Show today's summary")}
+              _className ='border-none bg-white/10 text-xs text-white hover:bg-white/20'
+            >
+              <Calendar _className ='mr-1 h-3 w-3' />
+              Today&apos;s Summary
+            </Button>
+            <Button
+              variant='outline'
+              _size ='sm'
+              onClick={() => handleSendMessage('Show current Await pallets')}
+              _className ='border-none bg-white/10 text-xs text-white hover:bg-white/20'
+            >
+              <Package _className ='mr-1 h-3 w-3' />
+              Await Status
+            </Button>
+            <Button
+              variant='outline'
+              _size ='sm'
+              onClick={() => handleSendMessage('Show pending shipments')}
+              _className ='border-none bg-white/10 text-xs text-white hover:bg-white/20'
+            >
+              <Truck _className ='mr-1 h-3 w-3' />
+              Pending Shipments
+            </Button>
+
+            {/* Anomaly Detection Button - only for authorized users */}
+            {hasAnomalyDetectionAccess && (
+              <Button
+                variant='outline'
+                _size ='sm'
+                onClick={runAnomalyDetection}
+                disabled={isDetectingAnomalies}
+                _className ='border-none bg-orange-600/10 text-orange-400 hover:bg-orange-600/20'
+              >
+                {isDetectingAnomalies ? (
+                  <>
+                    <Loader2 _className ='mr-2 h-3 w-3 animate-spin' />
+                    Detecting Anomalies...
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle _className ='mr-2 h-3 w-3' />
+                    Run Anomaly Detection
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+
+          {/* Anomaly Results Display */}
+          {showAnomalies && anomalies && anomalies.length > 0 && (
+            <div _className ='rounded-lg border-none bg-orange-600/10 p-4 backdrop-blur-sm'>
+              <div _className ='mb-3 flex items-center justify-between'>
+                <h3 _className ='flex items-center gap-2 text-sm font-medium text-orange-300'>
+                  <AlertTriangle _className ='h-4 w-4' />
+                  Anomalies Detected ({anomalies.length})
+                </h3>
+                <Button
+                  variant='ghost'
+                  _size ='sm'
+                  onClick={() => setShowAnomalies(false)}
+                  _className ={cn(cardTextStyles.labelSmall, 'text-slate-400 hover:text-white')}
+                >
+                  Hide
+                </Button>
+              </div>
+              <div _className ='space-y-2'>
+                {anomalies.map((anomaly, index) => (
+                  <div
+                    key={index}
+                    _className ={cn(
+                      'cursor-pointer rounded-lg border-none p-3 backdrop-blur-sm transition-all',
+                      anomaly.severity === 'critical' && 'bg-red-500/10',
+                      anomaly.severity === 'high' && 'bg-orange-500/10',
+                      anomaly.severity === 'medium' && 'bg-yellow-500/10',
+                      anomaly.severity === 'low' && 'bg-blue-500/10'
+                    )}
+                    onClick={() => {
+                      let query = '';
+                      switch (anomaly.type) {
+                        case 'stuck_pallets':
+                          query = 'Show all pallets that have not moved for over 30 days';
+                          break;
+                        case 'inventory_mismatch':
+                          query =
+                            'Show products where inventory count does not match system records';
+                          break;
+                        case 'overdue_orders':
+                          query = 'Show all orders that are overdue by more than 7 days';
+                          break;
+                      }
+                      if (query) handleSendMessage(query);
+                    }}
+                  >
+                    <div _className ='flex items-start justify-between'>
+                      <div>
+                        <h4 _className ={cn(cardTextStyles.body, 'font-semibold text-white')}>
+                          {anomaly.title}
+                        </h4>
+                        <p _className ={cn(cardTextStyles.labelSmall, 'text-slate-400')}>
+                          {anomaly.description}
+                        </p>
+                        <p _className ='mt-1 text-xs text-slate-500'>
+                          Count: {anomaly.count} | {anomaly.suggestedAction}
+                        </p>
+                      </div>
+                      <span
+                        _className ={cn(
+                          'rounded px-2 py-1 text-xs font-medium',
+                          anomaly.severity === 'critical' && 'bg-red-600 text-white',
+                          anomaly.severity === 'high' && 'bg-orange-600 text-white',
+                          anomaly.severity === 'medium' && 'bg-yellow-600 text-black',
+                          anomaly.severity === 'low' && 'bg-blue-600 text-white'
+                        )}
+                      >
+                        {anomaly.severity}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Toggle Suggestions for existing conversations */}
+      {messages.length > 1 && (
+        <div _className ='mt-2 flex justify-center'>
+          <Button
+            variant='ghost'
+            _size ='sm'
+            onClick={() => setShowSuggestions(!showSuggestions)}
+            _className ={cn(cardTextStyles.labelSmall, 'text-slate-400 hover:text-purple-400')}
+          >
+            {showSuggestions ? (
+              <>
+                <ChevronUp _className ='mr-1 h-3 w-3' />
+                Hide Suggestions
+              </>
+            ) : (
+              <>
+                <ChevronDown _className ='mr-1 h-3 w-3' />
+                Show Suggestions
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+
+      {/* Enhanced Query Suggestions for existing conversations */}
+      {showSuggestions && messages.length > 1 && (
+        <div _className ='mt-2 max-h-48 space-y-2 overflow-y-auto'>
+          <div _className ='flex flex-wrap gap-2'>
+            <Button
+              variant='outline'
+              _size ='sm'
+              onClick={() => handleSendMessage("Show today's summary")}
+              _className ='border-none bg-white/10 text-xs text-white hover:bg-white/20'
+            >
+              <Calendar _className ='mr-1 h-3 w-3' />
+              Today&apos;s Summary
+            </Button>
+            <Button
+              variant='outline'
+              _size ='sm'
+              onClick={() => handleSendMessage('Show current Await pallets')}
+              _className ='border-none bg-white/10 text-xs text-white hover:bg-white/20'
+            >
+              <Package _className ='mr-1 h-3 w-3' />
+              Await Status
+            </Button>
+            {hasAnomalyDetectionAccess && (
+              <Button
+                variant='outline'
+                _size ='sm'
+                onClick={runAnomalyDetection}
+                disabled={isDetectingAnomalies}
+                _className ='border-none bg-orange-600/10 text-orange-400 hover:bg-orange-600/20'
+              >
+                {isDetectingAnomalies ? (
+                  <>
+                    <Loader2 _className ='mr-2 h-3 w-3 animate-spin' />
+                    Detecting...
+                  </>
+                ) : (
+                  <>
+                    <AlertTriangle _className ='mr-2 h-3 w-3' />
+                    Anomaly Detection
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Input Area */}
+      <div _className ='mt-4 flex gap-2'>
+        <input
+          ref={inputRef}
+          type='text'
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={handleKeyPress}
+          placeholder='Ask a question about your data...'
+          disabled={isLoading}
+          _className ='flex-1 rounded-lg bg-white/10 px-4 py-2 text-sm text-white placeholder-slate-400 outline-none backdrop-blur-sm transition-colors focus:bg-white/20 disabled:opacity-50'
+        />
+        <button
+          onClick={() => handleSendMessage()}
+          disabled={!input.trim() || isLoading}
+          _className ='rounded-lg bg-purple-500/20 p-2 text-purple-400 transition-colors hover:bg-purple-500/30 disabled:opacity-50'
+        >
+          {isLoading ? <Loader2 _className ='h-5 w-5 animate-spin' /> : <Send _className ='h-5 w-5' />}
+        </button>
+      </div>
+    </SpecialCard>
+  );
+}

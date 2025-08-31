@@ -313,7 +313,7 @@ export type TableUpdate<T extends keyof Database['public']['Tables']> =
  */
 export function toTableRow<T extends keyof Database['public']['Tables']>(
   value: unknown,
-  tableName: T
+  _tableName: T
 ): Partial<TableRow<T>> {
   const record = toRecord(value);
 
@@ -327,10 +327,10 @@ export function toTableRow<T extends keyof Database['public']['Tables']>(
  */
 export function toTableRows<T extends keyof Database['public']['Tables']>(
   values: unknown,
-  tableName: T
+  _tableName: T
 ): Partial<TableRow<T>>[] {
   const records = toRecordArray(values);
-  return records.map(record => toTableRow(record, tableName));
+  return records.map(record => toTableRow(record, _tableName));
 }
 
 /**

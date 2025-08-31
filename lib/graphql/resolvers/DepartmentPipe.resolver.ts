@@ -4,15 +4,16 @@
  * Integrates stock_level table data and enhanced product filtering
  */
 
+// @ts-ignore - DataLoader module import issue with esModuleInterop
 import DataLoader from 'dataloader';
-import { createClient } from '@/app/utils/supabase/server';
+import { createClient } from '../../../app/utils/supabase/server';
 import {
   createStockLevelDataLoaders,
   type StockLevelDataLoaders,
   type StockLevelQuery,
-  type StockLevelRecord,
-} from '@/lib/graphql/dataloaders/stock-level.dataloader';
-import { DataLoaderContext } from '@/lib/graphql/dataloaders/base.dataloader';
+  type StockLevelRecord as _StockLevelRecord,
+} from '../dataloaders/stock-level.dataloader';
+import { DataLoaderContext } from '../dataloaders/base.dataloader';
 
 // Enhanced types for pipe department
 interface PipeStats {
@@ -237,10 +238,10 @@ class PipeDepartmentDataLoaders {
     // Production stats loader for time-based analytics
     this.productionStatsLoader = new DataLoader(
       async (productCodes: readonly string[]) => {
-        const now = new Date();
-        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        const past7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        const past14Days = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+        const _now = new Date();
+        const today = new Date(_now.getFullYear(), _now.getMonth(), _now.getDate());
+        const past7Days = new Date(_now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const past14Days = new Date(_now.getTime() - 14 * 24 * 60 * 60 * 1000);
 
         const supabase = await this.supabase;
         const { data, error } = await supabase
@@ -344,12 +345,12 @@ class PipeDepartmentDataLoaders {
 /**
  * Enhanced pipe product filtering logic
  */
-function isPipeProduct(productType: string): boolean {
+function _isPipeProduct(productType: string): boolean {
   const pipeTypes = ['Pipe', 'pipe', 'PIPE', 'Tube', 'tube', 'TUBE'];
   return pipeTypes.includes(productType);
 }
 
-function isMaterialProduct(productType: string): boolean {
+function _isMaterialProduct(productType: string): boolean {
   const materialTypes = ['Material', 'material', 'MATERIAL', 'Raw Material', 'raw_material'];
   return materialTypes.includes(productType);
 }
@@ -359,7 +360,7 @@ function isMaterialProduct(productType: string): boolean {
  */
 async function fetchPipeStats(
   supabase: ReturnType<typeof createClient>,
-  loaders: PipeDepartmentDataLoaders
+  _loaders: PipeDepartmentDataLoaders
 ): Promise<PipeStats> {
   try {
     // Use optimized RPC function instead of complex client-side filtering
@@ -417,7 +418,7 @@ async function fetchPipeStats(
  */
 async function fetchEnhancedTopStocks(
   supabase: ReturnType<typeof createClient>,
-  loaders: PipeDepartmentDataLoaders,
+  _loaders: PipeDepartmentDataLoaders,
   limit: number = 10
 ): Promise<{ nodes: EnhancedStockItem[]; totalCount: number }> {
   try {
@@ -465,7 +466,7 @@ async function fetchEnhancedTopStocks(
  */
 async function fetchEnhancedMaterialStocks(
   supabase: ReturnType<typeof createClient>,
-  loaders: PipeDepartmentDataLoaders,
+  _loaders: PipeDepartmentDataLoaders,
   limit: number = 10
 ): Promise<{ nodes: EnhancedStockItem[]; totalCount: number }> {
   try {
@@ -512,7 +513,7 @@ async function fetchEnhancedMaterialStocks(
  * Calculate pipe production metrics
  */
 async function calculatePipeProductionMetrics(
-  loaders: PipeDepartmentDataLoaders
+  _loaders: PipeDepartmentDataLoaders
 ): Promise<PipeProductionMetrics> {
   // This would integrate with production monitoring systems
   // For now, return placeholder values
@@ -529,7 +530,7 @@ async function calculatePipeProductionMetrics(
 export const enhancedPipeDepartmentResolver = {
   Query: {
     // Enhanced main query
-    departmentPipeData: (async (_, __, context) => {
+    departmentPipeData: (async (_, __, _context) => {
       try {
         const supabasePromise = createClient();
         const loaders = new PipeDepartmentDataLoaders(supabasePromise);
@@ -627,7 +628,7 @@ export const enhancedPipeDepartmentResolver = {
     }) as GraphQLResolver<Record<string, unknown>>,
 
     // Real-time stock levels query
-    realTimeStockLevels: (async (_, args, context) => {
+    realTimeStockLevels: (async (_, args, _context) => {
       try {
         const supabasePromise = createClient();
         const loaders = new PipeDepartmentDataLoaders(supabasePromise);
@@ -659,14 +660,14 @@ export const enhancedPipeDepartmentResolver = {
           await loaders.initStockLevelLoaders();
         }
 
-        const result = await loaders.stockLevel!.byQuery.load(query);
+        const _result = await loaders.stockLevel!.byQuery.load(query);
         loaders.clearAll();
 
-        if (result instanceof Error) {
-          throw result;
+        if (_result instanceof Error) {
+          throw _result;
         }
 
-        return result;
+        return _result;
       } catch (error) {
         console.error('[EnhancedPipeDepartment] Real-time stock levels error:', error);
         throw new Error('Failed to load real-time stock levels');
@@ -678,7 +679,7 @@ export const enhancedPipeDepartmentResolver = {
     }>,
 
     // Machine status query
-    machineStatusRealTime: (async (_, args: { departmentType: string }, context) => {
+    machineStatusRealTime: (async (_, args: { departmentType: string }, _context) => {
       if (args.departmentType !== 'PIPE') {
         return [];
       }

@@ -5,17 +5,18 @@
 
 'use client';
 
-import React, { useEffect } from 'react';
+import * as React from 'react';
+const { useEffect } = React;
 import {
   XMarkIcon,
   DocumentTextIcon,
   ClipboardDocumentListIcon,
 } from '@heroicons/react/24/outline';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { cardTextStyles } from '@/lib/card-system/theme';
-import type { ExtractedOrderItem } from '@/lib/types/order-extraction';
+import { cn } from '../../lib/utils';
+import { Button } from './button';
+import { ScrollArea } from './scroll-area';
+import { cardTextStyles } from '../../lib/card-system/theme';
+import type { ExtractedOrderItem } from '../../lib/types/order-extraction';
 
 interface DataExtractionOverlayProps {
   isOpen: boolean;

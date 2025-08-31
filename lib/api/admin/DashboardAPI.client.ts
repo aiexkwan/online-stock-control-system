@@ -5,23 +5,10 @@
 
 // Removed unused import: createClient
 import { DataAccessLayer } from '../core/DataAccessStrategy';
+import type { DashboardParams, DashboardResult } from './DashboardAPI';
 
 // Re-export types from main DashboardAPI
-export type { DashboardWidgetData } from './DashboardAPI';
-
-interface DashboardParams {
-  widgetIds: string[];
-  warehouse?: string;
-  dateRange?: {
-    start: string;
-    end: string;
-  };
-}
-
-interface DashboardResult {
-  widgets: Record<string, unknown>;
-  metadata?: Record<string, unknown>;
-}
+export type { DashboardWidgetData, DashboardParams, DashboardResult } from './DashboardAPI';
 
 export class DashboardAPIClient extends DataAccessLayer<DashboardParams, DashboardResult> {
   constructor() {

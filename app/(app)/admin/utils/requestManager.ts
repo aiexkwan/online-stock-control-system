@@ -183,7 +183,8 @@ export class RequestManager {
    */
   private isAbortError(error: unknown): boolean {
     return (
-      error instanceof Error && (error.name === 'AbortError' || error.message === 'Request aborted')
+      error instanceof Error &&
+      ((error as any).name === 'AbortError' || error.message === 'Request aborted')
     );
   }
 

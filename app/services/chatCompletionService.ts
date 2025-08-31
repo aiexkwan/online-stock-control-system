@@ -18,9 +18,9 @@ interface OpenAIApiError extends Error {
     statusText?: string;
     data?: unknown;
   };
-  constructor: {
-    name: string;
-  };
+  code?: string;
+  type?: string;
+  status?: number;
 }
 
 interface ErrorDetails {
@@ -295,7 +295,7 @@ export class ChatCompletionService {
       // 提供更詳細的錯誤診斷
       let errorDetails: ErrorDetails = {
         error: errorMessage,
-        type: apiError?.constructor?.name,
+        type: apiError?.type || apiError?.code || 'unknown',
       };
 
       // 檢查 OpenAI 特定錯誤
@@ -442,7 +442,7 @@ Rules:
 - Join multi-line addresses with ", " (comma space) as separator
 - EXCLUDE email addresses and phone numbers from addresses
 - Do NOT include "Tel:", "Email:", phone numbers, or email addresses in address fields
-- Only include company name, street address, city, region, and postcode
+- Only include company _name, street address, city, region, and postcode
 - Ignore empty form fields and labels like "Driver", "Tel No:", "Booked In"`;
 
     // 根據複雜度添加 few-shot examples
@@ -464,10 +464,10 @@ Skip Trans* items. Extract COMPLETE product codes (never truncate) and quantitie
    * 獲取 Few-shot 示例（僅在複雜情況下使用）
    */
   private getFewShotExamples(): string {
-    return `\n\nExamples:\n\nInput: "Order: 12345, Product: MHL10G Widget Qty: 5"
+    return `\n\nExamples:\n\nInput: "Order: 12345, _Product: MHL10G Widget Qty: 5"
 Output: {"orders":[{"order_ref":"12345","product_code":"MHL10G","product_qty":5}]}
 
-Input: "Trans shipping: £15.00, Product: ABC123 Part Qty: 3"
+Input: "Trans shipping: £15.00, _Product: ABC123 Part Qty: 3"
 Output: {"orders":[{"product_code":"ABC123","product_qty":3}]}
 
 CRITICAL: In table format, columns are typically:
@@ -557,7 +557,7 @@ CRITICAL: Skip Tel:, Email:, phone numbers, email addresses, and form field labe
    */
   private async parseResponse(
     responseText: string,
-    _tokensUsed: number
+    tokensUsed: number
   ): Promise<OrderExtractionResult> {
     try {
       const parsed = JSON.parse(responseText);
@@ -887,7 +887,7 @@ CRITICAL: Skip Tel:, Email:, phone numbers, email addresses, and form field labe
       // 詳細錯誤診斷
       let errorDetails: ErrorDetails = {
         error: errorMessage,
-        type: apiError?.constructor?.name,
+        type: apiError?.type || apiError?.code || 'unknown',
         model: fallbackModel,
       };
 

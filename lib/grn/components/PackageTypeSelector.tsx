@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { PACKAGE_TYPE_OPTIONS, type PackageTypeKey } from '@/app/constants/grnConstants';
 
 interface PackageTypeData {
@@ -27,7 +27,7 @@ export const PackageTypeSelector: React.FC<PackageTypeSelectorProps> = ({
     ([_, value]) => value && parseInt(value) > 0
   )?.[0] as PackageTypeKey | undefined;
 
-  const selectedQuantity = selectedType ? packageType[selectedType] : '';
+  const selectedQuantity = selectedType ? packageType[selectedType as keyof PackageTypeData] : '';
 
   const handleTypeChange = (newType: string) => {
     const key = newType as PackageTypeKey;
@@ -59,7 +59,7 @@ export const PackageTypeSelector: React.FC<PackageTypeSelectorProps> = ({
           <option value='' className='bg-slate-800'>
             Select package type...
           </option>
-          {PACKAGE_TYPE_OPTIONS.map(option => (
+          {PACKAGE_TYPE_OPTIONS.map((option: { key: string; label: string; weight: number }) => (
             <option key={option.key} value={option.key} className='bg-slate-800'>
               {option.label}
             </option>

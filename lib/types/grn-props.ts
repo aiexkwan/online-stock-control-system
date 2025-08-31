@@ -410,19 +410,27 @@ export function mergeGrnConfig<T extends Record<string, unknown>>(
     return defaultConfig;
   }
 
-  return {
+  const result: T = {
     ...defaultConfig,
     ...userConfig,
-    // Deep merge for nested objects
-    ...(userConfig.customClasses && defaultConfig.customClasses
-      ? {
-          customClasses: {
-            ...(defaultConfig.customClasses || {}),
-            ...(userConfig.customClasses || {}),
-          } as Record<string, string>,
-        }
-      : {}),
-  };
+  } as T;
+
+  // Deep merge for nested objects like customClasses if they exist
+  if (
+    'customClasses' in userConfig &&
+    'customClasses' in defaultConfig &&
+    userConfig.customClasses &&
+    defaultConfig.customClasses &&
+    typeof userConfig.customClasses === 'object' &&
+    typeof defaultConfig.customClasses === 'object'
+  ) {
+    (result as any).customClasses = {
+      ...(defaultConfig.customClasses as Record<string, unknown>),
+      ...(userConfig.customClasses as Record<string, unknown>),
+    };
+  }
+
+  return result;
 }
 
 /**

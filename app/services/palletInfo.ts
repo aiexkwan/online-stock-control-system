@@ -1,17 +1,9 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@/app/utils/supabase/client';
 import { format } from 'date-fns';
+import type { Database } from '@/types/database/supabase';
 
-// 使用延遲初始化以避免 SSR 問題
-let supabase: ReturnType<typeof createClient> | null = null;
-
-function getSupabase() {
-  if (!supabase && typeof window !== 'undefined') {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-    supabase = createClient(supabaseUrl, supabaseAnonKey);
-  }
-  return supabase;
-}
+// 使用專案統一的資料庫類型定義
+type PalletInfoRow = Database['public']['Tables']['record_palletinfo']['Row'];
 
 export interface PalletInfo {
   generate_time: string;
@@ -20,20 +12,15 @@ export interface PalletInfo {
   product_qty: number;
 }
 
-// Database record type from Supabase
-interface PalletInfoRecord {
-  generate_time: string;
-  plt_num: string;
-  product_code: string;
-  product_qty: number;
-}
-
 export async function getLatestPalletInfo(): Promise<PalletInfo[]> {
   try {
-    const client = getSupabase();
-    if (!client) {
-      throw new Error('Supabase client is not available in SSR environment');
+    // 確保只在客戶端環境中執行
+    if (typeof window === 'undefined') {
+      console.warn('[getLatestPalletInfo] Cannot run in server-side environment');
+      return [];
     }
+
+    const client = createClient();
 
     const { data, error } = await client
       .from('record_palletinfo')
@@ -46,10 +33,16 @@ export async function getLatestPalletInfo(): Promise<PalletInfo[]> {
       throw error;
     }
 
-    return (data as PalletInfoRecord[]).map(
-      (record: PalletInfoRecord): PalletInfo => ({
-        ...record,
+    if (!data) {
+      return [];
+    }
+
+    return (data as PalletInfoRow[]).map(
+      (record: PalletInfoRow): PalletInfo => ({
         generate_time: format(new Date(record.generate_time), 'dd-MMM-yy HH:mm'),
+        plt_num: record.plt_num,
+        product_code: record.product_code,
+        product_qty: record.product_qty,
       })
     );
   } catch (error) {

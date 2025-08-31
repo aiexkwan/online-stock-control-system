@@ -5,16 +5,17 @@
  * These types enable flexible composition while maintaining type safety.
  */
 
-import React from 'react';
-import {
-  // FormSubmissionData, // TODO: Remove if not used
-  // FormEventHandler, // TODO: Remove if not used
-  // UIEventHandler, // TODO: Remove if not used
-  // ComponentRegistryOperations, // TODO: Remove if not used
-  AnyComponentProps,
-  RenderPropsBase,
-} from '@/lib/types/auth-system';
+import * as React from 'react';
 // import { LoginFormData, RegisterFormData } from '../../context/LoginContext'; // TODO: Remove if not used
+
+// 本地類型定義以替代缺少的導入
+export interface AnyComponentProps {
+  [key: string]: unknown;
+}
+
+export interface RenderPropsBase<TContext = unknown> {
+  children?: React.ReactNode | ((context: TContext) => React.ReactNode);
+}
 
 // Base compound component props
 export interface BaseCompoundProps {
@@ -24,7 +25,9 @@ export interface BaseCompoundProps {
 }
 
 // Form compound component context with generic support
-export interface FormCompoundContext<TFormData = Record<string, string>> {
+export interface FormCompoundContext<
+  TFormData extends Record<string, unknown> = Record<string, string>,
+> {
   formType: 'login' | 'register' | 'reset' | 'change';
   isSubmitting: boolean;
   hasErrors: boolean;
@@ -166,20 +169,20 @@ export interface ComponentState {
 }
 
 // Event handler types for compound components
-// Re-export from auth-system types
-export type { FormEventHandler } from '@/lib/types/auth-system';
+// 本地事件處理器類型定義
+export type FormEventHandler = (event: React.FormEvent) => void;
 export type FieldEventHandler = (name: string, value: string) => void;
 export type ValidationEventHandler = (name: string, result: FieldValidationResult) => void;
-// Re-export from auth-system types
-export type { UIEventHandler } from '@/lib/types/auth-system';
+export type UIEventHandler = (event: React.SyntheticEvent) => void;
 
-// Compound component registry for dynamic composition
-// Re-export from auth-system types
-export type { ComponentRegistryOperations as ComponentRegistry } from '@/lib/types/auth-system';
-
-// Render props patterns
-// Re-export from auth-system types
-export type { RenderPropsBase } from '@/lib/types/auth-system';
+// 組件註冊表類型
+export interface ComponentRegistry {
+  register: (name: string, component: React.ComponentType<any>) => void;
+  unregister: (name: string) => void;
+  get<P = Record<string, unknown>>(
+    name: string
+  ): import('../../../../../lib/types/auth-system').RegisteredComponent<P> | undefined;
+}
 
 export interface FormRenderProps extends RenderPropsBase<FormCompoundContext> {}
 export interface FieldRenderProps

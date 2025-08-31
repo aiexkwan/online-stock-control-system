@@ -21,7 +21,10 @@ import {
   generateGlassmorphicCSSVariables,
   iconStyleSystem,
 } from './glassmorphic-integration';
-import { accessibleCardColors, validateTextContrast } from './accessibility-colors';
+import {
+  accessibleCardColors,
+  validateTextContrast as _validateTextContrast,
+} from './accessibility-colors';
 import { responsiveUtils } from './responsive-design';
 import visualGuidelines from './visual-guidelines';
 
@@ -70,11 +73,11 @@ export interface EnhancedGlassmorphicCardProps extends CardBaseProps {
 export const EnhancedGlassmorphicCard: React.FC<EnhancedGlassmorphicCardProps> = ({
   children,
   theme = 'operation',
-  variant = 'glass',
-  padding = 'base',
-  glassmorphicVariant = 'default',
+  variant: _variant = 'glass',
+  padding: _padding = 'base',
+  glassmorphicVariant: _glassmorphicVariant = 'default',
   borderGlow = false,
-  shadowIntensity = 'medium',
+  shadowIntensity: _shadowIntensity = 'medium',
   isHoverable = false,
   isLoading = false,
   isSelected = false,
@@ -82,7 +85,7 @@ export const EnhancedGlassmorphicCard: React.FC<EnhancedGlassmorphicCardProps> =
   status,
   animate = true,
   responsiveHide = [],
-  adaptiveContent = true,
+  adaptiveContent: _adaptiveContent = true,
   ariaLabel,
   role,
   tabIndex,
@@ -115,7 +118,7 @@ export const EnhancedGlassmorphicCard: React.FC<EnhancedGlassmorphicCardProps> =
   }, []);
 
   // 主題配置
-  const cardTheme = useMemo(() => cardThemes[theme], [theme]);
+  const _cardTheme = useMemo(() => cardThemes[theme], [theme]);
   const glassmorphicTheme = useMemo(() => glassmorphicThemes[theme], [theme]);
   const accessibleTheme = useMemo(() => accessibleCardColors[theme], [theme]);
   const visualConfig = useMemo(() => visualGuidelines.visual.categoryIdentifiers[theme], [theme]);

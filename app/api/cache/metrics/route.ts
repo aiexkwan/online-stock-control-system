@@ -23,12 +23,30 @@ export async function GET() {
     const cacheAdapter = getCacheAdapter();
     const cacheType = getCurrentCacheType();
 
-    // 並行獲取各種指標
-    const [cacheMetrics, cacheStats, adapterMetrics, isCacheConnected] = await Promise.all([
+    // 並行獲取各種指標，添加錯誤處理和類型安全檢查
+    const [cacheMetrics, cacheStats, adapterMetrics, isCacheConnected] = await Promise.allSettled([
       warehouseService.getCacheMetrics(),
       cacheAdapter.getStats(),
       cacheAdapter.getMetrics(),
       cacheAdapter.ping(),
+    ]).then(results => [
+      results[0].status === 'fulfilled' ? results[0].value : null,
+      results[1].status === 'fulfilled'
+        ? results[1].value
+        : { memory: '0KB', connections: 0, operations: 0 },
+      results[2].status === 'fulfilled'
+        ? results[2].value
+        : {
+            hits: 0,
+            misses: 0,
+            totalRequests: 0,
+            hitRate: 0,
+            avgResponseTime: 0,
+            errors: 0,
+            lastError: null,
+            lastErrorTime: null,
+          },
+      results[3].status === 'fulfilled' ? results[3].value : false,
     ]);
 
     const responseTime = Date.now() - startTime;
@@ -39,43 +57,116 @@ export async function GET() {
       responseTime: `${responseTime}ms`,
       version: 'v2.1-phase2-adaptive', // Phase 2.1 版本標識
 
-      // 緩存類型和狀態 (Phase 2.1 新增)
+      // 緩存類型和狀態 (Phase 2.1 新增) - 添加完整類型安全檢查
       cacheType: cacheType,
       cache: {
         type: cacheType,
-        connected: isCacheConnected,
-        memory: cacheStats.memory,
-        connections: cacheStats.connections,
-        operations: cacheStats.operations,
-        hitRate: cacheStats.hitRate || 0,
+        connected: Boolean(isCacheConnected),
+        memory:
+          cacheStats &&
+          typeof cacheStats === 'object' &&
+          'memory' in cacheStats &&
+          typeof cacheStats.memory === 'string'
+            ? cacheStats.memory
+            : '0KB',
+        connections:
+          cacheStats &&
+          typeof cacheStats === 'object' &&
+          'connections' in cacheStats &&
+          typeof cacheStats.connections === 'number'
+            ? cacheStats.connections
+            : 0,
+        operations:
+          cacheStats &&
+          typeof cacheStats === 'object' &&
+          'operations' in cacheStats &&
+          typeof cacheStats.operations === 'number'
+            ? cacheStats.operations
+            : 0,
+        hitRate:
+          cacheStats &&
+          typeof cacheStats === 'object' &&
+          'hitRate' in cacheStats &&
+          typeof cacheStats.hitRate === 'number'
+            ? cacheStats.hitRate
+            : 0,
       },
 
-      // 緩存性能指標
+      // 緩存性能指標 - 添加完整類型安全檢查
       performance: {
-        hits: adapterMetrics.hits,
-        misses: adapterMetrics.misses,
-        totalRequests: adapterMetrics.totalRequests,
-        hitRate: adapterMetrics.hitRate.toFixed(2) + '%',
-        avgResponseTime: adapterMetrics.avgResponseTime.toFixed(2) + 'ms',
-        errorRate:
-          adapterMetrics.errors > 0
-            ? ((adapterMetrics.errors / adapterMetrics.totalRequests) * 100).toFixed(2) + '%'
+        hits:
+          adapterMetrics &&
+          typeof adapterMetrics === 'object' &&
+          'hits' in adapterMetrics &&
+          typeof adapterMetrics.hits === 'number'
+            ? adapterMetrics.hits
+            : 0,
+        misses:
+          adapterMetrics &&
+          typeof adapterMetrics === 'object' &&
+          'misses' in adapterMetrics &&
+          typeof adapterMetrics.misses === 'number'
+            ? adapterMetrics.misses
+            : 0,
+        totalRequests:
+          adapterMetrics &&
+          typeof adapterMetrics === 'object' &&
+          'totalRequests' in adapterMetrics &&
+          typeof adapterMetrics.totalRequests === 'number'
+            ? adapterMetrics.totalRequests
+            : 0,
+        hitRate:
+          adapterMetrics &&
+          typeof adapterMetrics === 'object' &&
+          'hitRate' in adapterMetrics &&
+          typeof adapterMetrics.hitRate === 'number'
+            ? adapterMetrics.hitRate.toFixed(2) + '%'
             : '0%',
+        avgResponseTime:
+          adapterMetrics &&
+          typeof adapterMetrics === 'object' &&
+          'avgResponseTime' in adapterMetrics &&
+          typeof adapterMetrics.avgResponseTime === 'number'
+            ? adapterMetrics.avgResponseTime.toFixed(2) + 'ms'
+            : '0ms',
+        errorRate: (() => {
+          const errors =
+            adapterMetrics &&
+            typeof adapterMetrics === 'object' &&
+            'errors' in adapterMetrics &&
+            typeof adapterMetrics.errors === 'number'
+              ? adapterMetrics.errors
+              : 0;
+          const totalRequests =
+            adapterMetrics &&
+            typeof adapterMetrics === 'object' &&
+            'totalRequests' in adapterMetrics &&
+            typeof adapterMetrics.totalRequests === 'number'
+              ? adapterMetrics.totalRequests
+              : 1;
+          return errors > 0 ? ((errors / totalRequests) * 100).toFixed(2) + '%' : '0%';
+        })(),
       },
 
-      // 系統健康指標
+      // 系統健康指標 - 添加完整類型安全檢查
       health: {
-        cache: isCacheConnected ? 'healthy' : 'error',
-        lastError: adapterMetrics.lastError,
-        lastErrorTime: adapterMetrics.lastErrorTime,
+        cache: Boolean(isCacheConnected) ? 'healthy' : 'error',
+        lastError:
+          adapterMetrics && typeof adapterMetrics === 'object' && 'lastError' in adapterMetrics
+            ? adapterMetrics.lastError
+            : null,
+        lastErrorTime:
+          adapterMetrics && typeof adapterMetrics === 'object' && 'lastErrorTime' in adapterMetrics
+            ? adapterMetrics.lastErrorTime
+            : null,
         uptime: process.uptime(),
         memoryUsage: process.memoryUsage(),
       },
 
-      // Phase 2.1: 適應性緩存優化建議
+      // Phase 2.1: 適應性緩存優化建議 - 添加類型安全檢查
       recommendations: generateAdaptiveCacheRecommendations(
-        adapterMetrics as unknown as Record<string, unknown>,
-        cacheStats as unknown as Record<string, unknown>,
+        extractAdapterMetrics(adapterMetrics),
+        extractCacheStats(cacheStats),
         cacheType
       ),
     });
@@ -102,10 +193,10 @@ export async function GET() {
  * 清除指定的緩存 (開發/管理用途) - 智能緩存適配器支援
  * Security: Requires authentication and admin role
  */
-export async function DELETE(request: Request) {
+export async function DELETE(_request: Request) {
   try {
     // Rate limiting check
-    const rateLimitResult = await cacheOperationLimiter(request);
+    const rateLimitResult = await cacheOperationLimiter(_request);
     if (!rateLimitResult.success) {
       return NextResponse.json(
         {
@@ -125,7 +216,7 @@ export async function DELETE(request: Request) {
     }
 
     // Authentication check
-    const cookieStore = await cookies();
+    await cookies(); // Ensure cookies are available
     const supabase = await createClient();
     const {
       data: { user },
@@ -144,20 +235,20 @@ export async function DELETE(request: Request) {
 
     // Admin role check (in production)
     if (process.env.NODE_ENV === 'production') {
-      // Check if user has admin role
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
+      // Check if user has admin position using data_id table
+      const { data: userInfo, error: userError } = await supabase
+        .from('data_id')
+        .select('position, department')
+        .eq('email', user.email || '')
         .single();
 
-      if (!profile || profile.role !== 'admin') {
+      if (userError || !userInfo || userInfo.position !== 'Admin') {
         // Log unauthorized attempt
         console.warn('[SECURITY] Unauthorized cache clear attempt:', {
           userId: user.id,
           email: user.email,
           timestamp: new Date().toISOString(),
-          ip: request.headers.get('x-forwarded-for') || 'unknown',
+          ip: _request.headers.get('x-forwarded-for') || 'unknown',
         });
 
         return NextResponse.json(
@@ -180,7 +271,7 @@ export async function DELETE(request: Request) {
     });
 
     // Continue with original logic after authentication
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(_request.url);
     const type = searchParams.get('type') as 'summary' | 'dashboard' | 'inventory' | 'all';
     const pattern = searchParams.get('pattern');
 
@@ -239,10 +330,10 @@ export async function DELETE(request: Request) {
  * 預熱緩存 (管理用途)
  * Security: Requires authentication
  */
-export async function POST(request: Request) {
+export async function POST(_request: Request) {
   try {
     // Rate limiting check
-    const rateLimitResult = await cacheOperationLimiter(request);
+    const rateLimitResult = await cacheOperationLimiter(_request);
     if (!rateLimitResult.success) {
       return NextResponse.json(
         {
@@ -262,7 +353,7 @@ export async function POST(request: Request) {
     }
 
     // Authentication check
-    const cookieStore = await cookies();
+    await cookies(); // Ensure cookies are available
     const supabase = await createClient();
     const {
       data: { user },
@@ -315,18 +406,103 @@ export async function POST(request: Request) {
 }
 
 /**
+ * 從複雜類型中安全提取 adapter metrics
+ */
+function extractAdapterMetrics(metrics: unknown): {
+  hitRate?: number;
+  avgResponseTime?: number;
+  errors?: number;
+  hits?: number;
+  misses?: number;
+  totalRequests?: number;
+} {
+  const defaultMetrics = {
+    hitRate: 0,
+    avgResponseTime: 0,
+    errors: 0,
+    hits: 0,
+    misses: 0,
+    totalRequests: 0,
+  };
+
+  if (!metrics || typeof metrics !== 'object') {
+    return defaultMetrics;
+  }
+
+  const metricsObj = metrics as Record<string, unknown>;
+
+  return {
+    hitRate: typeof metricsObj.hitRate === 'number' ? metricsObj.hitRate : defaultMetrics.hitRate,
+    avgResponseTime:
+      typeof metricsObj.avgResponseTime === 'number'
+        ? metricsObj.avgResponseTime
+        : defaultMetrics.avgResponseTime,
+    errors: typeof metricsObj.errors === 'number' ? metricsObj.errors : defaultMetrics.errors,
+    hits: typeof metricsObj.hits === 'number' ? metricsObj.hits : defaultMetrics.hits,
+    misses: typeof metricsObj.misses === 'number' ? metricsObj.misses : defaultMetrics.misses,
+    totalRequests:
+      typeof metricsObj.totalRequests === 'number'
+        ? metricsObj.totalRequests
+        : defaultMetrics.totalRequests,
+  };
+}
+
+/**
+ * 從複雜類型中安全提取 cache stats
+ */
+function extractCacheStats(stats: unknown): {
+  memory?: string;
+  connections?: number;
+  operations?: number;
+  hitRate?: number;
+} {
+  const defaultStats = { memory: '0KB', connections: 0, operations: 0, hitRate: 0 };
+
+  if (!stats || typeof stats !== 'object') {
+    return defaultStats;
+  }
+
+  const statsObj = stats as Record<string, unknown>;
+
+  return {
+    memory: typeof statsObj.memory === 'string' ? statsObj.memory : defaultStats.memory,
+    connections:
+      typeof statsObj.connections === 'number' ? statsObj.connections : defaultStats.connections,
+    operations:
+      typeof statsObj.operations === 'number' ? statsObj.operations : defaultStats.operations,
+    hitRate: typeof statsObj.hitRate === 'number' ? statsObj.hitRate : defaultStats.hitRate,
+  };
+}
+
+/**
  * Phase 2.1: 生成適應性緩存優化建議
  * 支援 Redis 和 Memory 緩存的智能分析
  */
 function generateAdaptiveCacheRecommendations(
-  metrics: Record<string, unknown>,
-  stats: Record<string, unknown>,
+  metrics: {
+    hitRate?: number;
+    avgResponseTime?: number;
+    errors?: number;
+    hits?: number;
+    misses?: number;
+    totalRequests?: number;
+  } | null,
+  stats: { memory?: string; connections?: number; operations?: number; hitRate?: number } | null,
   cacheType: string
 ): string[] {
-  const recommendations = [];
+  const recommendations: string[] = [];
 
-  // 命中率建議 (通用)
-  const hitRate = typeof metrics.hitRate === 'number' ? metrics.hitRate : 0;
+  // 類型安全的輔助函數
+  const safeGetNumber = (value: number | undefined, defaultValue: number = 0): number => {
+    return typeof value === 'number' && !isNaN(value) ? value : defaultValue;
+  };
+
+  const safeGetString = (value: string | undefined, defaultValue: string = ''): string => {
+    return typeof value === 'string' ? value : defaultValue;
+  };
+
+  // 命中率建議 (通用) - 添加空值檢查
+  const hitRate = safeGetNumber(metrics?.hitRate);
   if (hitRate < 70) {
     recommendations.push(
       `Cache hit rate is below 70% (${cacheType} cache). Consider increasing TTL or pre-warming more data.`
@@ -337,8 +513,8 @@ function generateAdaptiveCacheRecommendations(
     );
   }
 
-  // 響應時間建議 (適應性)
-  const avgResponseTime = typeof metrics.avgResponseTime === 'number' ? metrics.avgResponseTime : 0;
+  // 響應時間建議 (適應性) - 添加空值檢查
+  const avgResponseTime = safeGetNumber(metrics?.avgResponseTime);
   const responseTimeThreshold = cacheType === 'memory' ? 5 : 50; // 內存緩存標準更嚴格
 
   if (avgResponseTime > responseTimeThreshold) {
@@ -353,21 +529,22 @@ function generateAdaptiveCacheRecommendations(
     }
   }
 
-  // 錯誤率建議 (通用)
-  const errors = typeof metrics.errors === 'number' ? metrics.errors : 0;
+  // 錯誤率建議 (通用) - 添加空值檢查
+  const errors = safeGetNumber(metrics?.errors);
   if (errors > 0) {
     recommendations.push(
       `${errors} cache errors detected with ${cacheType} cache. Check connectivity and logs.`
     );
   }
 
-  // 內存使用建議 (適應性)
-  if (typeof stats.memory === 'string') {
+  // 內存使用建議 (適應性) - 添加空值檢查
+  const memory = safeGetString(stats?.memory);
+  if (memory) {
     if (cacheType === 'memory') {
       // 內存緩存特定建議
-      if (stats.memory.includes('KB')) {
-        const memoryKB = parseFloat(stats.memory.replace('KB', ''));
-        if (memoryKB > 10000) {
+      if (memory.includes('KB')) {
+        const memoryKB = parseFloat(memory.replace('KB', ''));
+        if (!isNaN(memoryKB) && memoryKB > 10000) {
           // 10MB
           recommendations.push(
             'Memory cache usage is high. Consider implementing more aggressive LRU eviction or reducing TTL.'
@@ -376,9 +553,9 @@ function generateAdaptiveCacheRecommendations(
       }
     } else if (cacheType === 'redis') {
       // Redis 特定建議
-      if (stats.memory.includes('MB')) {
-        const memoryMB = parseFloat(stats.memory.replace('MB', ''));
-        if (memoryMB > 100) {
+      if (memory.includes('MB')) {
+        const memoryMB = parseFloat(memory.replace('MB', ''));
+        if (!isNaN(memoryMB) && memoryMB > 100) {
           recommendations.push(
             'Redis memory usage is high. Consider implementing cache eviction policies or data compression.'
           );
@@ -387,8 +564,8 @@ function generateAdaptiveCacheRecommendations(
     }
   }
 
-  // 連接數建議 (Redis 特定)
-  const connections = typeof stats.connections === 'number' ? stats.connections : 0;
+  // 連接數建議 (Redis 特定) - 添加空值檢查
+  const connections = safeGetNumber(stats?.connections);
   if (cacheType === 'redis' && connections > 50) {
     recommendations.push(
       'High number of Redis connections. Consider connection pooling optimization.'

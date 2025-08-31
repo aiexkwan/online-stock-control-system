@@ -36,7 +36,7 @@ description: 對指定的檔案或組件進行全面的循序深度分析，以�
 2. **第1步：靜態分析 (由 [code-reviewer](../agents/code-reviewer.md) 執行)**
    - **目標**: 檢查檔案本身的屬性，判斷其是否符合已知的「技術債務」特徵。
    - **檢查點**:
-     - 是否符合「清理對象識別標準」（如命名包含 `_legacy`, `_bak`）。
+     - 是否符合「清理對象識別標準」:「有否真正地被使用」，而非「設計好不好」，「組件有否好處」。
      - 是否使用了已被棄用的技術或庫。
 
 3. **第2步：依賴分析 (由 [frontend-developer](../agents/frontend-developer.md) 和 [backend-architect](../agents/backend-architect.md) 協同執行)**
@@ -68,7 +68,7 @@ description: 對指定的檔案或組件進行全面的循序深度分析，以�
 在分析階段，代理應根據以下一個或多個標準，將檔案或組件標記為潛在的清理對象：
 
 - **零引用 (Zero-Reference)**: 檔案在專案中沒有任何有效的 import 或引用。
-- **命名約定 (Naming Convention)**: 檔案或目錄名稱包含 `_legacy`, `_bak`, `_old`, `v1`, `archive` 等關鍵字。
+- **實用原則**: 「有否真正地被使用」，而非「設計好不好」，「組件有否好處」
 - **過時技術 (Outdated Technology)**: 使用了已被官方棄用的函式庫或 API。
 - **關聯的功能已下線 (Disabled Feature Association)**: 代碼僅被一個已經下線或永久停用的功能標記 (Feature Flag) 所使用。
 

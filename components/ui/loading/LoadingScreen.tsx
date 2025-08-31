@@ -6,7 +6,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Transition } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 interface LoadingScreenProps {
   isLoading: boolean;
@@ -153,12 +154,12 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
 
 // Loading Messages Component
 const LoadingMessages: React.FC = () => {
-  const messages = [
+  const messages: readonly string[] = [
     'Initializing components...',
     'Loading your data...',
     'Preparing interface...',
     'Almost there...',
-  ];
+  ] as const;
 
   const [currentMessage, setCurrentMessage] = useState(0);
 
@@ -186,13 +187,17 @@ const LoadingMessages: React.FC = () => {
 };
 
 // Skeleton Loading Component for gradual content reveal
-export const SkeletonCard: React.FC<{ className?: string }> = ({ className = '' }) => {
+interface SkeletonCardProps {
+  className?: string;
+}
+
+export const SkeletonCard: React.FC<SkeletonCardProps> = ({ className }) => {
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      transition={{ duration: 0.2 }}
-      className={`${className} animate-pulse`}
+      transition={{ duration: 0.2 } satisfies Transition}
+      className={cn('animate-pulse', className)}
     >
       <div className='h-full rounded-lg bg-slate-800/50 p-6'>
         <div className='mb-4 h-4 w-3/4 rounded bg-slate-700'></div>
@@ -204,20 +209,28 @@ export const SkeletonCard: React.FC<{ className?: string }> = ({ className = '' 
 };
 
 // Fade In Container for individual elements
-export const FadeInContainer: React.FC<{
+interface FadeInContainerProps {
   children: React.ReactNode;
   delay?: number;
   className?: string;
-}> = ({ children, delay = 0, className = '' }) => {
+}
+
+export const FadeInContainer: React.FC<FadeInContainerProps> = ({
+  children,
+  delay = 0,
+  className,
+}) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{
-        duration: 0.3,
-        delay,
-        ease: [0.25, 0.1, 0.25, 1], // Custom easing
-      }}
+      transition={
+        {
+          duration: 0.3,
+          delay,
+          ease: [0.25, 0.1, 0.25, 1] as const, // Custom easing
+        } satisfies Transition
+      }
       className={className}
     >
       {children}

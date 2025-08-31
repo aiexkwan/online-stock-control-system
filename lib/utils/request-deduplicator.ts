@@ -9,7 +9,7 @@ interface PendingRequest<T = unknown> {
 }
 
 class RequestDeduplicator {
-  private pendingRequests = new Map<string, PendingRequest>();
+  private pendingRequests = new Map<string, PendingRequest<unknown>>();
   private readonly TTL = 5000; // 5 秒內的相同請求會被去重
 
   /**
@@ -49,7 +49,7 @@ class RequestDeduplicator {
     this.pendingRequests.set(key, {
       promise,
       timestamp: Date.now(),
-    } as PendingRequest<T>);
+    });
 
     return promise;
   }

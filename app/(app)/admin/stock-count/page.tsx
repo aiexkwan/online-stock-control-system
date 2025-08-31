@@ -56,28 +56,28 @@ export default function AdminStockCountPage() {
         body: JSON.stringify(requestBody),
       });
 
-      const result = await response.json();
+      const _result = await response.json();
 
-      if (!result.success) {
-        toast.error(result.error || 'Processing failed');
+      if (!_result.success) {
+        toast.error(_result.error || 'Processing failed');
         return;
       }
 
       // 設置結果數據
       const data: CountData = {
-        plt_num: result.data.plt_num,
-        product_code: result.data.product_code,
-        product_desc: result.data.product_desc,
-        remain_qty: result.data.remain_qty || 0,
-        current_remain_qty: result.data.current_remain_qty,
-        need_input: result.data.need_input,
+        plt_num: _result.data.plt_num,
+        product_code: _result.data.product_code,
+        product_desc: _result.data.product_desc,
+        remain_qty: _result.data.remain_qty || 0,
+        current_remain_qty: _result.data.current_remain_qty,
+        need_input: _result.data.need_input,
       };
 
       setCountData(data);
 
       if (data.need_input) {
         setState('input');
-        if (result.data.is_first_count) {
+        if (_result.data.is_first_count) {
           toast.info(
             `First count for ${data.product_code}. Current stock: ${data.current_remain_qty}`
           );
@@ -117,10 +117,10 @@ export default function AdminStockCountPage() {
         }),
       });
 
-      const result = await response.json();
+      const _result = await response.json();
 
-      if (!result.success) {
-        toast.error(result.error || 'Count submission failed');
+      if (!_result.success) {
+        toast.error(_result.error || 'Count submission failed');
         return;
       }
 
@@ -128,8 +128,8 @@ export default function AdminStockCountPage() {
         prev
           ? {
               ...prev,
-              remain_qty: result.data.remain_qty,
-              product_desc: result.data.product_desc || prev.product_desc,
+              remain_qty: _result.data.remain_qty,
+              product_desc: _result.data.product_desc || prev.product_desc,
               need_input: false,
             }
           : null

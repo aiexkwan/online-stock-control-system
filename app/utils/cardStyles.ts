@@ -39,7 +39,7 @@ export const CardStyles = {
     aco_order_progress: '',
     finished_product: '',
     material_received: '',
-    ask_database: '',
+    askdatabase: '',
     void_pallet: '',
     upload_files: '',
     reports: '',

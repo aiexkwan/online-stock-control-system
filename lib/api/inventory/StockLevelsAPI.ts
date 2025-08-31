@@ -4,11 +4,11 @@
  */
 
 import { useState, useEffect } from 'react';
-import { createClient } from '@/app/utils/supabase/client';
+import { createClient } from '../../../app/utils/supabase/client';
 import { DataAccessLayer, DataAccessConfig } from '../core/DataAccessStrategy';
 
 // Type definitions
-export interface StockLevelParams {
+export interface StockLevelParams extends Record<string, unknown> {
   warehouse?: string;
   productCode?: string;
   minQty?: number;
@@ -30,7 +30,7 @@ export interface StockLevelItem {
   palletCount: number;
 }
 
-export interface StockLevelResult {
+export interface StockLevelResult extends Record<string, unknown> {
   items: StockLevelItem[];
   total: number;
   aggregates: {
@@ -53,54 +53,64 @@ export class StockLevelsAPI extends DataAccessLayer<StockLevelParams, StockLevel
    */
   async serverFetch(params: StockLevelParams): Promise<StockLevelResult> {
     try {
-      // Use direct Supabase query
+      // Use direct Supabase query with type-safe approach
       const supabase = createClient();
 
-      let query = supabase
+      // Build query with explicit any typing to avoid deep instantiation
+      let query: any = supabase
         .from('data_code')
         .select('*')
         .order(params.sortBy || 'product_code');
 
-      // Apply filters
-      if (params.warehouse) {
+      // Apply filters with proper type safety
+      if (typeof params.warehouse === 'string' && params.warehouse.trim()) {
         query = query.like('current_plt_loc', `${params.warehouse}%`);
       }
-      if (params.productCode) {
-        // Split query to avoid deep type instantiation
-        const filteredQuery: any = query.eq('product_code', params.productCode);
-        query = filteredQuery;
+
+      if (typeof params.productCode === 'string' && params.productCode.trim()) {
+        query = query.eq('product_code', params.productCode);
       }
-      if (params.minQty !== undefined) {
+
+      if (typeof params.minQty === 'number' && !isNaN(params.minQty)) {
         query = query.gte('product_qty', params.minQty);
       }
-      if (params.maxQty !== undefined) {
+
+      if (typeof params.maxQty === 'number' && !isNaN(params.maxQty)) {
         query = query.lte('product_qty', params.maxQty);
       }
-      if (!params.includeZeroStock) {
+
+      if (params.includeZeroStock !== true) {
         query = query.gt('product_qty', 0);
       }
 
-      // Pagination
-      const limit = params.limit || 50;
-      const offset = params.offset || 0;
+      // Apply pagination
+      const limit = typeof params.limit === 'number' && params.limit > 0 ? params.limit : 50;
+      const offset = typeof params.offset === 'number' && params.offset >= 0 ? params.offset : 0;
       query = query.range(offset, offset + limit - 1);
 
       const { data: products, error: queryError, count } = await query;
 
-      if (queryError) throw queryError;
+      if (queryError) {
+        throw new Error(`Database query error: ${queryError.message}`);
+      }
 
-      // Transform and aggregate data
-      const items = this.transformProducts(products || []);
+      // Validate and transform data
+      const validatedProducts = Array.isArray(products) ? products : [];
+      const items = this.transformProducts(validatedProducts);
       const aggregates = this.calculateAggregates(items);
 
       return {
         items,
-        total: count || 0,
+        total: typeof count === 'number' ? count : items.length,
         aggregates,
       };
     } catch (error) {
       console.error('Error in serverFetch:', error);
-      throw error;
+      // Re-throw with enhanced context
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(`Unknown error occurred during stock levels fetch: ${String(error)}`);
     }
   }
 
@@ -122,11 +132,8 @@ export class StockLevelsAPI extends DataAccessLayer<StockLevelParams, StockLevel
       headers: {
         'Content-Type': 'application/json',
       },
-      // Enable caching for GET requests
+      // Enable caching for GET requests (standard fetch API only)
       cache: 'force-cache',
-      next: {
-        revalidate: 60, // Revalidate every 60 seconds
-      },
     });
 
     if (!response.ok) {
@@ -144,11 +151,18 @@ export class StockLevelsAPI extends DataAccessLayer<StockLevelParams, StockLevel
     // - Multiple filters applied
     // - Large data set expected (no specific product filter)
     // - Sorting by calculated fields (value)
-    const filterCount = [params.warehouse, params.productCode, params.minQty, params.maxQty].filter(
-      Boolean
-    ).length;
+    const validFilters = [
+      typeof params.warehouse === 'string' && params.warehouse.trim(),
+      typeof params.productCode === 'string' && params.productCode.trim(),
+      typeof params.minQty === 'number' && !isNaN(params.minQty),
+      typeof params.maxQty === 'number' && !isNaN(params.maxQty),
+    ];
 
-    return filterCount >= 2 || !params.productCode || params.sortBy === 'value';
+    const filterCount = validFilters.filter(Boolean).length;
+    const hasProductCode = typeof params.productCode === 'string' && params.productCode.trim();
+    const isValueSorting = params.sortBy === 'value';
+
+    return filterCount >= 2 || !hasProductCode || isValueSorting;
   }
 
   /**
@@ -156,47 +170,161 @@ export class StockLevelsAPI extends DataAccessLayer<StockLevelParams, StockLevel
    * Strategy 4: unknown + type narrowing with safe accessors
    */
   private transformProducts(products: Record<string, unknown>[]): StockLevelItem[] {
-    return products.map(product => {
-      // Safe type narrowing for product data
-      const productCode =
-        typeof product.product_code === 'string' ? product.product_code : 'Unknown';
-      const productDesc = typeof product.product_desc === 'string' ? product.product_desc : '';
-      const currentPltLoc =
-        typeof product.current_plt_loc === 'string' ? product.current_plt_loc : 'Unknown';
-      const productQty = typeof product.product_qty === 'number' ? product.product_qty : 0;
-      const unitPrice = typeof product.unit_price === 'number' ? product.unit_price : 0;
-      const updatedAt =
-        typeof product.updated_at === 'string'
-          ? product.updated_at
-          : typeof product.created_at === 'string'
-            ? product.created_at
-            : new Date().toISOString();
+    if (!Array.isArray(products)) {
+      console.warn('transformProducts received non-array data, returning empty array');
+      return [];
+    }
 
-      return {
-        productCode,
-        productDesc,
-        warehouse: currentPltLoc.charAt(0) || 'Unknown',
-        location: currentPltLoc,
-        quantity: productQty,
-        value: productQty * unitPrice,
-        lastUpdated: updatedAt,
-        palletCount: 1, // Each record represents one pallet
-      };
+    return products.map((product, index) => {
+      try {
+        // Safe type narrowing for product data with validation
+        const productCode = this.validateStringField(product.product_code, `Unknown-${index}`);
+        const productDesc = this.validateStringField(product.product_desc, '');
+        const currentPltLoc = this.validateStringField(product.current_plt_loc, 'Unknown');
+        const productQty = this.validateNumberField(product.product_qty, 0);
+        const unitPrice = this.validateNumberField(product.unit_price, 0);
+
+        // Handle timestamp with fallback chain
+        const updatedAt = this.validateTimestamp(
+          product.updated_at ?? product.created_at ?? new Date().toISOString()
+        );
+
+        // Calculate warehouse from location with safety checks
+        const warehouse = currentPltLoc.length > 0 ? currentPltLoc.charAt(0) : 'U';
+
+        // Ensure value calculation is safe
+        const value = Math.max(0, productQty * Math.max(0, unitPrice));
+
+        return {
+          productCode,
+          productDesc,
+          warehouse,
+          location: currentPltLoc,
+          quantity: productQty,
+          value,
+          lastUpdated: updatedAt,
+          palletCount: 1, // Each record represents one pallet
+        };
+      } catch (error) {
+        console.warn(`Error transforming product at index ${index}:`, error);
+        // Return safe fallback item
+        return {
+          productCode: `Error-${index}`,
+          productDesc: 'Data transformation error',
+          warehouse: 'E',
+          location: 'ERROR',
+          quantity: 0,
+          value: 0,
+          lastUpdated: new Date().toISOString(),
+          palletCount: 0,
+        };
+      }
     });
   }
 
   /**
-   * Calculate aggregates from items
+   * Validate and normalize string fields
+   */
+  private validateStringField(value: unknown, fallback: string): string {
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+    return fallback;
+  }
+
+  /**
+   * Validate and normalize number fields
+   */
+  private validateNumberField(value: unknown, fallback: number): number {
+    if (typeof value === 'number' && !isNaN(value) && isFinite(value)) {
+      return Math.max(0, value); // Ensure non-negative
+    }
+    if (typeof value === 'string') {
+      const parsed = parseFloat(value);
+      if (!isNaN(parsed) && isFinite(parsed)) {
+        return Math.max(0, parsed);
+      }
+    }
+    return fallback;
+  }
+
+  /**
+   * Validate and normalize timestamp fields
+   */
+  private validateTimestamp(value: unknown): string {
+    if (typeof value === 'string' && value.trim()) {
+      try {
+        const date = new Date(value.trim());
+        if (!isNaN(date.getTime())) {
+          return date.toISOString();
+        }
+      } catch {
+        // Fall through to default
+      }
+    }
+    return new Date().toISOString();
+  }
+
+  /**
+   * Calculate aggregates from items with type safety
    */
   private calculateAggregates(items: StockLevelItem[]): StockLevelResult['aggregates'] {
-    const uniqueProducts = new Set(items.map(i => i.productCode));
+    if (!Array.isArray(items) || items.length === 0) {
+      return {
+        totalQuantity: 0,
+        totalValue: 0,
+        totalPallets: 0,
+        uniqueProducts: 0,
+      };
+    }
 
-    return {
-      totalQuantity: items.reduce((sum, item) => sum + item.quantity, 0),
-      totalValue: items.reduce((sum, item) => sum + item.value, 0),
-      totalPallets: items.length,
-      uniqueProducts: uniqueProducts.size,
-    };
+    try {
+      const uniqueProducts = new Set<string>();
+      let totalQuantity = 0;
+      let totalValue = 0;
+      let totalPallets = 0;
+
+      for (const item of items) {
+        // Validate item structure and add to aggregates
+        if (item && typeof item === 'object') {
+          // Safe quantity aggregation
+          if (typeof item.quantity === 'number' && isFinite(item.quantity)) {
+            totalQuantity += Math.max(0, item.quantity);
+          }
+
+          // Safe value aggregation
+          if (typeof item.value === 'number' && isFinite(item.value)) {
+            totalValue += Math.max(0, item.value);
+          }
+
+          // Safe pallet count aggregation
+          if (typeof item.palletCount === 'number' && isFinite(item.palletCount)) {
+            totalPallets += Math.max(0, item.palletCount);
+          }
+
+          // Safe product code collection
+          if (typeof item.productCode === 'string' && item.productCode.trim()) {
+            uniqueProducts.add(item.productCode.trim());
+          }
+        }
+      }
+
+      return {
+        totalQuantity: Math.round(totalQuantity * 100) / 100, // Round to 2 decimal places
+        totalValue: Math.round(totalValue * 100) / 100,
+        totalPallets: Math.round(totalPallets),
+        uniqueProducts: uniqueProducts.size,
+      };
+    } catch (error) {
+      console.warn('Error calculating aggregates:', error);
+      // Return safe fallback
+      return {
+        totalQuantity: 0,
+        totalValue: 0,
+        totalPallets: items.length, // At least count the items
+        uniqueProducts: 0,
+      };
+    }
   }
 }
 
@@ -205,16 +333,16 @@ export function createStockLevelsAPI(): StockLevelsAPI {
   return new StockLevelsAPI();
 }
 
-// React Hook for client-side usage with SWR
+// React Hook for client-side usage
 export function useStockLevels(params: StockLevelParams, config?: DataAccessConfig) {
   const [data, setData] = useState<StockLevelResult | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Extract complex expression to separate variable for static checking
-  const paramsKey = JSON.stringify(params);
-
   useEffect(() => {
+    setIsLoading(true);
+    setError(null);
+
     const api = createStockLevelsAPI();
 
     api
@@ -225,7 +353,21 @@ export function useStockLevels(params: StockLevelParams, config?: DataAccessConf
       .then(setData)
       .catch(setError)
       .finally(() => setIsLoading(false));
-  }, [params, paramsKey, config]);
+  }, [
+    params.warehouse,
+    params.productCode,
+    params.minQty,
+    params.maxQty,
+    params.includeZeroStock,
+    params.sortBy,
+    params.limit,
+    params.offset,
+    config?.strategy,
+    config?.priority,
+    config?.realtime,
+    config,
+    params,
+  ]);
 
   return { data, error, isLoading };
 }

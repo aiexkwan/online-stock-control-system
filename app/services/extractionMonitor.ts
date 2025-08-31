@@ -13,7 +13,7 @@
  */
 
 import { EventEmitter } from 'events';
-import { systemLogger } from '@/lib/logger';
+import { systemLogger } from '../../lib/logger';
 
 // 提取結果監控接口
 export interface ExtractionResult {
@@ -196,7 +196,6 @@ export class ExtractionMonitor extends EventEmitter {
     const tokenEfficiency = totalOrders > 0 ? totalTokens / totalOrders : 0;
 
     // 準確性計算
-    const totalCorrected = recentExtractions.reduce((sum, r) => sum + (r.correctedCount || 0), 0);
     const totalInvalid = recentExtractions.reduce((sum, r) => sum + (r.invalidCount || 0), 0);
     const accuracyRate = totalOrders > 0 ? ((totalOrders - totalInvalid) / totalOrders) * 100 : 0;
 
@@ -521,9 +520,9 @@ export class ExtractionMonitor extends EventEmitter {
       return;
     }
 
-    setInterval(() => {
+    setInterval(async () => {
       const metrics = this.getMetrics();
-      const health = this.checkHealthThresholds();
+      const health = await this.checkHealthThresholds();
 
       systemLogger.info(
         {

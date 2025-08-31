@@ -105,10 +105,26 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        Root: ({ className, rootRef, ...props }) => {
+        Root: ({
+          className,
+          rootRef,
+          ...props
+        }: {
+          className?: string;
+          rootRef?: React.RefObject<HTMLDivElement>;
+          [key: string]: unknown;
+        }) => {
           return <div data-slot='calendar' ref={rootRef} className={cn(className)} {...props} />;
         },
-        Chevron: ({ className, orientation, ...props }) => {
+        Chevron: ({
+          className,
+          orientation,
+          ...props
+        }: {
+          className?: string;
+          orientation?: 'left' | 'right' | 'up' | 'down';
+          [key: string]: unknown;
+        }) => {
           if (orientation === 'left') {
             return <ChevronLeftIcon className={cn('size-4', className)} {...props} />;
           }
@@ -120,11 +136,11 @@ function Calendar({
           return <ChevronDownIcon className={cn('size-4', className)} {...props} />;
         },
         DayButton: CalendarDayButton,
-        WeekNumber: ({ children, ...props }) => {
+        WeekNumber: ({ week, ...props }) => {
           return (
             <td {...props}>
               <div className='flex size-[--cell-size] items-center justify-center text-center'>
-                {children}
+                {week.weekNumber}
               </div>
             </td>
           );
@@ -149,21 +165,20 @@ function CalendarDayButton({
     if (modifiers.focused) ref.current?.focus();
   }, [modifiers.focused]);
 
-  // Fix aria attribute type conversions
+  // Clean up aria attributes - React handles string/boolean conversion automatically
+  const { 'aria-expanded': ariaExpanded, 'aria-pressed': ariaPressed, ...restProps } = props;
   const buttonProps = {
-    ...props,
-    'aria-expanded':
-      props['aria-expanded'] === 'true'
-        ? true
-        : props['aria-expanded'] === 'false'
-          ? false
-          : (props['aria-expanded'] as boolean | undefined),
-    'aria-pressed':
-      props['aria-pressed'] === 'true'
-        ? true
-        : props['aria-pressed'] === 'false'
-          ? false
-          : (props['aria-pressed'] as boolean | undefined),
+    ...restProps,
+    ...(ariaExpanded !== undefined && {
+      'aria-expanded':
+        typeof ariaExpanded === 'string' ? ariaExpanded === 'true' : Boolean(ariaExpanded),
+    }),
+    ...(ariaPressed !== undefined && {
+      'aria-pressed':
+        typeof ariaPressed === 'string'
+          ? ariaPressed === 'true' || ariaPressed === 'mixed'
+          : Boolean(ariaPressed),
+    }),
   };
 
   return (
@@ -200,7 +215,7 @@ interface CalendarCellProps {
   [key: string]: unknown;
 }
 
-export const CalendarCell = ({ date, ...props }: CalendarCellProps) => {
+export const CalendarCell = ({ date: _date, ...props }: CalendarCellProps) => {
   // CalendarCell is a wrapper for compatibility - it passes through all props
   // The actual day prop will be handled by the parent component
   return <div {...props} />;

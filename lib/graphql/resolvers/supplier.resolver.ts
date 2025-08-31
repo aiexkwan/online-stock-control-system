@@ -114,7 +114,7 @@ export const supplierResolvers: IResolvers = {
     // The data_supplier table only has supplier_code and supplier_name fields
 
     /* Commented out - these fields don't exist in the simplified Supplier schema
-    statistics: async (parent, _args, context: GraphQLContext) => {
+    statistics: async (parent, _args, _context: GraphQLContext) => {
       try {
         // Get supplier statistics from multiple sources
         const [grnData, productData] = await Promise.all([
@@ -150,8 +150,7 @@ export const supplierResolvers: IResolvers = {
           onTimeDeliveryRate: null, // Would need delivery tracking
           qualityRating: null, // Would need quality data
           lastOrderDate: null, // Would need orders table
-          lastDeliveryDate,
-        };
+          lastDeliveryDate };
       } catch (error) {
         console.error(`[SupplierResolver] Error calculating statistics for ${parent.supplier_code}:`, error);
         return {
@@ -162,12 +161,11 @@ export const supplierResolvers: IResolvers = {
           onTimeDeliveryRate: null,
           qualityRating: null,
           lastOrderDate: null,
-          lastDeliveryDate: null,
-        };
+          lastDeliveryDate: null };
       }
     },
 
-    products: async (parent, args, context: GraphQLContext) => {
+    products: async (parent, args, _context: GraphQLContext) => {
       try {
         // This is a placeholder - in reality, we'd need a supplier-product mapping table
         const { pagination, sort } = args;
@@ -179,17 +177,15 @@ export const supplierResolvers: IResolvers = {
             hasNextPage: false,
             hasPreviousPage: false,
             startCursor: null,
-            endCursor: null,
-          },
-          totalCount: 0,
-        };
+            endCursor: null },
+          totalCount: 0 };
       } catch (error) {
         console.error(`[SupplierResolver] Error loading products for ${parent.supplier_code}:`, error);
         throw new GraphQLError(`Failed to load products for supplier ${parent.supplier_code}`);
       }
     },
 
-    grns: async (parent, args, context: GraphQLContext) => {
+    grns: async (parent, args, _context: GraphQLContext) => {
       try {
         const { filter, pagination, sort } = args;
         
@@ -245,7 +241,7 @@ export const supplierResolvers: IResolvers = {
           throw new GraphQLError(`Failed to load GRNs: ${error.message}`);
         }
 
-        const edges = (data || []).map((grn, index) => ({
+        const edges = (data || []).map((grn, _index) => ({
           cursor: Buffer.from(grn.grn_number).toString('base64'),
           node: {
             grnNumber: grn.grn_number,
@@ -254,9 +250,7 @@ export const supplierResolvers: IResolvers = {
             receivedDate: grn.received_date,
             status: grn.status || 'RECEIVED',
             invoiceNumber: grn.invoice_number,
-            remarks: grn.remarks,
-          },
-        }));
+            remarks: grn.remarks } }));
 
         const hasNextPage = pagination?.first ? data.length >= (pagination.first || 0) : false;
         const hasPreviousPage = !!pagination?.after || !!pagination?.before;
@@ -267,10 +261,8 @@ export const supplierResolvers: IResolvers = {
             hasNextPage,
             hasPreviousPage,
             startCursor: edges.length > 0 ? edges[0].cursor : null,
-            endCursor: edges.length > 0 ? edges[edges.length - 1].cursor : null,
-          },
-          totalCount: totalCount || 0,
-        };
+            endCursor: edges.length > 0 ? edges[edges.length - 1].cursor : null },
+          totalCount: totalCount || 0 };
       } catch (error) {
         console.error(`[SupplierResolver] Error loading GRNs for ${parent.supplier_code}:`, error);
         throw error instanceof GraphQLError ? error : new GraphQLError(`Failed to load GRNs for supplier ${parent.supplier_code}`);
@@ -335,7 +327,7 @@ export const supplierResolvers: IResolvers = {
           throw new GraphQLError(`Failed to load suppliers: ${error.message}`);
         }
 
-        const edges = (data || []).map((supplier, index) => ({
+        const edges = (data || []).map((supplier, _index) => ({
           cursor: Buffer.from(supplier.supplier_code).toString('base64'),
           node: {
             supplier_code: supplier.supplier_code,

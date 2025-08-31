@@ -4,18 +4,11 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
-// Removed unused import: isNotProduction
-import type { Database, Tables } from '@/types/database/supabase';
-import { DatabaseRecord } from '@/types/database/tables';
+import type { Database } from '../../database.types';
+import { DatabaseRecord } from '../../types/database-types';
 import { DataAccessLayer } from '../core/DataAccessStrategy';
 
-// 使用 Supabase 生成的類型
-type DataIdRow = Tables<'data_id'>;
-type RecordTransferRow = Tables<'record_transfer'>;
-type RecordHistoryRow = Tables<'record_history'>;
-type RecordInventoryRow = Tables<'record_inventory'>;
-type RecordPalletinfoRow = Tables<'record_palletinfo'>;
-type DataCodeRow = Tables<'data_code'>;
+// 表類型可根據需要從 Database['public']['Tables'] 直接引用
 
 // 錯誤回應類型
 interface ErrorResponse {
@@ -44,7 +37,7 @@ export interface DashboardWidgetData {
   lastUpdated: string;
 }
 
-export interface DashboardParams {
+export interface DashboardParams extends Record<string, unknown> {
   widgetIds: string[];
   dateRange?: {
     start: string;
@@ -74,7 +67,7 @@ export interface DashboardParams {
   };
 }
 
-export interface DashboardResult {
+export interface DashboardResult extends Record<string, unknown> {
   widgets: DashboardWidgetData[];
   metadata: {
     generatedAt: string;
@@ -92,7 +85,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
    * Server-side implementation using optimized queries
    */
   async serverFetch(params: DashboardParams): Promise<DashboardResult> {
-    const { createClient } = await import('@/app/utils/supabase/server');
+    const { createClient } = await import('../../../app/utils/supabase/server');
     const supabase = await createClient();
 
     const startTime = performance.now();
@@ -155,13 +148,14 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
       throw new Error('Failed to fetch dashboard data');
     }
 
-    return response.json() as Promise<DashboardResult>;
+    const result = await response.json();
+    return result as DashboardResult;
   }
 
   /**
    * Dashboard queries are always complex - prefer server-side
    */
-  protected isComplexQuery(): boolean {
+  protected isComplexQuery(_params?: DashboardParams): boolean {
     return true;
   }
 
@@ -171,7 +165,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
   private async fetchWidgetData(
     widgetId: string,
     params: DashboardParams,
-    supabase?: SupabaseClientType
+    supabase: SupabaseClientType
   ): Promise<DatabaseRecord[] | Record<string, unknown>> {
     const dataSource = params.params?.dataSource || widgetId;
     return this.fetchStatsCardData(dataSource, params, supabase);
@@ -183,12 +177,8 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
   private async fetchStatsCardData(
     dataSource: string,
     params: DashboardParams,
-    supabase?: SupabaseClientType
+    supabase: SupabaseClientType
   ): Promise<Record<string, unknown>> {
-    if (!supabase) {
-      throw new Error('Supabase client is required for fetchStatsCardData');
-    }
-
     try {
       switch (dataSource) {
         case 'total_pallets':
@@ -255,12 +245,11 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
             };
           }
 
-          const records =
-            awaitInventory?.map(item => ({
-              location: 'AWAIT',
-              quantity: item.await || 0,
-              product_code: item.product_code,
-            })) || [];
+          const records = (awaitInventory || []).map(item => ({
+            location: 'AWAIT',
+            quantity: (item.await as number) || 0,
+            product_code: item.product_code,
+          }));
 
           const totalQuantity = records.reduce((sum, record) => sum + record.quantity, 0);
 
@@ -274,7 +263,7 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
             dataSource: 'await_location_count',
           };
 
-        // ⚡ 修復：為常見的 card 數據源添加支援，避免 "Unknown data source" 警告
+        // 為常見的 card 數據源添加支援
         case 'top_products':
           return {
             value: 0,
@@ -380,7 +369,6 @@ export class DashboardAPI extends DataAccessLayer<DashboardParams, DashboardResu
           };
 
         default:
-          // 🔧 修復：移除警告，直接返回空數據避免循環
           return {
             value: 0,
             label: dataSource.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),

@@ -3,7 +3,7 @@
  * Handles navigation menu queries and bookmark management
  */
 
-import { GraphQLContext as Context } from './index';
+// import { GraphQLContext as Context  } from // Unused import './index';
 // NavigationCard has been deleted - define NavigationType locally
 enum NavigationType {
   DASHBOARD = 'dashboard',
@@ -13,13 +13,13 @@ enum NavigationType {
   QUICK_ACCESS = 'quick_access',
 }
 
-interface NavigationMenuInput {
+interface _NavigationMenuInput {
   navigationType: NavigationType;
   permissions?: string[];
   currentPath?: string;
 }
 
-interface BookmarkInput {
+interface _BookmarkInput {
   itemId: string;
   action: 'ADD' | 'REMOVE';
 }
@@ -39,7 +39,7 @@ interface NavigationItem {
 }
 
 // Mock navigation data - 將來會從資料庫獲取
-const mockNavigationData = {
+const _mockNavigationData = {
   [NavigationType.SIDEBAR]: [
     {
       id: 'dashboard',
@@ -197,10 +197,10 @@ const mockNavigationData = {
 };
 
 // Mock bookmarks storage - 將來會存儲在資料庫
-const userBookmarks: Record<string, Set<string>> = {};
+const _userBookmarks: Record<string, Set<string>> = {};
 
 // 過濾有權限的導航項目
-const filterByPermissions = (
+const _filterByPermissions = (
   items: NavigationItem[],
   userPermissions: string[]
 ): NavigationItem[] => {
@@ -211,7 +211,7 @@ const filterByPermissions = (
     })
     .map(item => ({
       ...item,
-      children: item.children ? filterByPermissions(item.children, userPermissions) : undefined,
+      children: item.children ? _filterByPermissions(item.children, userPermissions) : undefined,
     }));
 };
 

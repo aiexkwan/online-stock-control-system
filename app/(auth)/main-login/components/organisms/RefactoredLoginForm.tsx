@@ -8,7 +8,7 @@ import { Button } from '../atoms';
 
 interface RefactoredLoginFormProps {
   onSuccess?: () => void;
-  onError?: (error: string) => void;
+  onError?: (_error: string) => void;
 }
 
 /**
@@ -26,10 +26,10 @@ const RefactoredLoginForm = memo(function RefactoredLoginForm({
     fieldErrors,
     passwordRules,
     loginFormData,
-    uiState: _uiState,
+    uiState,
     login,
     updateLoginForm,
-    setShowPassword: _setShowPassword,
+    setShowPassword,
     clearAllErrors,
   } = useLoginContext();
 

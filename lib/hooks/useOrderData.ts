@@ -171,7 +171,6 @@ export function useOrderData(config: OrderDataConfig = {}): UseOrderDataReturn {
             totalQuantity: 0, // 添加必需的屬性
             loadedQuantity: 0, // 添加必需的屬性
             remainingQuantity: 0, // 添加必需的屬性
-            progress: 0, // 添加必需的屬性
             createdAt: new Date().toISOString(), // 添加必需的屬性
           } as WarehouseOrder,
         })
@@ -257,7 +256,7 @@ export function useOrderData(config: OrderDataConfig = {}): UseOrderDataReturn {
       loadingRecords,
 
       // Network Status
-      networkStatus: ordersNetworkStatus,
+      networkStatus: ordersNetworkStatus || NetworkStatus.ready,
 
       // Error States
       error: ordersError || orderError || acoError || recordsError || null,

@@ -3,7 +3,8 @@
  * Tracks all authentication and authorization events
  */
 
-import { createClient } from '@/app/utils/supabase/server';
+import { createClient } from '../../app/utils/supabase/server';
+import type { Database } from '../database.types';
 
 export enum AuditEventType {
   // Authentication events
@@ -42,6 +43,29 @@ export interface AuditLogEntry {
   success: boolean;
   metadata?: Record<string, unknown>;
   risk_score?: number;
+}
+
+// Database representation of audit log
+export interface AuditLogRecord {
+  id?: string;
+  event_type: string;
+  user_id?: string | null;
+  email?: string | null;
+  ip_address?: string | null;
+  user_agent?: string | null;
+  created_at: string;
+  success: boolean;
+  metadata?: Record<string, unknown> | null;
+  risk_score?: number | null;
+}
+
+// Query filters interface
+export interface AuditQueryFilters {
+  user_id?: string;
+  event_type?: AuditEventType;
+  start_date?: Date;
+  end_date?: Date;
+  limit?: number;
 }
 
 /**
@@ -93,7 +117,7 @@ export class AuditLogger {
   /**
    * Calculate risk score for event
    */
-  private calculateRiskScore(entry: Partial<AuditLogEntry>): number {
+  private calculateRiskScore(entry: Omit<AuditLogEntry, 'timestamp' | 'risk_score'>): number {
     let score = 0;
 
     // Failed authentication attempts
@@ -107,13 +131,13 @@ export class AuditLogger {
     }
 
     // Attack attempts
-    if (
-      [
-        AuditEventType.CSRF_ATTACK_BLOCKED,
-        AuditEventType.SESSION_HIJACK_ATTEMPT,
-        AuditEventType.SUSPICIOUS_ACTIVITY,
-      ].includes(entry.event_type!)
-    ) {
+    const attackEventTypes = [
+      AuditEventType.CSRF_ATTACK_BLOCKED,
+      AuditEventType.SESSION_HIJACK_ATTEMPT,
+      AuditEventType.SUSPICIOUS_ACTIVITY,
+    ] as const;
+
+    if (attackEventTypes.includes(entry.event_type as any)) {
       score += 80;
     }
 
@@ -183,27 +207,29 @@ export class AuditLogger {
       // You'll need to create this table in your database
       const supabase = await createClient();
 
-      const { error } = await supabase.from('audit_logs').insert(
-        entries.map(entry => ({
-          event_type: entry.event_type,
-          user_id: entry.user_id,
-          email: entry.email,
-          ip_address: entry.ip_address,
-          user_agent: entry.user_agent,
-          success: entry.success,
-          metadata: entry.metadata,
-          risk_score: entry.risk_score,
-          created_at: entry.timestamp.toISOString(),
-        }))
-      );
+      const auditRecords: Partial<AuditLogRecord>[] = entries.map(entry => ({
+        event_type: entry.event_type,
+        user_id: entry.user_id || null,
+        email: entry.email || null,
+        ip_address: entry.ip_address || null,
+        user_agent: entry.user_agent || null,
+        success: entry.success,
+        metadata: entry.metadata || null,
+        risk_score: entry.risk_score || null,
+        created_at: entry.timestamp.toISOString(),
+      }));
+
+      // Use generic table insert since audit_logs might not be defined in types
+      const { error } = await (supabase as any).from('audit_logs').insert(auditRecords);
 
       if (error) {
         console.error('Failed to write audit logs:', error);
         // Re-add to buffer for retry
         this.buffer.unshift(...entries);
       }
-    } catch (error) {
-      console.error('Audit log flush error:', error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Audit log flush error:', errorMessage);
       // Re-add to buffer for retry
       this.buffer.unshift(...entries);
     }
@@ -212,17 +238,12 @@ export class AuditLogger {
   /**
    * Query audit logs
    */
-  async query(filters: {
-    user_id?: string;
-    event_type?: AuditEventType;
-    start_date?: Date;
-    end_date?: Date;
-    limit?: number;
-  }): Promise<AuditLogEntry[]> {
+  async query(filters: AuditQueryFilters = {}): Promise<AuditLogEntry[]> {
     try {
       const supabase = await createClient();
 
-      let query = supabase.from('audit_logs').select('*');
+      // Use generic query since audit_logs might not be defined in types
+      let query = (supabase as any).from('audit_logs').select('*');
 
       if (filters.user_id) {
         query = query.eq('user_id', filters.user_id);
@@ -248,9 +269,24 @@ export class AuditLogger {
 
       if (error) throw error;
 
-      return (data || []) as unknown as AuditLogEntry[];
-    } catch (error) {
-      console.error('Audit log query error:', error);
+      // Transform database records to AuditLogEntry format
+      const entries: AuditLogEntry[] = (data || []).map((record: AuditLogRecord) => ({
+        id: record.id,
+        event_type: record.event_type as AuditEventType,
+        user_id: record.user_id || undefined,
+        email: record.email || undefined,
+        ip_address: record.ip_address || undefined,
+        user_agent: record.user_agent || undefined,
+        timestamp: new Date(record.created_at),
+        success: record.success,
+        metadata: record.metadata || undefined,
+        risk_score: record.risk_score || undefined,
+      }));
+
+      return entries;
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Audit log query error:', errorMessage);
       return [];
     }
   }
@@ -259,10 +295,12 @@ export class AuditLogger {
    * Get suspicious activity for user
    */
   async getSuspiciousActivity(userId: string): Promise<AuditLogEntry[]> {
-    return this.query({
+    const logs = await this.query({
       user_id: userId,
       limit: 50,
-    }).then(logs => logs.filter(log => log.risk_score && log.risk_score >= 60));
+    });
+
+    return logs.filter(log => (log.risk_score ?? 0) >= 60);
   }
 
   /**
@@ -275,14 +313,16 @@ export class AuditLogger {
 
       const supabase = await createClient();
 
-      const { error } = await supabase
+      // Use generic delete since audit_logs might not be defined in types
+      const { error } = await (supabase as any)
         .from('audit_logs')
         .delete()
         .lt('created_at', cutoffDate.toISOString());
 
       if (error) throw error;
-    } catch (error) {
-      console.error('Audit log cleanup error:', error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('Audit log cleanup error:', errorMessage);
     }
   }
 
@@ -294,7 +334,8 @@ export class AuditLogger {
       clearInterval(this.flushInterval);
       this.flushInterval = null;
     }
-    this.flush(); // Final flush
+    // Final flush without awaiting to avoid blocking
+    void this.flush();
   }
 }
 

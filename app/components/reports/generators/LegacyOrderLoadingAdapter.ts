@@ -4,13 +4,13 @@
 
 import { ProcessedReportData, ReportConfig } from '../core/ReportConfig';
 import { LegacyOrderLoadingPdfGenerator } from '../core/LegacyOrderLoadingPdfGenerator';
-import { safeGet, safeString, safeNumber, toRecordArray } from '@/types/database/helpers';
+import { safeGet, safeString, safeNumber, toRecordArray } from '../../../../types/database/helpers';
 
 export class LegacyOrderLoadingAdapter {
   /**
    * 將統一框架數據轉換為舊版格式並生成 PDF
    */
-  static async generatePdf(data: ProcessedReportData, config: ReportConfig): Promise<Blob> {
+  static async generatePdf(data: ProcessedReportData, _config: ReportConfig): Promise<Blob> {
     // 從 metadata 中提取日期範圍和過濾器
     const dateRange = this.extractDateRange(data.metadata.filters);
     const filters = this.extractFilters(data.metadata.filters);
@@ -60,7 +60,7 @@ export class LegacyOrderLoadingAdapter {
     return {
       orderNumber: filters.orderNumber || undefined,
       productCode: filters.productCode || undefined,
-      userId: filters.userId || undefined,
+      _userId: filters.userId || undefined,
       status: filters.status || undefined,
     };
   }

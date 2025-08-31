@@ -3,7 +3,13 @@
  * Central interface for all hardware operations
  */
 
-import { createLogger } from '../logger';
+// Simple logger replacement to avoid complex dependencies
+const createLogger = (name: string) => ({
+  info: (message: string, data?: unknown) => console.info(`[${name}] ${message}`, data),
+  error: (data: { err?: unknown }, message: string) =>
+    console.error(`[${name}] ${message}`, data.err),
+  debug: (data: unknown, message: string) => console.debug(`[${name}] ${message}`, data),
+});
 import { DefaultPrinterService, PrinterService } from './services/printer-service';
 import { HardwareMonitoringService } from './services/monitoring-service';
 import { PrintQueueManager } from './services/print-queue-manager';
@@ -56,7 +62,7 @@ export class HardwareAbstractionLayer {
       this.initialized = true;
 
       logger.info('Hardware Abstraction Layer initialized successfully');
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error({ err: error }, 'Failed to initialize Hardware Abstraction Layer');
       throw error;
     }
@@ -104,7 +110,7 @@ export class HardwareAbstractionLayer {
     let healthy = true;
 
     // Check each device
-    devices.forEach((device, deviceId) => {
+    devices.forEach((device: DeviceStatus, deviceId: string) => {
       if (device.status === 'error' || device.status === 'offline') {
         healthy = false;
         errors.push(`Device ${deviceId} is ${device.status}`);
@@ -139,9 +145,9 @@ export class HardwareAbstractionLayer {
           break;
       }
 
-      logger.info({ deviceType }, 'Device recovery completed successfully');
-    } catch (error) {
-      logger.error({ deviceType, err: error }, 'Device recovery failed');
+      logger.info(`Device recovery completed successfully for ${deviceType}`);
+    } catch (error: unknown) {
+      logger.error({ err: error }, 'Device recovery failed');
       throw error;
     }
   }
@@ -184,7 +190,7 @@ export class HardwareAbstractionLayer {
       });
 
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       // Record failure event
       this.recordEvent({
         type: 'job.failed',
@@ -216,7 +222,7 @@ export class HardwareAbstractionLayer {
       this.initialized = false;
 
       logger.info('Hardware Abstraction Layer shut down successfully');
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error({ err: error }, 'Error during HAL shutdown');
     }
   }
@@ -237,7 +243,7 @@ export class HardwareAbstractionLayer {
       });
 
       logger.debug({ printerCount: printers.length }, 'Registered hardware devices');
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error({ err: error }, 'Failed to register devices');
       throw error;
     }
@@ -253,16 +259,16 @@ export class HardwareAbstractionLayer {
     });
 
     // Monitor queue events
-    this.services.queue.on('job.added', job => {
+    this.services.queue.on('job.added', (job: PrintJob) => {
       logger.debug({ jobId: job.id, jobType: job.type }, 'Print job added to queue');
     });
 
-    this.services.queue.on('job.completed', job => {
-      logger.info({ jobId: job.id, jobType: job.type }, 'Print job completed successfully');
+    this.services.queue.on('job.completed', (job: PrintJob) => {
+      logger.info('Print job completed successfully', { jobId: job.id, jobType: job.type });
     });
 
-    this.services.queue.on('job.failed', (job, error) => {
-      logger.error({ jobId: job.id, jobType: job.type, err: error }, 'Print job failed');
+    this.services.queue.on('job.failed', (job: PrintJob, error: unknown) => {
+      logger.error({ err: error }, 'Print job failed');
     });
   }
 

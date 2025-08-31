@@ -5,7 +5,27 @@
  * 提供分類、自動恢復、用戶友好的錯誤處理
  */
 
-import { systemLogger } from '@/lib/logger';
+// 簡化的日誌接口，避免複雜依賴
+interface SimpleLogger {
+  error(data: object, message: string): void;
+  warn(data: object, message: string): void;
+}
+
+// 創建簡單的日誌器，適用於錯誤服務
+const createSimpleLogger = (): SimpleLogger => ({
+  error: (data: object, message: string) => {
+    if (typeof console !== 'undefined') {
+      console.error(`[ERROR] ${message}`, data);
+    }
+  },
+  warn: (data: object, message: string) => {
+    if (typeof console !== 'undefined') {
+      console.warn(`[WARN] ${message}`, data);
+    }
+  },
+});
+
+const systemLogger = createSimpleLogger();
 
 export enum ErrorSeverity {
   LOW = 'low',
@@ -200,7 +220,7 @@ export class EnhancedErrorService {
   /**
    * 錯誤分類邏輯
    */
-  private categorizeError(errorMessage: string, originalError?: Error | string): ErrorCategory {
+  private categorizeError(errorMessage: string, _originalError?: Error | string): ErrorCategory {
     const message = errorMessage.toLowerCase();
 
     // 資料庫架構相關
@@ -347,7 +367,7 @@ export class EnhancedErrorService {
   /**
    * 生成用戶友好的錯誤訊息
    */
-  private generateUserFriendlyMessage(category: ErrorCategory, originalMessage: string): string {
+  private generateUserFriendlyMessage(category: ErrorCategory, _originalMessage: string): string {
     switch (category) {
       case ErrorCategory.SCHEMA:
         return '系統配置出現問題，請聯繫系統管理員。我們正在處理這個問題。';
@@ -381,7 +401,7 @@ export class EnhancedErrorService {
   /**
    * 生成建議操作
    */
-  private generateSuggestedActions(category: ErrorCategory, message: string): string[] {
+  private generateSuggestedActions(category: ErrorCategory, _message: string): string[] {
     const actions: string[] = [];
 
     switch (category) {

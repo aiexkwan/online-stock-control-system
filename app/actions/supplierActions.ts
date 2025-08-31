@@ -10,9 +10,11 @@
 import { z } from 'zod';
 import { createClient } from '@/app/utils/supabase/server';
 import { errorHandler } from '@/app/components/qc-label-form/services/ErrorHandler';
-import type {
+import {
   RpcSearchSupplierResponse,
   RpcSupplierMutationResponse,
+  isRpcSearchSupplierResponse,
+  isRpcSupplierMutationResponse,
 } from '@/lib/types/rpc-supplier-types';
 
 // Type definitions
@@ -128,14 +130,11 @@ export async function searchSupplier(code: string): Promise<SearchSupplierResult
       throw error;
     }
 
-    if (
-      data &&
-      (data as unknown as RpcSearchSupplierResponse).exists &&
-      (data as unknown as RpcSearchSupplierResponse).supplier
-    ) {
+    // 使用類型守衛進行安全的類型檢查
+    if (data && isRpcSearchSupplierResponse(data) && data.exists && data.supplier) {
       return {
         exists: true,
-        supplier: (data as unknown as RpcSearchSupplierResponse).supplier,
+        supplier: data.supplier,
       };
     }
 
@@ -196,15 +195,16 @@ export async function createSupplier(code: string, name: string): Promise<Mutati
       throw error;
     }
 
-    if (!(data as unknown as RpcSupplierMutationResponse)?.success) {
+    // 使用類型守衛進行安全的類型檢查
+    if (!data || !isRpcSupplierMutationResponse(data) || !data.success) {
       const errorMessage =
-        (data as unknown as RpcSupplierMutationResponse)?.error || 'Failed to create supplier';
+        (isRpcSupplierMutationResponse(data) ? data.error : null) || 'Failed to create supplier';
       throw new Error(errorMessage);
     }
 
     return {
       success: true,
-      supplier: (data as unknown as RpcSupplierMutationResponse).supplier,
+      supplier: data.supplier,
     };
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -269,15 +269,16 @@ export async function updateSupplier(code: string, name: string): Promise<Mutati
       throw error;
     }
 
-    if (!(data as unknown as RpcSupplierMutationResponse)?.success) {
+    // 使用類型守衛進行安全的類型檢查
+    if (!data || !isRpcSupplierMutationResponse(data) || !data.success) {
       const errorMessage =
-        (data as unknown as RpcSupplierMutationResponse)?.error || 'Failed to update supplier';
+        (isRpcSupplierMutationResponse(data) ? data.error : null) || 'Failed to update supplier';
       throw new Error(errorMessage);
     }
 
     return {
       success: true,
-      supplier: (data as unknown as RpcSupplierMutationResponse).supplier,
+      supplier: data.supplier,
     };
   } catch (error) {
     if (error instanceof z.ZodError) {

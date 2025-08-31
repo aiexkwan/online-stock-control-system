@@ -6,7 +6,7 @@ import { ReportConfig } from '../core/ReportConfig';
 
 export const transactionReportConfig: ReportConfig = {
   id: 'transaction-report',
-  name: 'Transaction Report',
+  _name: 'Transaction Report',
   description: 'Export transfer reports with date range',
   category: 'operational',
   formats: ['excel'],

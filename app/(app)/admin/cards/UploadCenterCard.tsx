@@ -25,17 +25,15 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { DataCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
 import { cardTextStyles } from '@/lib/card-system/theme';
-
-// Import individual upload components - deleted files
-// import { BaseUploadCard, UploadConfiguration, UploadFile } from './BaseUploadCard';
-// import { UploadOrdersCard } from './UploadOrdersCard';
-// import { UploadProductSpecCard } from './UploadProductSpecCard';
-
-// Import types from centralized type definitions
 import { PDFPreviewOverlay } from '@/components/ui/pdf-preview-overlay';
+import { DataExtractionOverlay } from '@/components/ui/data-extraction-overlay';
+import type { _DocUploadRecord, UploadCenterCardProps } from '../types/data-management';
+import { formatFileSize as formatFileSizeUtil } from '../utils/formatters';
+import { StatusOverlay } from '../components/shared';
+import { useUploadManager } from '../hooks/useUploadManager';
 
-// Define upload configuration type
-interface UploadConfiguration {
+// Local interface for upload configuration (extends the one from data-management)
+interface LocalUploadConfiguration {
   accept: string;
   maxSize: number;
   maxFiles: number;
@@ -45,14 +43,6 @@ interface UploadConfiguration {
   dropzoneSubtext: string;
   showFileList: boolean;
 }
-import { DataExtractionOverlay } from '@/components/ui/data-extraction-overlay';
-import type {
-  DocUploadRecord,
-  UploadCenterCardProps,
-} from '../types/data-management';
-import { formatFileSize as formatFileSizeUtil } from '../utils/formatters';
-import { StatusOverlay } from '../components/shared';
-import { useUploadManager } from '../hooks/useUploadManager';
 
 export const UploadCenterCard: React.FC<UploadCenterCardProps> = ({
   className,
@@ -94,8 +84,8 @@ export const UploadCenterCard: React.FC<UploadCenterCardProps> = ({
     handleSpecFilesUpload,
     handleOthersUpload,
     setUploadToast,
-    setIsDragging: _setIsDragging,
-    openDataExtractionOverlay: _openDataExtractionOverlay,
+    setIsDragging,
+    openDataExtractionOverlay,
     closeDataExtractionOverlay,
   } = actions;
 
@@ -105,7 +95,7 @@ export const UploadCenterCard: React.FC<UploadCenterCardProps> = ({
   }, [fetchUploadRecords, refreshKey]);
 
   // Render upload record item
-  const renderUploadRecord = (record: DocUploadRecord) => (
+  const renderUploadRecord = (record: _DocUploadRecord) => (
     <div
       key={record.uuid}
       className={cn(
@@ -134,7 +124,7 @@ export const UploadCenterCard: React.FC<UploadCenterCardProps> = ({
   );
 
   // Upload configuration for Others section
-  const othersUploadConfig: UploadConfiguration = {
+  const othersUploadConfig: LocalUploadConfiguration = {
     accept: '*',
     maxSize: 10 * 1024 * 1024, // 10MB
     maxFiles: 5,
@@ -144,20 +134,28 @@ export const UploadCenterCard: React.FC<UploadCenterCardProps> = ({
     showFileList: false,
   };
 
-  // Use formatFileSize from utils
-  const formatFileSize = formatFileSizeUtil;
-
-  // Simple inline BaseUploadCard component - uses hook functions
-  const BaseUploadCard: React.FC<{
+  // Interface for BaseUploadCard props
+  interface BaseUploadCardProps {
     title: string;
     description: string;
     icon: React.ComponentType<{ className?: string }>;
     height?: string | number;
     className?: string;
-    uploadConfig?: UploadConfiguration;
+    uploadConfig?: LocalUploadConfiguration;
     isEditMode?: boolean;
     onUpload?: (files: File[]) => Promise<void>;
-  }> = ({ title, description, icon: Icon, className, uploadConfig, isEditMode, onUpload }) => {
+  }
+
+  // Simple inline BaseUploadCard component - uses hook functions
+  const BaseUploadCard: React.FC<BaseUploadCardProps> = ({
+    title,
+    description,
+    icon: Icon,
+    className,
+    uploadConfig,
+    isEditMode,
+    onUpload,
+  }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileSelectLocal = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -363,7 +361,7 @@ export const UploadCenterCard: React.FC<UploadCenterCardProps> = ({
                 ? 'Upload Complete!'
                 : 'Upload Failed'
         }
-        message={`${uploadToast.fileName} • ${formatFileSize(uploadToast.fileSize)}`}
+        message={`${uploadToast.fileName} • ${formatFileSizeUtil(uploadToast.fileSize)}`}
         details={
           uploadToast.status === 'error' && uploadToast.error
             ? uploadToast.error

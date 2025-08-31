@@ -5,25 +5,25 @@ import {
   ErrorResponseSchema,
   QueryContext,
   QueryContextSchema,
-  SafeDatabaseValue,
+  SafeDatabaseValue as _SafeDatabaseValue,
   safeParseDatabaseValue,
 } from '@/lib/validation/zod-schemas';
 
 // Error Pattern Schema
-const ErrorPatternSchema = z.object({
+const _ErrorPatternSchema = z.object({
   pattern: z.instanceof(RegExp),
   handler: z.function(z.tuple([z.string()]), ErrorResponseSchema),
 });
 
-type ErrorPattern = z.infer<typeof ErrorPatternSchema>;
+type ErrorPattern = z.infer<typeof _ErrorPatternSchema>;
 
 export class QueryErrorHandler {
   // 常見錯誤模式
   private errorPatterns: ErrorPattern[] = [
     {
       pattern: /column ["']?(\w+)["']? does not exist/i,
-      handler: (error: string) => {
-        const match = error.match(/column ["']?(\w+)["']?/i);
+      handler: (_error: string) => {
+        const match = _error.match(/column ["']?(\w+)["']?/i);
         const columnName = match ? match[1] : 'unknown';
 
         return {
@@ -37,8 +37,8 @@ export class QueryErrorHandler {
     },
     {
       pattern: /relation ["']?(\w+)["']? does not exist/i,
-      handler: (error: string) => {
-        const match = error.match(/relation ["']?(\w+)["']?/i);
+      handler: (_error: string) => {
+        const match = _error.match(/relation ["']?(\w+)["']?/i);
         const tableName = match ? match[1] : 'unknown';
 
         return {
@@ -52,7 +52,7 @@ export class QueryErrorHandler {
     },
     {
       pattern: /syntax error at or near/i,
-      handler: (error: string) => ({
+      handler: (_error: string) => ({
         message: 'SQL syntax error',
         suggestion: 'Try describing your query in simpler, more natural language.',
         showExamples: true,
@@ -96,8 +96,8 @@ export class QueryErrorHandler {
     },
     {
       pattern: /invalid input syntax for type (\w+)/i,
-      handler: (error: string) => {
-        const match = error.match(/invalid input syntax for type (\w+)/i);
+      handler: (_error: string) => {
+        const match = _error.match(/invalid input syntax for type (\w+)/i);
         const dataType = match ? match[1] : 'unknown';
 
         return {
@@ -164,7 +164,7 @@ export class QueryErrorHandler {
     return error
       .replace(/\/\*.*?\*\//g, '') // 移除 SQL 註釋
       .replace(/--.*$/gm, '') // 移除行註釋
-      .replace(/\b\d{4,}\b/g, 'XXXX') // 隱藏長數字
+      .replace(/\b\d{4 }\b/g, 'XXXX') // 隱藏長數字
       .substring(0, 200); // 限制長度
   }
 

@@ -274,8 +274,22 @@ if (!validation.isValid) {
 
 - `useUnifiedPdfGeneration.ts` - Hook 主要實現
 - `useUnifiedPdfGeneration.types.ts` - 完整類型定義
-- `useUnifiedPdfGeneration.example.ts` - 使用示例
+- `useUnifiedPdfGeneration.example.tsx` - 使用示例（即將移除）
 - `__tests__/useUnifiedPdfGeneration.test.ts` - 單元測試
+
+## 完整範例與教學
+
+📚 **推薦參考**: [PDF 生成系統完整使用範例](/docs/examples/pdf-generation-examples.md)
+
+該文檔包含從生產代碼提取的實用範例，涵蓋：
+
+- 基本 QC/GRN 標籤生成範例
+- 批量生成與進度追蹤
+- 數據驗證最佳實踐
+- 完整錯誤處理模式
+- 性能優化建議
+
+> **注意**: `useUnifiedPdfGeneration.example.tsx` 檔案中的範例已完整備份至上述文檔中，建議開發者使用文檔版本作為學習資源。
 
 ## 依賴
 

@@ -12,7 +12,7 @@
  */
 
 import { useState, useCallback, useRef } from 'react';
-import { createClient } from '@/app/utils/supabase/client';
+import { createClient } from '../../../utils/supabase/client';
 
 // Types for different form modes
 export type FormMode = 'initial' | 'searching' | 'display' | 'edit' | 'add' | 'loading' | 'error';
@@ -199,7 +199,7 @@ export const useDataUpdate = (options: UseDataUpdateOptions): UseDataUpdateRetur
 
       return null;
     },
-    [config]
+    [config.fields]
   );
 
   // Form validation
@@ -279,7 +279,7 @@ export const useDataUpdate = (options: UseDataUpdateOptions): UseDataUpdateRetur
         onError?.(error as Error, 'search');
       }
     },
-    [config, enableSearch, initialData, onError, supabase]
+    [enableSearch, config.tableName, config.primaryKey, supabase, initialData, onError]
   );
 
   const create = useCallback(async (): Promise<boolean> => {
@@ -322,7 +322,7 @@ export const useDataUpdate = (options: UseDataUpdateOptions): UseDataUpdateRetur
       onError?.(error as Error, 'create');
       return false;
     }
-  }, [config, validateForm, showOverlay, onSuccess, onError, supabase, initialData]);
+  }, [showOverlay, config.tableName, supabase, validateForm, onError, initialData, onSuccess]);
 
   const update = useCallback(async (): Promise<boolean> => {
     if (!config.tableName || !config.primaryKey) {
@@ -374,7 +374,15 @@ export const useDataUpdate = (options: UseDataUpdateOptions): UseDataUpdateRetur
       onError?.(error as Error, 'update');
       return false;
     }
-  }, [config, validateForm, showOverlay, onSuccess, onError, supabase]);
+  }, [
+    showOverlay,
+    config.tableName,
+    config.primaryKey,
+    supabase,
+    validateForm,
+    onError,
+    onSuccess,
+  ]);
 
   // Action handlers
   const actions: FormActions = {
@@ -447,7 +455,7 @@ export const useDataUpdate = (options: UseDataUpdateOptions): UseDataUpdateRetur
     markAllFieldsTouched: useCallback(() => {
       const touched = config.fields.reduce((acc, field) => ({ ...acc, [field.name]: true }), {});
       setState(prev => ({ ...prev, touched }));
-    }, [config]),
+    }, [config.fields]),
 
     clearErrors: useCallback(() => {
       setState(prev => ({ ...prev, errors: {} }));

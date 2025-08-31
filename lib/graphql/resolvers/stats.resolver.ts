@@ -14,20 +14,20 @@ import {
   SingleStatQueryInput,
   TrendDirection,
   StatsConfig,
-} from '@/types/generated/graphql';
-import { createClient } from '@/app/utils/supabase/server';
-import { Database } from '@/types/database/supabase';
+} from '../../../types/generated/graphql';
+// import { createClient } from '@/app/utils/supabase/server'; // Unused import
+import { Database } from '../../database.types';
 
 // 定義 Supabase client 類型
 type SupabaseClientType = SupabaseClient<Database>;
 
 // 定義資料庫查詢結果類型
-type PalletInfoRow = Database['public']['Tables']['record_palletinfo']['Row'];
-type InventoryRow = Database['public']['Tables']['record_inventory']['Row'];
+type _PalletInfoRow = Database['public']['Tables']['record_palletinfo']['Row'];
+type _InventoryRow = Database['public']['Tables']['record_inventory']['Row'];
 type TransferRow = Database['public']['Tables']['record_transfer']['Row'];
 
 // 為 record_pallet_transfer 定義 fallback 類型（如果表不存在）
-type PalletTransferRow = TransferRow & {
+type _PalletTransferRow = TransferRow & {
   transferdone?: string;
   status?: string;
   count?: number;
@@ -224,11 +224,12 @@ async function fetchStatData(
 
   switch (type) {
     case StatsType.YesterdayTransferCount: {
-      const { data, error, count } = await supabase
+      const result = await (supabase as any)
         .from('record_transfer')
         .select('*', { count: 'exact' })
         .gte('tran_date', range.start)
         .lte('tran_date', range.end);
+      const { data: _data, error: _error, count } = result;
 
       const transferCount = count || 0;
 
@@ -238,11 +239,12 @@ async function fetchStatData(
         end: endOfDay(subDays(yesterday, 1)).toISOString(),
       };
 
-      const { data: previousData, count: previousCount } = await supabase
+      const previousResult = await (supabase as any)
         .from('record_transfer')
         .select('*', { count: 'exact' })
         .gte('tran_date', previousRange.start)
         .lte('tran_date', previousRange.end);
+      const { data: _previousData, count: previousCount } = previousResult;
 
       const prevTransferCount = previousCount || 0;
       const change = transferCount - prevTransferCount;
@@ -277,19 +279,22 @@ async function fetchStatData(
     }
 
     case StatsType.AwaitLocationQty: {
-      const { data, error } = await supabase
+      const result = await (supabase as any)
         .from('record_palletinfo')
         .select('product_qty')
         .eq('location', 'AWAIT');
+      const { data: _data, error: _error } = result;
 
       // 注意：此處查詢的 'quantity' 欄位在 record_palletinfo 表中不存在
       // 應該使用 'product_qty' 或從其他表查詢
       type RecordPalletInfo = { product_qty?: number };
-      const totalQty =
-        (data as RecordPalletInfo[])?.reduce(
-          (sum: number, record: RecordPalletInfo) => sum + (record.product_qty || 0),
-          0
-        ) || 0;
+      const records = _data as RecordPalletInfo[] | null;
+      const totalQty = records
+        ? records.reduce(
+            (sum: number, record: RecordPalletInfo) => sum + (record.product_qty || 0),
+            0
+          )
+        : 0;
 
       return {
         type,
@@ -305,17 +310,21 @@ async function fetchStatData(
     }
 
     case StatsType.StillInAwait: {
-      const { data, error } = await supabase
+      const {
+        data: _data,
+        error: _error,
+        count,
+      } = await (supabase as any)
         .from('record_palletinfo')
-        .select('count', { count: 'exact' })
+        .select('*', { count: 'exact' })
         .eq('location', 'AWAIT')
         .gte('created_at', range.start);
 
-      const count = data?.[0]?.count || 0;
+      const recordCount = count || 0;
 
       return {
         type,
-        value: count,
+        value: recordCount,
         label: 'pallets',
         unit: 'pallets',
         trend: undefined,
@@ -328,20 +337,20 @@ async function fetchStatData(
 
     case StatsType.StillInAwaitPercentage: {
       // 獲取總數
-      const { data: totalData } = await supabase
+      const { data: _totalData, count: totalCount } = await (supabase as any)
         .from('record_palletinfo')
-        .select('count', { count: 'exact' });
+        .select('*', { count: 'exact' });
 
-      const total = totalData?.[0]?.count || 1; // 避免除零
+      const total = totalCount || 1; // 避免除零
 
       // 獲取等待數量
-      const { data: awaitData } = await supabase
+      const { data: _awaitData, count: awaitCount } = await (supabase as any)
         .from('record_palletinfo')
-        .select('count', { count: 'exact' })
+        .select('*', { count: 'exact' })
         .eq('location', 'AWAIT');
 
-      const awaitCount = awaitData?.[0]?.count || 0;
-      const percentage = (awaitCount / total) * 100;
+      const awaitRecordCount = awaitCount || 0;
+      const percentage = (awaitRecordCount / total) * 100;
 
       return {
         type,
@@ -358,15 +367,17 @@ async function fetchStatData(
 
     // 新Card系統統計類型實現
     case StatsType.PalletCount: {
-      const { data, error } = await supabase
-        .from('record_palletinfo')
-        .select('count', { count: 'exact' });
+      const {
+        data: _data,
+        error: _error,
+        count,
+      } = await (supabase as any).from('record_palletinfo').select('*', { count: 'exact' });
 
-      const count = data?.[0]?.count || 0;
+      const palletCount = count || 0;
 
       return {
         type,
-        value: count,
+        value: palletCount,
         label: 'pallets',
         unit: 'pallets',
         trend: undefined,
@@ -422,7 +433,11 @@ async function fetchStatData(
     }
 
     case StatsType.TransferCount: {
-      const { data, error, count } = await supabase
+      const {
+        data: _data,
+        error: _error,
+        count,
+      } = await (supabase as any)
         .from('record_transfer')
         .select('*', { count: 'exact' })
         .gte('tran_date', range.start)
@@ -444,9 +459,10 @@ async function fetchStatData(
     }
 
     case StatsType.InventoryLevel: {
-      const { data, error } = await supabase
+      const result = await (supabase as any)
         .from('record_inventory')
         .select('await, backcarpark, bulk, damage, fold, injection, pipeline, prebook');
+      const { data: _data, error: _error } = result;
 
       // 注意：此處查詢的 'quantity' 欄位在 record_inventory 表中不存在
       // 應該使用具體的庫存字段總和
@@ -460,20 +476,22 @@ async function fetchStatData(
         pipeline?: number;
         prebook?: number;
       };
-      const totalInventory =
-        (data as RecordInventory[])?.reduce((sum: number, record: RecordInventory) => {
-          // 計算所有庫存位置的總和
-          const quantity =
-            (record.await || 0) +
-            (record.backcarpark || 0) +
-            (record.bulk || 0) +
-            (record.damage || 0) +
-            (record.fold || 0) +
-            (record.injection || 0) +
-            (record.pipeline || 0) +
-            (record.prebook || 0);
-          return sum + quantity;
-        }, 0) || 0;
+      const inventoryRecords = _data as RecordInventory[] | null;
+      const totalInventory = inventoryRecords
+        ? inventoryRecords.reduce((sum: number, record: RecordInventory) => {
+            // 計算所有庫存位置的總和
+            const quantity =
+              (record.await || 0) +
+              (record.backcarpark || 0) +
+              (record.bulk || 0) +
+              (record.damage || 0) +
+              (record.fold || 0) +
+              (record.injection || 0) +
+              (record.pipeline || 0) +
+              (record.prebook || 0);
+            return sum + quantity;
+          }, 0)
+        : 0;
 
       return {
         type,
@@ -602,14 +620,14 @@ export const statsResolvers = {
       context: StatsResolverContext
     ): Promise<StatsCardData> => {
       try {
-        console.log('[StatsResolver] statsCardData called with input:', input);
+        console.log('[StatsResolver] statsCardData called with _input:', input);
 
         const { supabase } = context;
         if (!supabase) {
           throw new Error('Supabase client not available in context');
         }
 
-        const startTime = Date.now();
+        const _startTime = Date.now();
 
         // 創建 DataLoader 實例
         const statsLoader = createStatsLoader(supabase);
@@ -628,11 +646,11 @@ export const statsResolvers = {
         console.log('[StatsResolver] Loaded configs:', configs.length);
 
         // 計算性能指標
-        const endTime = Date.now();
+        const _endTime = Date.now();
         const performance = {
           totalQueries: input.types.length,
           cachedQueries: 0, // TODO: 實現緩存統計
-          averageResponseTime: endTime - startTime,
+          averageResponseTime: _endTime - _startTime,
           dataAge: 0, // TODO: 實現數據年齡計算
         };
 
@@ -685,7 +703,7 @@ export const statsResolvers = {
   Subscription: {
     // 訂閱統計數據更新
     statsUpdated: {
-      subscribe: async function* (_: unknown, { types }: { types: StatsType[] }) {
+      subscribe: async function* (_: unknown, { _types }: { _types: StatsType[] }) {
         // TODO: 實現實時訂閱邏輯
         // 這裡可以使用 Supabase Realtime 或其他實時數據源
       },

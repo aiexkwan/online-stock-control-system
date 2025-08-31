@@ -5,16 +5,8 @@ import ProductCodeInput from './ProductCodeInput';
 import ProductInfoDisplay from './ProductInfoDisplay';
 import FormField from './FormField';
 import { getFieldError } from './hooks/useFormValidation';
-import { FormValidation } from './types';
+import { FormValidation, ProductInfo } from './types';
 import RemarkFormatter from './RemarkFormatter';
-
-interface ProductInfo {
-  code: string;
-  description: string;
-  standard_qty: string;
-  type: string;
-  remark?: string;
-}
 
 interface BasicProductFormProps {
   productCode: string;

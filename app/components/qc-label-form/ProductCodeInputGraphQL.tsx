@@ -4,19 +4,18 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { ApolloError } from '@apollo/client';
 import { getErrorMessage } from '@/lib/types/error-handling';
 import { useGetProductBasicInfo } from '@/lib/graphql/hooks/useProduct';
-import type { Product } from '@/types/generated/graphql';
 
-// GraphQL query result type - matching the hook response type
-interface ProductBasicInfoQueryResult {
-  product?: {
-    code: string;
-    description: string;
-    type: string;
-    standardQty?: number;
-    colour?: string;
-    remark?: string;
-  };
+// GraphQL Product interface to match the hook response
+interface Product {
+  code: string;
+  description: string;
+  colour?: string;
+  type: string;
+  standardQty?: number;
+  remark?: string;
 }
+
+// Product info interface for component props
 
 interface ProductInfo {
   code: string;
@@ -58,9 +57,9 @@ export const ProductCodeInputGraphQL: React.FC<ProductCodeInputGraphQLProps> = (
   // GraphQL hook for searching product
   const [getProductBasicInfo, { loading: graphqlLoading, error: graphqlError }] =
     useGetProductBasicInfo({
-      onCompleted: (data: any) => {
-        if (data?.product) {
-          const product = data.product;
+      onCompleted: (data: { product?: Product }) => {
+        const product = data?.product;
+        if (product) {
           const productData: ProductInfo = {
             code: product.code,
             description: product.description,
@@ -93,7 +92,7 @@ export const ProductCodeInputGraphQL: React.FC<ProductCodeInputGraphQLProps> = (
           }
         }
       },
-      onError: error => {
+      onError: (error: ApolloError) => {
         console.error('[ProductCodeInputGraphQL] Search error:', error);
         onProductInfoChange(null);
         setProductError('Search failed. Please try again.');

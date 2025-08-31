@@ -6,7 +6,7 @@
 import { IResolvers } from '@graphql-tools/utils';
 import { GraphQLError } from 'graphql';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { GraphQLContext } from './index';
+import type { GraphQLContext } from './index';
 
 // Helper types for pagination
 interface PaginationParams {
@@ -298,7 +298,7 @@ export const productResolvers: IResolvers = {
           throw new GraphQLError(`Failed to load pallets: ${error.message}`);
         }
 
-        const edges = (data || []).map((pallet, index) => ({
+        const edges = (data || []).map((pallet, _index) => ({
           cursor: Buffer.from(pallet.plt_num).toString('base64'),
           node: {
             pltNum: pallet.plt_num,
@@ -446,7 +446,7 @@ export const productResolvers: IResolvers = {
           throw new GraphQLError(`Failed to load products: ${error.message}`);
         }
 
-        const edges = (data || []).map((product, index) => ({
+        const edges = (data || []).map((product, _index) => ({
           cursor: Buffer.from(product.code).toString('base64'),
           node: {
             code: product.code,

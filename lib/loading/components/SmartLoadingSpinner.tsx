@@ -56,6 +56,19 @@ export function SmartLoadingSpinner({
     enablePerformanceAware,
   });
 
+  // 處理完成和錯誤回調
+  React.useEffect(() => {
+    if (!isLoading && progress === 100 && !error && onComplete) {
+      onComplete();
+    }
+  }, [isLoading, progress, error, onComplete]);
+
+  React.useEffect(() => {
+    if (error && onError) {
+      onError(error);
+    }
+  }, [error, onError]);
+
   // 使用提供的性能指標或從 Hook 獲取
   const metrics = performanceMetrics || smartLoading.performanceMetrics;
 

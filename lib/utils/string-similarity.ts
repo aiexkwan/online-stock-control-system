@@ -17,7 +17,7 @@ export function levenshteinDistance(str1: string, str2: string): number {
     for (let j = 1; j <= str1.length; j++) {
       const currentRow = matrix[i];
       const prevRow = matrix[i - 1];
-      
+
       if (currentRow && prevRow && str2.charAt(i - 1) === str1.charAt(j - 1)) {
         currentRow[j] = prevRow[j - 1] ?? 0;
       } else if (currentRow && prevRow) {

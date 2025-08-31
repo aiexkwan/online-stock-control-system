@@ -42,7 +42,7 @@ export async function testHardwareServices() {
     logger.info(`✅ Job added to queue: ${jobId}`);
 
     const queueStatus = hal.queue.getQueueStatus();
-    logger.info(queueStatus, 'Queue status:');
+    logger.info({ queueStatus }, 'Queue status:');
 
     // Test 4: Monitoring
     logger.info('Test 4: Device Monitoring');
@@ -78,6 +78,13 @@ export async function testHardwareServices() {
 }
 
 // Run tests if called directly
-if (require.main === module) {
-  testHardwareServices();
+// Note: In ES6 modules, use dynamic checks instead of require.main
+if (typeof window === 'undefined' && typeof process !== 'undefined') {
+  // Check if this script is being run directly (not imported)
+  const isMainModule =
+    process.argv[1]?.endsWith('test-hardware-services.ts') ||
+    process.argv[1]?.endsWith('test-hardware-services.js');
+  if (isMainModule) {
+    testHardwareServices().catch(console.error);
+  }
 }

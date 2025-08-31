@@ -48,7 +48,7 @@ interface VisualSystemContextType {
     updatePerformanceMetrics: (fps: number, memory: number) => void;
     setPerformanceTier: (tier: 'high' | 'medium' | 'low') => void;
   };
-  config: typeof VISUAL_CONFIG;
+  _config: typeof VISUAL_CONFIG;
   performanceConfig: typeof PERFORMANCE_CONFIG;
 }
 
@@ -242,7 +242,7 @@ export function VisualSystemProvider({ children, overrides }: VisualSystemProvid
   const value = {
     state,
     actions,
-    config: VISUAL_CONFIG,
+    _config: VISUAL_CONFIG,
     performanceConfig: PERFORMANCE_CONFIG,
   };
 

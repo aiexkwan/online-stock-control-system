@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 import { getErrorMessage } from '@/lib/types/error-handling';
-import { getUserId } from '@/app/hooks/getUserId';
+import { useGetUserId } from '@/app/hooks/getUserId';
 import { usePdfGeneration } from '@/app/(app)/admin/hooks/usePdfGeneration';
 import { createQcDatabaseEntriesWithTransaction } from '@/app/actions/qcActions';
 import {
@@ -12,7 +12,7 @@ import {
   releasePalletReservation,
 } from '@/app/utils/palletGeneration';
 import { createClient } from '@/app/utils/supabase/client';
-import { MIN_ACO_ORDER_REF_LENGTH } from '../constants';
+import { _MIN_ACO_ORDER_REF_LENGTH } from '../constants';
 // 導入新的模組化 hooks
 import type { ProductInfo, FormData, SlateDetail } from '../types';
 import { useFormValidation } from './modules/useFormValidation';
@@ -23,11 +23,16 @@ import { useStreamingPdfGeneration } from './modules/useStreamingPdfGeneration';
 // Using Server Actions for database operations
 import { useStockUpdates } from './modules/useStockUpdates';
 
+/**
+ * Props for useQcLabelBusiness hook
+ * @description Configuration for QC label business logic
+ * @interface UseQcLabelBusinessProps
+ */
 interface UseQcLabelBusinessProps {
-  formData: FormData;
-  setFormData: React.Dispatch<React.SetStateAction<FormData>>;
-  productInfo: ProductInfo | null;
-  onProductInfoReset?: () => void;
+  readonly formData: FormData;
+  readonly setFormData: React.Dispatch<React.SetStateAction<FormData>>;
+  readonly productInfo: ProductInfo | null;
+  readonly onProductInfoReset?: () => void;
 }
 
 export const useQcLabelBusiness = ({
@@ -40,22 +45,22 @@ export const useQcLabelBusiness = ({
   const supabase = createClient();
 
   // 使用統一的 useUserId hook
-  const { userId, refreshUser } = getUserId();
+  const { _userId, _refreshUser } = useGetUserId();
 
   // 當 userId 改變時更新 formData
   useEffect(() => {
-    if (userId) {
-      setFormData(prev => ({ ...prev, userId }));
+    if (_userId) {
+      setFormData(prev => ({ ...prev, userId: _userId }));
     }
-  }, [userId, setFormData]);
+  }, [_userId, setFormData]);
 
   const {
     canSearchAco,
     isAcoOrderFulfilled,
     isAcoOrderIncomplete,
     isAcoOrderExcess,
-    validateForm,
-    validateAcoOrderDetails,
+    _validateForm,
+    _validateAcoOrderDetails,
   } = useFormValidation({ formData, productInfo });
 
   const {
@@ -79,9 +84,9 @@ export const useQcLabelBusiness = ({
 
   const {
     handleSlateDetailChange,
-    handleSlateBatchNumberChange,
-    validateSlateDetails,
-    clearSlateDetails,
+    _handleSlateBatchNumberChange,
+    _validateSlateDetails,
+    _clearSlateDetails,
   } = useSlateManagement({ formData, setFormData });
 
   const { generatePdfs, printPdfs } = usePdfGeneration();
@@ -103,8 +108,6 @@ export const useQcLabelBusiness = ({
           timeStamp: e.timeStamp,
           currentTarget: e.currentTarget,
         },
-        preventDefault: () => e.preventDefault(),
-        stopPropagation: () => e.stopPropagation(),
       };
 
       // Store the event and open clock number confirmation
@@ -137,9 +140,9 @@ export const useQcLabelBusiness = ({
       setCooldownTimer();
 
       // 驗證基本表單數據
-      const { isValid, errors } = validateForm();
-      if (!isValid) {
-        const errorMessage = Object.values(errors).join(', ');
+      const validationResult = _validateForm();
+      if (!validationResult.isValid) {
+        const errorMessage = Object.values(validationResult._errors).join(', ');
         toast.error(errorMessage);
         setIsProcessing(false);
         setPrintEventToProceed(null);
@@ -456,7 +459,7 @@ export const useQcLabelBusiness = ({
       onProductInfoReset,
       checkCooldownPeriod,
       setCooldownTimer,
-      validateForm,
+      _validateForm,
       generatePdfs,
       generatePdfsStream,
       printPdfs,

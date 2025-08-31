@@ -1,16 +1,13 @@
 /**
  * 表單驗證 Schema
- * 
+ *
  * 統一的 Zod 表單驗證系統，整合現有的表單組件
  */
 
 import { z } from 'zod';
 
 // 基礎驗證 Schema
-export const emailSchema = z
-  .string()
-  .min(1, '電子郵件為必填項')
-  .email('請輸入有效的電子郵件格式');
+export const emailSchema = z.string().min(1, '電子郵件為必填項').email('請輸入有效的電子郵件格式');
 
 export const passwordSchema = z
   .string()
@@ -29,35 +26,33 @@ export const loginFormSchema = z.object({
   password: passwordSchema,
 });
 
-export const registerFormSchema = z.object({
-  email: emailSchema,
-  password: passwordSchema,
-  confirmPassword: z.string(),
-  clockNumber: clockNumberSchema,
-  name: z.string().min(1, '姓名為必填項').max(50, '姓名長度不能超過 50 個字符'),
-}).refine(
-  (data) => data.password === data.confirmPassword,
-  {
+export const registerFormSchema = z
+  .object({
+    email: emailSchema,
+    password: passwordSchema,
+    confirmPassword: z.string(),
+    clockNumber: clockNumberSchema,
+    name: z.string().min(1, '姓名為必填項').max(50, '姓名長度不能超過 50 個字符'),
+  })
+  .refine(data => data.password === data.confirmPassword, {
     message: '密碼確認不匹配',
     path: ['confirmPassword'],
-  }
-);
+  });
 
 export const resetPasswordFormSchema = z.object({
   email: emailSchema,
 });
 
-export const changePasswordFormSchema = z.object({
-  currentPassword: passwordSchema,
-  newPassword: passwordSchema,
-  confirmPassword: z.string(),
-}).refine(
-  (data) => data.newPassword === data.confirmPassword,
-  {
+export const changePasswordFormSchema = z
+  .object({
+    currentPassword: passwordSchema,
+    newPassword: passwordSchema,
+    confirmPassword: z.string(),
+  })
+  .refine(data => data.newPassword === data.confirmPassword, {
     message: '新密碼確認不匹配',
     path: ['confirmPassword'],
-  }
-);
+  });
 
 // 產品和庫存相關 Schema
 export const productCodeSchema = z
@@ -71,21 +66,20 @@ export const quantitySchema = z
   .min(0, '數量不能為負數')
   .max(999999, '數量不能超過 999999');
 
-export const stockTransferFormSchema = z.object({
-  productCode: productCodeSchema,
-  fromLocation: z.string().min(1, '來源位置為必填項'),
-  toLocation: z.string().min(1, '目標位置為必填項'),
-  quantity: quantitySchema,
-  reason: z.string().optional(),
-}).refine(
-  (data) => data.fromLocation !== data.toLocation,
-  {
+export const stockTransferFormSchema = z
+  .object({
+    productCode: productCodeSchema,
+    fromLocation: z.string().min(1, '來源位置為必填項'),
+    toLocation: z.string().min(1, '目標位置為必填項'),
+    quantity: quantitySchema,
+    reason: z.string().optional(),
+  })
+  .refine(data => data.fromLocation !== data.toLocation, {
     message: '來源位置和目標位置不能相同',
     path: ['toLocation'],
-  }
-);
+  });
 
-// GRN 相關 Schema  
+// GRN 相關 Schema
 export const grnFormSchema = z.object({
   grnRef: z.number().positive('GRN 參考號必須為正數'),
   materialCode: productCodeSchema,
@@ -106,11 +100,15 @@ export const orderFormSchema = z.object({
   deliveryAddress: z.string().min(1, '送貨地址為必填項'),
   deliveryDate: z.string().refine(date => !isNaN(Date.parse(date)), '無效的日期格式'),
   accountNumber: z.string().optional(),
-  items: z.array(z.object({
-    productCode: productCodeSchema,
-    quantity: quantitySchema,
-    description: z.string().optional(),
-  })).min(1, '訂單必須包含至少一個項目'),
+  items: z
+    .array(
+      z.object({
+        productCode: productCodeSchema,
+        quantity: quantitySchema,
+        description: z.string().optional(),
+      })
+    )
+    .min(1, '訂單必須包含至少一個項目'),
 });
 
 // QC 標籤相關 Schema
@@ -204,14 +202,14 @@ export function validateFileUpload(data: unknown) {
 // 統一錯誤處理
 export function formatZodErrors(error: z.ZodError): Record<string, string> {
   const errors: Record<string, string> = {};
-  
-  error.errors.forEach((err) => {
+
+  error.errors.forEach(err => {
     const path = err.path.join('.');
     if (path) {
       errors[path] = err.message;
     }
   });
-  
+
   return errors;
 }
 

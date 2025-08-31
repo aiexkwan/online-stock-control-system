@@ -347,8 +347,8 @@ export function setupAccessibility(
   const {
     enableSkipLinks: _enableSkipLinks = true, // Renamed unused variable
     enableFocusManagement: _enableFocusManagement = true, // Renamed unused variable
-    enableKeyboardNavigation = true,
-    debugMode = false,
+    enableKeyboardNavigation: _enableKeyboardNavigation = true,
+    debugMode: _debugMode = false,
   } = options;
 
   // 設置全域CSS

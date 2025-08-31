@@ -3,7 +3,7 @@
  */
 
 import { IResolvers } from '@graphql-tools/utils';
-import { GraphQLContext } from './index';
+// Unused import: GraphQLContext from './index'
 
 export const reportGenerationResolvers: IResolvers = {
   Query: {},

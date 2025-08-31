@@ -95,6 +95,22 @@ export interface AlertThresholds {
   errorRate: number;
 }
 
+// Alert interface for notifications
+export interface SecurityAlert {
+  title: string;
+  message: string;
+  severity: SecuritySeverity;
+  events?: SecurityEvent[];
+  metrics?: Record<string, unknown>;
+}
+
+// Anomaly baseline interface
+interface AnomalyBaseline {
+  values: number[];
+  mean: number;
+  stdDev: number;
+}
+
 // Security patterns for detection
 const SECURITY_PATTERNS = {
   SQL_INJECTION: [
@@ -127,7 +143,7 @@ export class ProductionSecurityMonitor extends EventEmitter {
   private events: SecurityEvent[] = [];
   private alertConfig: AlertConfig;
   private rateLimitMap: Map<string, number[]> = new Map();
-  private anomalyBaseline: Map<string, Record<string, unknown>> = new Map();
+  private anomalyBaseline: Map<string, AnomalyBaseline> = new Map();
   private isMonitoring: boolean = false;
 
   private constructor() {
@@ -267,23 +283,28 @@ export class ProductionSecurityMonitor extends EventEmitter {
     }
 
     // Calculate z-score
-    const zScore = Math.abs((value - baseline.mean) / (baseline.stdDev || 1));
+    const zScore = Math.abs(
+      (value - (baseline.mean as number)) / ((baseline.stdDev as number) || 1)
+    );
 
     // Anomaly if z-score > 3 (99.7% confidence)
     const isAnomaly = zScore > 3;
 
     // Update baseline with exponential moving average
-    baseline.values.push(value);
-    if (baseline.values.length > 100) {
-      baseline.values.shift();
+    const values = baseline.values as number[];
+    values.push(value);
+    if (values.length > 100) {
+      values.shift();
     }
 
-    baseline.mean =
-      baseline.values.reduce((a: number, b: number) => a + b, 0) / baseline.values.length;
-    baseline.stdDev = Math.sqrt(
-      baseline.values.reduce((sum: number, v: number) => sum + Math.pow(v - baseline.mean, 2), 0) /
-        baseline.values.length
+    const mean = values.reduce((a: number, b: number) => a + b, 0) / values.length;
+    const stdDev = Math.sqrt(
+      values.reduce((sum: number, v: number) => sum + Math.pow(v - mean, 2), 0) / values.length
     );
+
+    baseline.values = values;
+    baseline.mean = mean;
+    baseline.stdDev = stdDev;
 
     return isAnomaly;
   }
@@ -480,14 +501,14 @@ export class ProductionSecurityMonitor extends EventEmitter {
     this.events = this.events.filter(e => e.timestamp > cutoffTime);
   }
 
-  private sendAlert(alert: SecurityEvent): void {
+  private sendAlert(alert: SecurityAlert): void {
     // Send alerts through configured channels
     this.alertConfig.channels.forEach(channel => {
       this.sendToChannel(channel, alert);
     });
   }
 
-  private sendToChannel(channel: AlertChannel, alert: SecurityEvent): void {
+  private sendToChannel(channel: AlertChannel, alert: SecurityAlert): void {
     // Implementation would send to actual channels
     console.log(`[Alert - ${channel.type}]`, alert);
   }

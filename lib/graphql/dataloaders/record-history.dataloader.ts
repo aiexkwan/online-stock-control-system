@@ -116,7 +116,7 @@ function buildOptimizedQuery(keys: RecordHistoryKey[]): {
   let paramIndex = 1;
   let resultOffset = 0;
 
-  keys.forEach((key, keyIndex) => {
+  keys.forEach((key, _keyIndex) => {
     const filters = key.filters;
     let subQuery = baseQuery;
     const params: unknown[] = [];
@@ -200,13 +200,13 @@ export function createRecordHistoryDataLoader(supabase: SupabaseClient) {
         }
 
         // Get all unique operator IDs for operator info lookup
-        const operatorIds = [
-          ...new Set(
+        const operatorIds = Array.from(
+          new Set(
             rawResults
               .map((r: { operator_id: number }) => r.operator_id)
               .filter((id: number | null | undefined) => id !== null && id !== undefined)
-          ),
-        ];
+          )
+        );
 
         // Fetch operator information in batch
         const { data: operatorData, error: operatorError } = await supabase

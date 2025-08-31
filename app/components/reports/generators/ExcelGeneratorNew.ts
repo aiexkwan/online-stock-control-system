@@ -1,16 +1,18 @@
 /**
- * Excel 報表生成器 (ExcelJS 版本)
+ * Excel 報表生成器 (_ExcelJS 版本)
  * 替代原有 xlsx 版本，提供更豐富嘅功能同更好嘅安全性
  */
 
-import { getExcelJS } from '@/lib/utils/exceljs-dynamic';
-import { DatabaseRecord } from '@/types/database/tables';
-import type { Workbook, Worksheet } from '@/lib/utils/exceljs-dynamic';
+import { getExcelJS } from '../../../../lib/utils/exceljs-dynamic';
+import { DatabaseRecord } from '../../../../types/database/tables';
+import type { Workbook, Worksheet } from '../../../../lib/utils/exceljs-dynamic';
 import {
   ReportGenerator,
   ProcessedReportData,
   ReportConfig,
   ReportFormat,
+  SectionConfig,
+  ColumnConfig,
 } from '../core/ReportConfig';
 import {
   jsonToWorksheet,
@@ -19,28 +21,24 @@ import {
   autoFitColumns,
   NumberFormats,
   setNumberFormat,
-} from '@/lib/utils/exceljs-migration-helper';
+} from '../../../../lib/utils/exceljs-migration-helper';
 import {
   validateAndParseReportConfig,
   validateAndParseProcessedData,
   validateColumnConfig,
   validateSectionConfig,
-  type ValidatedColumnConfig,
-  type ValidatedSectionConfig,
-  type ValidatedReportConfig,
-  type ValidatedProcessedReportData,
 } from '../schemas/ExcelGeneratorSchemas';
 
 export class ExcelGeneratorNew implements ReportGenerator {
   format: ReportFormat = 'excel';
   supportLegacyMode = true;
 
-  async generate(data: ProcessedReportData, config: ReportConfig): Promise<Blob> {
+  async generate(data: ProcessedReportData, _config: ReportConfig): Promise<Blob> {
     // Strategy 1: Zod validation for runtime safety
     const validatedData = validateAndParseProcessedData(data);
-    const validatedConfig = validateAndParseReportConfig(config);
-    const ExcelJS = await getExcelJS();
-    const workbook = new ExcelJS.Workbook();
+    const validatedConfig = validateAndParseReportConfig(_config);
+    const _ExcelJS = await getExcelJS();
+    const workbook = new _ExcelJS.Workbook();
 
     // 設置工作簿屬性
     workbook.creator = 'NewPennine WMS';
@@ -49,27 +47,27 @@ export class ExcelGeneratorNew implements ReportGenerator {
     workbook.lastPrinted = new Date();
 
     // 添加摘要工作表
-    if (data.summary && Object.keys(data.summary).length > 0) {
-      await this.addSummarySheet(workbook, data.summary, config);
+    if (validatedData.summary && Object.keys(validatedData.summary).length > 0) {
+      await this.addSummarySheet(workbook, validatedData.summary, validatedConfig);
     }
 
     // 添加各區段工作表
-    for (const section of config.sections) {
+    for (const section of validatedConfig.sections) {
       // 檢查是否在 Excel 中隱藏此區段
       if (section.hideInFormats?.includes('excel')) {
         continue;
       }
 
-      const sectionData = data.sections[section.id];
+      const sectionData = validatedData.sections[section.id];
       if (!sectionData) continue;
 
       if (section.type === 'table' && Array.isArray(sectionData)) {
-        await this.addDataSheet(workbook, section, sectionData, config);
+        await this.addDataSheet(workbook, section, sectionData, validatedConfig);
       }
     }
 
     // 添加元數據工作表
-    await this.addMetadataSheet(workbook, data.metadata, config);
+    await this.addMetadataSheet(workbook, validatedData.metadata, validatedConfig);
 
     // 生成 Excel 文件
     const buffer = await workbook.xlsx.writeBuffer();
@@ -82,7 +80,7 @@ export class ExcelGeneratorNew implements ReportGenerator {
   private async addSummarySheet(
     workbook: Workbook,
     summary: Record<string, unknown>,
-    config: ReportConfig
+    _config: ReportConfig
   ): Promise<void> {
     const worksheet = workbook.addWorksheet('Summary');
 
@@ -109,7 +107,7 @@ export class ExcelGeneratorNew implements ReportGenerator {
     });
 
     // 從配置中獲取摘要欄位定義
-    const summarySection = config.sections.find(s => s.type === 'summary');
+    const summarySection = _config.sections.find(s => s.type === 'summary');
     const summaryFields = summarySection?.config?.summaryFields || [];
 
     for (const field of summaryFields) {
@@ -141,9 +139,9 @@ export class ExcelGeneratorNew implements ReportGenerator {
 
   private async addDataSheet(
     workbook: Workbook,
-    section: ValidatedSectionConfig,
+    section: SectionConfig,
     data: Record<string, unknown>[],
-    config: ReportConfig
+    _config: ReportConfig
   ): Promise<void> {
     // 使用簡短的工作表名稱（Excel 限制 31 字符）
     const sheetName =
@@ -174,31 +172,25 @@ export class ExcelGeneratorNew implements ReportGenerator {
     // 空行
     worksheet.addRow([]);
 
-    // 策略4: 設置列配置 - 安全的類型轉換
-    worksheet.columns = columns.map((col: Record<string, unknown>) => ({
-      header: typeof col.label === 'string' ? col.label : String(col.label || 'Unknown'),
-      key: typeof col.id === 'string' ? col.id : String(col.id || 'unknown'),
-      width: typeof col.width === 'number' ? col.width / 7 : 15, // 轉換為 ExcelJS 寬度
+    // 設置列配置
+    worksheet.columns = columns.map(col => ({
+      header: col.label,
+      key: col.id,
+      width: col.width ? col.width / 7 : 15, // 轉換為 ExcelJS 寬度
     }));
 
     // 數據行
     data.forEach(item => {
       const rowData: DatabaseRecord = {};
-      columns.forEach((col: Record<string, unknown>) => {
-        const colId = typeof col.id === 'string' ? col.id : String(col.id || 'unknown');
-        const colFormat =
-          typeof col.format === 'string'
-            ? col.format
-            : typeof col.type === 'string'
-              ? col.type
-              : undefined;
-        rowData[colId] = this.formatValue(item[colId], colFormat);
+      columns.forEach(col => {
+        const colFormat = col.format || col.type;
+        rowData[col.id] = this.formatValue(item[col.id], colFormat);
       });
       worksheet.addRow(rowData);
     });
 
     // 添加統計行（如果需要）
-    if (section.config?.showTotals) {
+    if ((section.config as any)?.showTotals) {
       worksheet.addRow([]); // 空行
       const totalsRow = this.calculateTotals(data, columns);
       const totalRowNum = worksheet.addRow(totalsRow);
@@ -213,7 +205,7 @@ export class ExcelGeneratorNew implements ReportGenerator {
     }
 
     // 應用樣式
-    this.applyStyles(worksheet, columns, config);
+    this.applyStyles(worksheet, columns, _config);
 
     // 設置標題行樣式
     const headerRowNum = 3; // 標題在第3行
@@ -238,7 +230,7 @@ export class ExcelGeneratorNew implements ReportGenerator {
   private async addMetadataSheet(
     workbook: Workbook,
     metadata: { generatedAt: string; filters: Record<string, unknown>; recordCount: number },
-    config: ReportConfig
+    _config: ReportConfig
   ): Promise<void> {
     const worksheet = workbook.addWorksheet('Info');
 
@@ -252,8 +244,8 @@ export class ExcelGeneratorNew implements ReportGenerator {
     worksheet.addRow([]);
 
     // 基本信息
-    worksheet.addRow(['Report Name', config.name]);
-    worksheet.addRow(['Report ID', config.id]);
+    worksheet.addRow(['Report Name', _config._name]);
+    worksheet.addRow(['Report ID', _config.id]);
     worksheet.addRow(['Generated At', new Date(metadata.generatedAt).toLocaleString()]);
     worksheet.addRow(['Total Records', metadata.recordCount]);
 
@@ -277,7 +269,7 @@ export class ExcelGeneratorNew implements ReportGenerator {
     // 添加過濾器值
     for (const [key, value] of Object.entries(metadata.filters)) {
       if (value !== undefined && value !== null && value !== '') {
-        const filterConfig = config.filters.find(f => f.id === key);
+        const filterConfig = _config.filters.find(f => f.id === key);
         const label = filterConfig?.label || key;
         worksheet.addRow([label, String(value)]);
       }
@@ -292,13 +284,9 @@ export class ExcelGeneratorNew implements ReportGenerator {
     addBorders(worksheet, filterStartRow, 1, lastRow, 2);
   }
 
-  private applyStyles(
-    worksheet: Worksheet,
-    columns: ValidatedColumnConfig[],
-    config: ValidatedReportConfig
-  ): void {
+  private applyStyles(worksheet: Worksheet, columns: ColumnConfig[], _config: ReportConfig): void {
     // 應用列格式
-    columns.forEach((col: ValidatedColumnConfig, index: number) => {
+    columns.forEach((col: ColumnConfig, index: number) => {
       const colNum = index + 1;
 
       if (col.format === 'currency' || col.type === 'currency') {
@@ -313,13 +301,13 @@ export class ExcelGeneratorNew implements ReportGenerator {
     });
 
     // 應用自定義樣式（如果配置中有）
-    const styleConfig = config.styleOverrides?.excel;
+    const styleConfig = _config.styleOverrides?.excel;
     if (styleConfig) {
       // 可以根據配置應用更多樣式
     }
   }
 
-  private inferColumns(dataItem: Record<string, unknown>): ValidatedColumnConfig[] {
+  private inferColumns(dataItem: Record<string, unknown>): ColumnConfig[] {
     return Object.keys(dataItem).map(key =>
       validateColumnConfig({
         id: key,
@@ -358,7 +346,7 @@ export class ExcelGeneratorNew implements ReportGenerator {
 
   private calculateTotals(
     data: Record<string, unknown>[],
-    columns: ValidatedColumnConfig[]
+    columns: ColumnConfig[]
   ): (string | number | unknown)[] {
     const totals: DatabaseRecord = { [columns[0].id]: 'Total' };
 

@@ -25,7 +25,6 @@ const RegisterForm = memo(function RegisterForm({ onRegistrationSuccess }: Regis
     clearAllErrors,
   } = useLoginContext();
 
-
   // Memoized handlers to prevent re-renders
   const handleSubmit = useCallback(
     async (formData: { email: string; password: string; confirmPassword: string }) => {
@@ -131,8 +130,8 @@ const RegisterForm = memo(function RegisterForm({ onRegistrationSuccess }: Regis
           {/* Password validation errors */}
           {passwordErrors.length > 0 && (
             <div className='mt-1 space-y-1'>
-              {passwordErrors.map((error, index) => (
-                <CompoundForm.Error key={index} error={error} />
+              {passwordErrors.map((_error, index) => (
+                <CompoundForm.Error key={index} error={_error} />
               ))}
             </div>
           )}

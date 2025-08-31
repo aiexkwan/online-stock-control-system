@@ -5,7 +5,7 @@
  */
 
 import { SupabaseClient } from '@supabase/supabase-js';
-import { detectSearchType } from '@/app/utils/palletSearchUtils';
+import { detectSearchType } from '../../../app/utils/palletSearchUtils';
 import { IInventoryService } from '../interfaces/IInventoryService';
 import {
   PalletSearchResult,
@@ -76,7 +76,7 @@ export class UnifiedInventoryService implements IInventoryService {
    * Uses TransactionService to ensure atomic updates
    */
   async transferStock(transfer: StockTransferDto): Promise<StockTransferResult> {
-    const startTime = Date.now();
+    const _startTime = Date.now();
 
     try {
       // Add operator info if not provided
@@ -156,7 +156,7 @@ export class UnifiedInventoryService implements IInventoryService {
    * Executes all transfers within a single transaction
    */
   async batchTransfer(batch: BatchTransferDto): Promise<BatchTransferResult> {
-    const startTime = Date.now();
+    const _startTime = Date.now();
     const results: Map<string, StockTransferResult> = new Map();
 
     try {
@@ -181,7 +181,7 @@ export class UnifiedInventoryService implements IInventoryService {
           totalSuccessful: 0,
           totalFailed: batch.transfers.length,
           results: Array.from(results.values()),
-          duration: Date.now() - startTime,
+          duration: Date.now() - _startTime,
         };
       }
 
@@ -243,7 +243,7 @@ export class UnifiedInventoryService implements IInventoryService {
         totalSuccessful: successCount,
         totalFailed: failureCount,
         results: Array.from(results.values()),
-        duration: Date.now() - startTime,
+        duration: Date.now() - _startTime,
       };
     } catch (error: unknown) {
       console.error('[UnifiedInventoryService] Batch transfer error:', error);
@@ -252,7 +252,7 @@ export class UnifiedInventoryService implements IInventoryService {
         totalSuccessful: 0,
         totalFailed: batch.transfers.length,
         results: Array.from(results.values()),
-        duration: Date.now() - startTime,
+        duration: Date.now() - _startTime,
       };
     }
   }

@@ -152,7 +152,7 @@ export const useGraphQLDataUpdate = (
 
   const [createSupplier] = useCreateSupplier();
   const [updateSupplier] = useUpdateSupplier();
-  const [_searchSuppliers] = useSearchSuppliers(); // Renamed unused variable
+  const [searchSuppliers] = useSearchSuppliers();
   const [getSupplierByCode] = useSearchSupplierByCode();
 
   // Helper to show overlays (same as original)
@@ -215,11 +215,11 @@ export const useGraphQLDataUpdate = (
 
       return null;
     },
-    [config]
+    [config.fields]
   );
 
   // Form validation (same as original)
-  const validateForm = useCallback((): boolean => {
+  const _validateForm = useCallback((): boolean => {
     const errors: Record<string, string> = {};
 
     // Validate each field
@@ -282,8 +282,8 @@ export const useGraphQLDataUpdate = (
               description: productData.description,
               type: productData.type,
               colour: productData.colour,
-              standard_qty: productData.standardQty,
-              remark: productData.remark,
+              standard_qty: productData.standardQty || 0,
+              remark: productData.remark || null,
             };
 
             setState(prev => ({
@@ -315,8 +315,8 @@ export const useGraphQLDataUpdate = (
             // Found - switch to display mode
             const supplierData = result.data.supplier;
             const mappedData = {
-              supplier_code: supplierData.code,
-              supplier_name: supplierData.name,
+              supplier_code: supplierData.supplier_code,
+              supplier_name: supplierData.supplier_name,
             };
 
             setState(prev => ({
@@ -345,7 +345,7 @@ export const useGraphQLDataUpdate = (
 
   // GraphQL Create Operations
   const create = useCallback(async (): Promise<boolean> => {
-    if (!validateForm()) {
+    if (!_validateForm()) {
       return false;
     }
 
@@ -411,14 +411,14 @@ export const useGraphQLDataUpdate = (
       return false;
     }
   }, [
-    config,
-    validateForm,
+    _validateForm,
     showOverlay,
-    onSuccess,
-    onError,
     createProduct,
     createSupplier,
+    config.entityType,
     initialData,
+    onError,
+    onSuccess,
   ]);
 
   // GraphQL Update Operations
@@ -428,7 +428,7 @@ export const useGraphQLDataUpdate = (
       return false;
     }
 
-    if (!validateForm()) {
+    if (!_validateForm()) {
       return false;
     }
 
@@ -496,7 +496,16 @@ export const useGraphQLDataUpdate = (
       onError?.(error as Error, 'update');
       return false;
     }
-  }, [config, validateForm, showOverlay, onSuccess, onError, updateProduct, updateSupplier]);
+  }, [
+    _validateForm,
+    config.primaryKey,
+    config.entityType,
+    updateProduct,
+    showOverlay,
+    onSuccess,
+    updateSupplier,
+    onError,
+  ]);
 
   // Action handlers (same as original with GraphQL operations)
   const actions: FormActions = {
@@ -560,7 +569,7 @@ export const useGraphQLDataUpdate = (
 
     // Validation
     validateField,
-    validateForm,
+    validateForm: _validateForm,
 
     markFieldTouched: useCallback((field: string) => {
       setState(prev => ({ ...prev, touched: { ...prev.touched, [field]: true } }));
@@ -569,7 +578,7 @@ export const useGraphQLDataUpdate = (
     markAllFieldsTouched: useCallback(() => {
       const touched = config.fields.reduce((acc, field) => ({ ...acc, [field.name]: true }), {});
       setState(prev => ({ ...prev, touched }));
-    }, [config]),
+    }, [config.fields]),
 
     clearErrors: useCallback(() => {
       setState(prev => ({ ...prev, errors: {} }));

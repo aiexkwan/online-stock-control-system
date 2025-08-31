@@ -19,7 +19,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { Loader2 } from 'lucide-react';
+// import { Loader2 } from 'lucide-react';
 import { dialogStyles } from '@/app/utils/dialogStyles';
 import { AnalyticsApiClient, type ProductTrendsData } from '@/lib/analytics/api-client';
 
@@ -75,11 +75,6 @@ export function ProductTrendChart({ timeRange }: ProductTrendChartProps) {
 
   const chartData = view === 'summary' ? data?.summary : data?.detail;
   const productCodes = data?.productCodes || [];
-
-  const chartProps = {
-    data: chartData,
-    margin: { top: 20, right: 30, left: 20, bottom: 60 },
-  };
 
   const tooltipStyle = {
     backgroundColor: '#1F2937',

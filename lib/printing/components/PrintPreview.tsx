@@ -3,16 +3,19 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCw } from 'lucide-react';
 import { DatabaseRecord } from '@/types/database/tables';
-import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { PrintOptions, PrintType } from '../types';
 
 export interface PrintPreviewProps {
-  type: string;
+  type: PrintType;
   data: DatabaseRecord[];
   options: PrintOptions;
   className?: string;
+}
+
+interface PreviewDataStructure {
+  items: DatabaseRecord[];
 }
 
 export function PrintPreview({ type, data, options, className }: PrintPreviewProps) {
@@ -27,16 +30,18 @@ export function PrintPreview({ type, data, options, className }: PrintPreviewPro
     // For now, we'll create a simple representation
     let content = '';
 
+    const previewData: PreviewDataStructure = { items: data };
+
     switch (type) {
       case PrintType.QC_LABEL:
         // 策略2: DTO/自定義 type interface - 適配數據格式
-        content = generateQcLabelPreview({ items: data });
+        content = generateQcLabelPreview(previewData);
         break;
       case PrintType.GRN_LABEL:
-        content = generateGrnLabelPreview({ items: data });
+        content = generateGrnLabelPreview(previewData);
         break;
       case PrintType.TRANSACTION_REPORT:
-        content = generateReportPreview({ items: data }, 'Transaction Report');
+        content = generateReportPreview(previewData, 'Transaction Report');
         break;
       default:
         content = '<div class="p-4">Preview not available for this document type</div>';
@@ -55,22 +60,24 @@ export function PrintPreview({ type, data, options, className }: PrintPreviewPro
     generatePreview();
   }, [generatePreview]);
 
-  const generateQcLabelPreview = (data: Record<string, unknown>) => {
+  const generateQcLabelPreview = (data: PreviewDataStructure) => {
+    // Get first item for preview or create empty object
+    const firstItem = data.items.length > 0 ? data.items[0] : {};
     return `
       <div class="p-6 space-y-4">
         <h2 class="text-xl font-bold text-center">QC Label</h2>
         <div class="grid grid-cols-2 gap-4">
           <div>
             <p class="text-sm text-gray-600">Product Code</p>
-            <p class="font-medium">${data.productCode || 'N/A'}</p>
+            <p class="font-medium">${firstItem.productCode || firstItem.product_code || 'N/A'}</p>
           </div>
           <div>
             <p class="text-sm text-gray-600">Quantity</p>
-            <p class="font-medium">${data.quantity || '0'}</p>
+            <p class="font-medium">${firstItem.quantity || firstItem.product_qty || '0'}</p>
           </div>
           <div>
             <p class="text-sm text-gray-600">Operator</p>
-            <p class="font-medium">${data.operator || 'N/A'}</p>
+            <p class="font-medium">${firstItem.operator || 'N/A'}</p>
           </div>
           <div>
             <p class="text-sm text-gray-600">Date</p>
@@ -78,28 +85,28 @@ export function PrintPreview({ type, data, options, className }: PrintPreviewPro
           </div>
         </div>
         ${
-          Array.isArray(data.plt_num) && data.plt_num.length > 0
+          Array.isArray(firstItem.plt_num) && (firstItem.plt_num as unknown[]).length > 0
             ? `
           <div>
             <p class="text-sm text-gray-600">Pallet Numbers</p>
             <div class="mt-1 space-y-1">
-              ${data.plt_num
+              ${(firstItem.plt_num as string[])
                 .slice(0, 3)
-                .map((id: string) => `<p class="font-mono text-sm">${id}</p>`)
+                .map((id: string) => `<p class="font-mono text-sm">${String(id)}</p>`)
                 .join('')}
               ${
-                data.plt_num.length > 3
-                  ? `<p class="text-sm text-gray-500">... and ${data.plt_num.length - 3} more</p>`
+                (firstItem.plt_num as string[]).length > 3
+                  ? `<p class="text-sm text-gray-500">... and ${(firstItem.plt_num as string[]).length - 3} more</p>`
                   : ''
               }
             </div>
           </div>
         `
-            : data.plt_num
+            : firstItem.plt_num
               ? `
           <div>
             <p class="text-sm text-gray-600">Pallet Number</p>
-            <p class="font-mono text-sm">${data.plt_num}</p>
+            <p class="font-mono text-sm">${String(firstItem.plt_num)}</p>
           </div>
         `
               : ''
@@ -108,37 +115,40 @@ export function PrintPreview({ type, data, options, className }: PrintPreviewPro
     `;
   };
 
-  const generateGrnLabelPreview = (data: Record<string, unknown>) => {
+  const generateGrnLabelPreview = (data: PreviewDataStructure) => {
+    // Get first item for preview or create empty object
+    const firstItem = data.items.length > 0 ? data.items[0] : {};
     return `
       <div class="p-6 space-y-4">
         <h2 class="text-xl font-bold text-center">GRN Label</h2>
         <div class="grid grid-cols-2 gap-4">
           <div>
             <p class="text-sm text-gray-600">GRN Number</p>
-            <p class="font-medium">${data.grnNumber || 'N/A'}</p>
+            <p class="font-medium">${firstItem.grnNumber || firstItem.grn_ref || 'N/A'}</p>
           </div>
           <div>
             <p class="text-sm text-gray-600">Supplier</p>
-            <p class="font-medium">${data.supplierName || 'N/A'}</p>
+            <p class="font-medium">${firstItem.supplierName || firstItem.sup_code || 'N/A'}</p>
           </div>
           <div>
             <p class="text-sm text-gray-600">Material Code</p>
-            <p class="font-medium">${data.materialCode || 'N/A'}</p>
+            <p class="font-medium">${firstItem.materialCode || firstItem.material_code || 'N/A'}</p>
           </div>
           <div>
             <p class="text-sm text-gray-600">Total Weight</p>
-            <p class="font-medium">${data.totalGrossWeight || '0'} kg</p>
+            <p class="font-medium">${firstItem.totalGrossWeight || firstItem.gross_weight || '0'} kg</p>
           </div>
         </div>
       </div>
     `;
   };
 
-  const generateReportPreview = (reportData: Record<string, unknown>, title: string) => {
+  const generateReportPreview = (reportData: PreviewDataStructure, title: string) => {
     // 策略4: unknown + type narrowing - 安全獲取報表屬性
-    const startDate = typeof reportData.startDate === 'string' ? reportData.startDate : 'N/A';
-    const endDate = typeof reportData.endDate === 'string' ? reportData.endDate : 'N/A';
-    const totalRecords = Array.isArray(reportData.items) ? reportData.items.length : 0;
+    const firstItem = reportData.items.length > 0 ? reportData.items[0] : {};
+    const startDate = typeof firstItem.startDate === 'string' ? firstItem.startDate : 'N/A';
+    const endDate = typeof firstItem.endDate === 'string' ? firstItem.endDate : 'N/A';
+    const totalRecords = reportData.items.length;
 
     return `
       <div class="p-6 space-y-4">

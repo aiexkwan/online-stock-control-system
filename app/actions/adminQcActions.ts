@@ -2,14 +2,14 @@
 
 import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
-import { createClient } from '@/app/utils/supabase/server';
+// import { _createClient } from '@/app/utils/supabase/server';
 import { getErrorMessage } from '@/lib/types/error-handling';
 
 import {
-  CACHE_CONTROL_TIMEOUT,
+  // _CACHE_CONTROL_TIMEOUT,
   MAX_DUPLICATE_CHECK_ATTEMPTS,
   DUPLICATE_CHECK_DELAY_BASE,
-  ONE_HOUR_CACHE,
+  // ONE_HOUR_CACHE
 } from '@/app/(app)/admin/components/qc-label-constants';
 
 // Schema for validating the clock number string and converting to number
@@ -63,7 +63,7 @@ export interface QcPalletInfoPayload {
 }
 
 export interface QcHistoryPayload {
-  time: string;
+  _time: string;
   id: string;
   action: string;
   plt_num?: string;
@@ -122,7 +122,7 @@ export async function updatePalletPdfUrl(
 export async function uploadPdfToStorage(
   pdfUint8Array: number[],
   fileName: string,
-  _storagePath: string = 'qc-labels'
+  storagePath: string = 'qc-labels'
 ): Promise<{ publicUrl?: string; error?: string }> {
   try {
     // 創建新的 Supabase 客戶端

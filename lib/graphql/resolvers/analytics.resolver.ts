@@ -7,4 +7,5 @@ import { GraphQLContext } from './index';
 
 export const analyticsResolvers: IResolvers = {
   Query: {},
+  Mutation: {},
 };

@@ -174,7 +174,7 @@ function LabelBlock(props: PrintLabelPdfProps) {
     labelType,
     labelMode,
     qcWorkOrderNumber,
-    qcWorkOrderName,
+    qcWorkOrderName: _qcWorkOrderName,
     grnNumber,
     grnMaterialSupplier,
   } = props;

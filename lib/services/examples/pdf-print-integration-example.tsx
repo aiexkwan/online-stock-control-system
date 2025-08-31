@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { Loader2, Printer, FileText, CheckCircle, XCircle } from 'lucide-react';
+import { Loader2, Printer, FileText, CheckCircle } from 'lucide-react';
 import type { QcLabelInputData, GrnLabelInputData } from '@/lib/mappers/pdf-data-mappers';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -232,7 +232,7 @@ export function AdvancedPrintConfigExample() {
   const [loading, setLoading] = useState(false);
   const [config, setConfig] = useState({
     copies: 1,
-    priority: 'normal' as const,
+    priority: 'normal' as 'low' | 'normal' | 'high',
     printerName: '',
     uploadEnabled: true,
     mergeMode: false,
@@ -338,7 +338,9 @@ export function AdvancedPrintConfigExample() {
           <label className='mb-1 block text-sm font-medium'>優先級</label>
           <select
             value={config.priority}
-            onChange={e => setConfig({ ...config, priority: e.target.value as any })}
+            onChange={e =>
+              setConfig({ ...config, priority: e.target.value as 'low' | 'normal' | 'high' })
+            }
             className='w-full rounded-md border px-3 py-2'
           >
             <option value='low'>低</option>

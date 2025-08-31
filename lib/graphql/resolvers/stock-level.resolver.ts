@@ -5,11 +5,11 @@
 
 import { IResolvers } from '@graphql-tools/utils';
 import { GraphQLError } from 'graphql';
-import { format, subDays, parseISO } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import type { StockLevelRecord } from '../types/database-types';
-import { GraphQLContext } from './index';
+import type { GraphQLContext } from './index';
 
-export const stockLevelResolvers: IResolvers<unknown, GraphQLContext> = {
+export const stockLevelResolvers: IResolvers = {
   // Type Resolvers
   StockLevelRecord: {
     productInfo: async (parent: StockLevelRecord, _args: unknown, context: GraphQLContext) => {
