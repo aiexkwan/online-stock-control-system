@@ -36,6 +36,9 @@ import { useOrderDataCache, useOrderSummariesCache } from './hooks/useOrderCache
 import { SoundSettingsToggle } from './components/SoundSettingsToggle';
 import { LoadingProgressChart } from './components/LoadingProgressChart';
 
+// Force dynamic rendering to prevent SSR issues
+export const dynamic = 'force-dynamic';
+
 // 為了類型安全，複製 SearchResult 接口定義
 interface SearchResult {
   id: string;

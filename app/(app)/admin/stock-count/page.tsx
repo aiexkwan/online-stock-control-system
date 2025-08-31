@@ -7,6 +7,9 @@ import { StarfieldBackground } from '@/app/components/StarfieldBackground';
 import StockCountForm from './components/StockCountForm';
 import ScanResult from './components/ScanResult';
 
+// Force dynamic rendering to prevent SSR issues
+export const dynamic = 'force-dynamic';
+
 // 簡化狀態類型
 type CountState = 'form' | 'result' | 'input';
 

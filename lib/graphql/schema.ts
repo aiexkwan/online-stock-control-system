@@ -3297,6 +3297,66 @@ enum ExportStatus {
   FAILED
 }
 
+# 篩選器操作符定義
+enum StringOperator {
+  EQ
+  NEQ
+  CONTAINS
+  NOT_CONTAINS
+  STARTS_WITH
+  ENDS_WITH
+  REGEX
+}
+
+enum NumberOperator {
+  EQ
+  NEQ
+  GT
+  GTE
+  LT
+  LTE
+  BETWEEN
+}
+
+enum DateOperator {
+  EQ
+  NEQ
+  GT
+  GTE
+  LT
+  LTE
+  BETWEEN
+  DAYS_AGO
+  MONTHS_AGO
+  YEARS_AGO
+}
+
+enum ArrayOperator {
+  IN
+  NOT_IN
+  CONTAINS
+  NOT_CONTAINS
+  CONTAINS_ANY
+  CONTAINS_ALL
+}
+
+enum PaginationStyle {
+  OFFSET
+  CURSOR
+}
+
+# 表格欄位定義
+type TableColumn {
+  name: String!
+  label: String!
+  type: String!
+  sortable: Boolean!
+  filterable: Boolean!
+  width: Int
+  alignment: String
+  format: String
+}
+
 # 篩選器類型
 input StringFilter {
   field: String!

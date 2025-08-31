@@ -87,12 +87,14 @@
 ### 2.3 依賴關係圖
 
 ```
+
 operational-wrapper.tsx
-    ├── 導出: OperationalWrapper, OperationalGrid
-    ├── 被引用: 0 個文件（組件未被直接使用）
-    └── CSS 類名被使用:
-        ├── globals.css (定義樣式)
-        └── order-loading/page.tsx (直接使用 CSS 類)
+├── 導出: OperationalWrapper, OperationalGrid
+├── 被引用: 0 個文件（組件未被直接使用）
+└── CSS 類名被使用:
+├── globals.css (定義樣式)
+└── order-loading/page.tsx (直接使用 CSS 類)
+
 ```
 
 ---
@@ -253,6 +255,7 @@ operational-wrapper.tsx
 
 ---
 
-**分析完成時間**: 2025-08-31  
-**分析人員**: 系統清理代理  
+**分析完成時間**: 2025-08-31
+**分析人員**: 系統清理代理
 **審核狀態**: 待執行
+```

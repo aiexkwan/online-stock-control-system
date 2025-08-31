@@ -24,6 +24,7 @@ export type Scalars = {
   DateTime: { input: any; output: any };
   File: { input: any; output: any };
   JSON: { input: any; output: any };
+  TableRow: { input: any; output: any };
   Upload: { input: any; output: any };
 };
 
@@ -359,6 +360,28 @@ export type AnalysisMetrics = {
   status: InventoryStatus;
 };
 
+export type AppliedArrayFilter = {
+  __typename?: 'AppliedArrayFilter';
+  field: Scalars['String']['output'];
+  operator: ArrayOperator;
+  values: Array<Scalars['String']['output']>;
+};
+
+export type AppliedBooleanFilter = {
+  __typename?: 'AppliedBooleanFilter';
+  field: Scalars['String']['output'];
+  value: Scalars['Boolean']['output'];
+};
+
+export type AppliedDateFilter = {
+  __typename?: 'AppliedDateFilter';
+  endDate?: Maybe<Scalars['DateTime']['output']>;
+  field: Scalars['String']['output'];
+  operator: DateOperator;
+  startDate?: Maybe<Scalars['DateTime']['output']>;
+  value?: Maybe<Scalars['DateTime']['output']>;
+};
+
 export type AppliedFilters = {
   __typename?: 'AppliedFilters';
   action?: Maybe<Scalars['String']['output']>;
@@ -390,6 +413,15 @@ export type AppliedMergingConfig = {
   timeWindowMinutes?: Maybe<Scalars['Int']['output']>;
 };
 
+export type AppliedNumberFilter = {
+  __typename?: 'AppliedNumberFilter';
+  field: Scalars['String']['output'];
+  max?: Maybe<Scalars['Float']['output']>;
+  min?: Maybe<Scalars['Float']['output']>;
+  operator: NumberOperator;
+  value?: Maybe<Scalars['Float']['output']>;
+};
+
 export type AppliedPagination = {
   __typename?: 'AppliedPagination';
   cursor?: Maybe<Scalars['String']['output']>;
@@ -402,6 +434,45 @@ export type AppliedSort = {
   direction?: Maybe<SortDirection>;
   field?: Maybe<RecordHistorySortField>;
 };
+
+export type AppliedStringFilter = {
+  __typename?: 'AppliedStringFilter';
+  caseSensitive: Scalars['Boolean']['output'];
+  field: Scalars['String']['output'];
+  operator: StringOperator;
+  value: Scalars['String']['output'];
+};
+
+export type AppliedTableFilters = {
+  __typename?: 'AppliedTableFilters';
+  arrayFilters?: Maybe<Array<AppliedArrayFilter>>;
+  booleanFilters?: Maybe<Array<AppliedBooleanFilter>>;
+  dateFilters?: Maybe<Array<AppliedDateFilter>>;
+  numberFilters?: Maybe<Array<AppliedNumberFilter>>;
+  stringFilters?: Maybe<Array<AppliedStringFilter>>;
+};
+
+export type AppliedTableSorting = {
+  __typename?: 'AppliedTableSorting';
+  secondarySort?: Maybe<AppliedTableSorting>;
+  sortBy: Scalars['String']['output'];
+  sortOrder: SortDirection;
+};
+
+export type ArrayFilter = {
+  field: Scalars['String']['input'];
+  operator: ArrayOperator;
+  values: Array<Scalars['String']['input']>;
+};
+
+export enum ArrayOperator {
+  Contains = 'CONTAINS',
+  ContainsAll = 'CONTAINS_ALL',
+  ContainsAny = 'CONTAINS_ANY',
+  In = 'IN',
+  NotContains = 'NOT_CONTAINS',
+  NotIn = 'NOT_IN',
+}
 
 export type BatchAlertResult = {
   __typename?: 'BatchAlertResult';
@@ -507,6 +578,11 @@ export type BatchUploadResult = {
 export type BatchWorkLevelUpdateInput = {
   updates: UpdateWorkLevelInput;
   uuid: Scalars['ID']['input'];
+};
+
+export type BooleanFilter = {
+  field: Scalars['String']['input'];
+  value: Scalars['Boolean']['input'];
 };
 
 export enum BottleneckSeverity {
@@ -1275,6 +1351,27 @@ export type DatabasePerformanceMetricFilterInput = {
   tableName?: InputMaybe<Scalars['String']['input']>;
 };
 
+export type DateFilter = {
+  endDate?: InputMaybe<Scalars['DateTime']['input']>;
+  field: Scalars['String']['input'];
+  operator: DateOperator;
+  startDate?: InputMaybe<Scalars['DateTime']['input']>;
+  value?: InputMaybe<Scalars['DateTime']['input']>;
+};
+
+export enum DateOperator {
+  Between = 'BETWEEN',
+  DaysAgo = 'DAYS_AGO',
+  Eq = 'EQ',
+  Gt = 'GT',
+  Gte = 'GTE',
+  Lt = 'LT',
+  Lte = 'LTE',
+  MonthsAgo = 'MONTHS_AGO',
+  Neq = 'NEQ',
+  YearsAgo = 'YEARS_AGO',
+}
+
 export type DateRange = {
   __typename?: 'DateRange';
   end: Scalars['DateTime']['output'];
@@ -1428,11 +1525,42 @@ export type ErrorTypeMetric = {
 };
 
 export enum ExportFormat {
+  Csv = 'CSV',
   Env = 'ENV',
+  Excel = 'EXCEL',
   Ini = 'INI',
   Json = 'JSON',
+  Pdf = 'PDF',
   Yaml = 'YAML',
 }
+
+export type ExportResult = {
+  __typename?: 'ExportResult';
+  downloadUrl: Scalars['String']['output'];
+  error?: Maybe<Scalars['String']['output']>;
+  expiresAt: Scalars['DateTime']['output'];
+  fileName: Scalars['String']['output'];
+  fileSize: Scalars['Int']['output'];
+  progress?: Maybe<Scalars['Float']['output']>;
+  status: ExportStatus;
+};
+
+export enum ExportStatus {
+  Completed = 'COMPLETED',
+  Failed = 'FAILED',
+  Pending = 'PENDING',
+  Processing = 'PROCESSING',
+}
+
+export type ExportTableInput = {
+  columns?: InputMaybe<Array<Scalars['String']['input']>>;
+  dataSource: Scalars['String']['input'];
+  dateRange?: InputMaybe<DateRangeInput>;
+  fileName?: InputMaybe<Scalars['String']['input']>;
+  filters?: InputMaybe<TableFilters>;
+  format: ExportFormat;
+  includeHeaders?: InputMaybe<Scalars['Boolean']['input']>;
+};
 
 export type FieldChange = {
   __typename?: 'FieldChange';
@@ -2249,6 +2377,7 @@ export type Mutation = {
   cancelWarehouseOrder: WarehouseOrder;
   clearCache: Scalars['Boolean']['output'];
   clearRecordHistoryCache: Scalars['Boolean']['output'];
+  clearTableCache: Scalars['Boolean']['output'];
   completeAcoRecord: AcoRecord;
   correctGRNRecord: GrnRecord;
   correctOrderLoadingHistory: OrderLoadingHistory;
@@ -2309,6 +2438,7 @@ export type Mutation = {
   dismissAlert: Scalars['Boolean']['output'];
   exportConfigs: Scalars['String']['output'];
   exportRecordHistory: RecordHistoryExportResult;
+  exportTableData: ExportResult;
   extendReportExpiry: GeneratedReport;
   generatePalletNumbers: Array<PalletNumberBuffer>;
   generateReport: ReportGenerationResult;
@@ -2321,6 +2451,7 @@ export type Mutation = {
   markQueryRecordAsExpired: QueryRecord;
   reanalyzeOrderPDF: OrderAnalysisResult;
   refreshCache: Scalars['Boolean']['output'];
+  refreshTableData: Scalars['Boolean']['output'];
   regenerateReport: ReportGenerationResult;
   rejectStocktakeRecord: StocktakeRecord;
   reportDiscrepancy: GrnRecord;
@@ -2466,6 +2597,10 @@ export type MutationCancelUploadArgs = {
 export type MutationCancelWarehouseOrderArgs = {
   orderId: Scalars['ID']['input'];
   reason?: InputMaybe<Scalars['String']['input']>;
+};
+
+export type MutationClearTableCacheArgs = {
+  dataSource: Scalars['String']['input'];
 };
 
 export type MutationCompleteAcoRecordArgs = {
@@ -2716,6 +2851,10 @@ export type MutationExportRecordHistoryArgs = {
   input: RecordHistoryExportInput;
 };
 
+export type MutationExportTableDataArgs = {
+  input: ExportTableInput;
+};
+
 export type MutationExtendReportExpiryArgs = {
   days: Scalars['Int']['input'];
   reportId: Scalars['ID']['input'];
@@ -2769,6 +2908,10 @@ export type MutationReanalyzeOrderPdfArgs = {
 };
 
 export type MutationRefreshCacheArgs = {
+  dataSource: Scalars['String']['input'];
+};
+
+export type MutationRefreshTableDataArgs = {
   dataSource: Scalars['String']['input'];
 };
 
@@ -2826,7 +2969,7 @@ export type MutationUnblockIpAddressArgs = {
 };
 
 export type MutationUpdateApiConfigArgs = {
-  input: UpdateApiConfigInput;
+  _input: UpdateApiConfigInput;
   uuid: Scalars['ID']['input'];
 };
 
@@ -2835,7 +2978,7 @@ export type MutationUpdateAcoOrderArgs = {
 };
 
 export type MutationUpdateAcoRecordArgs = {
-  input: UpdateAcoRecordInput;
+  _input: UpdateAcoRecordInput;
   uuid: Scalars['ID']['input'];
 };
 
@@ -2845,7 +2988,7 @@ export type MutationUpdateAcoRecordProgressArgs = {
 };
 
 export type MutationUpdateAlertRuleArgs = {
-  input: UpdateAlertRuleInput;
+  _input: UpdateAlertRuleInput;
   ruleId: Scalars['ID']['input'];
 };
 
@@ -2859,7 +3002,7 @@ export type MutationUpdateFileAnalysisArgs = {
 };
 
 export type MutationUpdateFileInfoArgs = {
-  input: UpdateFileInfoInput;
+  _input: UpdateFileInfoInput;
   uuid: Scalars['ID']['input'];
 };
 
@@ -2869,17 +3012,17 @@ export type MutationUpdateFileMetadataArgs = {
 };
 
 export type MutationUpdateGrnRecordArgs = {
-  input: UpdateGrnRecordInput;
+  _input: UpdateGrnRecordInput;
   uuid: Scalars['ID']['input'];
 };
 
 export type MutationUpdateGrnLevelArgs = {
-  input: UpdateGrnLevelInput;
+  _input: UpdateGrnLevelInput;
   uuid: Scalars['ID']['input'];
 };
 
 export type MutationUpdateHistoryRecordArgs = {
-  input: UpdateHistoryRecordInput;
+  _input: UpdateHistoryRecordInput;
   uuid: Scalars['ID']['input'];
 };
 
@@ -2888,32 +3031,32 @@ export type MutationUpdateMergingConfigArgs = {
 };
 
 export type MutationUpdatePalletNumberBufferArgs = {
+  _input: UpdatePalletNumberBufferInput;
   id: Scalars['Int']['input'];
-  input: UpdatePalletNumberBufferInput;
 };
 
 export type MutationUpdateProductArgs = {
+  _input: UpdateProductInput;
   code: Scalars['ID']['input'];
-  input: UpdateProductInput;
 };
 
 export type MutationUpdateReportTemplateArgs = {
-  input: UpdateReportTemplateInput;
+  _input: UpdateReportTemplateInput;
   templateId: Scalars['ID']['input'];
 };
 
 export type MutationUpdateReportVoidArgs = {
-  input: UpdateReportVoidInput;
+  _input: UpdateReportVoidInput;
   uuid: Scalars['ID']['input'];
 };
 
 export type MutationUpdateSlateInfoArgs = {
-  input: UpdateSlateInfoInput;
+  _input: UpdateSlateInfoInput;
   productCode: Scalars['String']['input'];
 };
 
 export type MutationUpdateStockLevelArgs = {
-  input: UpdateStockLevelInput;
+  _input: UpdateStockLevelInput;
   uuid: Scalars['ID']['input'];
 };
 
@@ -2923,18 +3066,18 @@ export type MutationUpdateStockLevelQuantityArgs = {
 };
 
 export type MutationUpdateStocktakeRecordArgs = {
-  input: UpdateStocktakeRecordInput;
+  _input: UpdateStocktakeRecordInput;
   uuid: Scalars['ID']['input'];
 };
 
 export type MutationUpdateSupplierArgs = {
+  _input: UpdateSupplierInput;
   code: Scalars['String']['input'];
-  input: UpdateSupplierInput;
 };
 
 export type MutationUpdateThreatStatArgs = {
+  _input: UpdateThreatStatInput;
   id: Scalars['Int']['input'];
-  input: UpdateThreatStatInput;
 };
 
 export type MutationUpdateTransferStatusArgs = {
@@ -2949,7 +3092,7 @@ export type MutationUpdateWarehouseOrderStatusArgs = {
 };
 
 export type MutationUpdateWorkLevelArgs = {
-  input: UpdateWorkLevelInput;
+  _input: UpdateWorkLevelInput;
   uuid: Scalars['ID']['input'];
 };
 
@@ -2986,6 +3129,24 @@ export enum NotificationConfigKey {
   PushEnabled = 'PUSH_ENABLED',
   QuietHours = 'QUIET_HOURS',
   SmsEnabled = 'SMS_ENABLED',
+}
+
+export type NumberFilter = {
+  field: Scalars['String']['input'];
+  max?: InputMaybe<Scalars['Float']['input']>;
+  min?: InputMaybe<Scalars['Float']['input']>;
+  operator: NumberOperator;
+  value?: InputMaybe<Scalars['Float']['input']>;
+};
+
+export enum NumberOperator {
+  Between = 'BETWEEN',
+  Eq = 'EQ',
+  Gt = 'GT',
+  Gte = 'GTE',
+  Lt = 'LT',
+  Lte = 'LTE',
+  Neq = 'NEQ',
 }
 
 export type OperationBreakdown = {
@@ -3307,6 +3468,11 @@ export type PaginationInput = {
   offset?: InputMaybe<Scalars['Int']['input']>;
   page?: InputMaybe<Scalars['Int']['input']>;
 };
+
+export enum PaginationStyle {
+  Cursor = 'CURSOR',
+  Offset = 'OFFSET',
+}
 
 export type Pallet = {
   __typename?: 'Pallet';
@@ -3810,6 +3976,9 @@ export type Query = {
   suppliers: SupplierConnection;
   systemApiConfigs: Array<ApiConfig>;
   systemPerformance: SystemPerformance;
+  tableCardData: TableCardData;
+  tableColumns: Array<TableColumn>;
+  tablePermissions: TablePermissions;
   threatAnalysis: ThreatAnalysis;
   threatStat?: Maybe<ThreatStat>;
   threatStats: ThreatStatConnection;
@@ -3929,8 +4098,8 @@ export type QueryCacheInvalidationEventsArgs = {
 };
 
 export type QueryCardDataArgs = {
+  _params?: InputMaybe<Scalars['JSON']['input']>;
   dataSource: Scalars['String']['input'];
-  params?: InputMaybe<Scalars['JSON']['input']>;
   timeFrame?: InputMaybe<DateRangeInput>;
 };
 
@@ -4525,6 +4694,18 @@ export type QuerySuppliersArgs = {
 
 export type QuerySystemPerformanceArgs = {
   timeWindow?: InputMaybe<TimeWindow>;
+};
+
+export type QueryTableCardDataArgs = {
+  input: TableDataInput;
+};
+
+export type QueryTableColumnsArgs = {
+  dataSource: Scalars['String']['input'];
+};
+
+export type QueryTablePermissionsArgs = {
+  dataSource: Scalars['String']['input'];
 };
 
 export type QueryThreatAnalysisArgs = {
@@ -5874,6 +6055,23 @@ export type StocktakeVarianceSummary = {
   totalVarianceValue?: Maybe<Scalars['Float']['output']>;
 };
 
+export type StringFilter = {
+  caseSensitive?: InputMaybe<Scalars['Boolean']['input']>;
+  field: Scalars['String']['input'];
+  operator: StringOperator;
+  value: Scalars['String']['input'];
+};
+
+export enum StringOperator {
+  Contains = 'CONTAINS',
+  EndsWith = 'ENDS_WITH',
+  Eq = 'EQ',
+  Neq = 'NEQ',
+  NotContains = 'NOT_CONTAINS',
+  Regex = 'REGEX',
+  StartsWith = 'STARTS_WITH',
+}
+
 export type Subscription = {
   __typename?: 'Subscription';
   acoRecordCompleted: AcoRecord;
@@ -5931,6 +6129,7 @@ export type Subscription = {
   stocktakeRecordApproved: StocktakeRecord;
   stocktakeRecordUpdated: StocktakeRecord;
   systemAlert: SystemAlert;
+  tableDataUpdated: TableCardData;
   threatStatCreated: ThreatStat;
   threatStatDeleted: ThreatStat;
   threatStatUpdated: ThreatStat;
@@ -6107,6 +6306,10 @@ export type SubscriptionSystemAlertArgs = {
   severity?: InputMaybe<AlertSeverity>;
 };
 
+export type SubscriptionTableDataUpdatedArgs = {
+  dataSource: Scalars['String']['input'];
+};
+
 export type SubscriptionThreatStatCreatedArgs = {
   eventTypes?: InputMaybe<Array<Scalars['String']['input']>>;
 };
@@ -6230,6 +6433,91 @@ export type SystemStatus = {
   lastBackup?: Maybe<Scalars['DateTime']['output']>;
   uptime: Scalars['Int']['output'];
   version: Scalars['String']['output'];
+};
+
+export type TableCardData = CardData & {
+  __typename?: 'TableCardData';
+  columns: Array<TableColumn>;
+  currentPage?: Maybe<Scalars['Int']['output']>;
+  data: Array<Scalars['TableRow']['output']>;
+  dataSource: Scalars['String']['output'];
+  filters?: Maybe<AppliedTableFilters>;
+  hasNextPage: Scalars['Boolean']['output'];
+  hasPreviousPage: Scalars['Boolean']['output'];
+  lastUpdated: Scalars['DateTime']['output'];
+  metadata: TableMetadata;
+  refreshInterval?: Maybe<Scalars['Int']['output']>;
+  sorting?: Maybe<AppliedTableSorting>;
+  totalCount: Scalars['Int']['output'];
+  totalPages?: Maybe<Scalars['Int']['output']>;
+};
+
+export type TableColumn = {
+  __typename?: 'TableColumn';
+  alignment?: Maybe<Scalars['String']['output']>;
+  filterable: Scalars['Boolean']['output'];
+  format?: Maybe<Scalars['String']['output']>;
+  label: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  sortable: Scalars['Boolean']['output'];
+  type: Scalars['String']['output'];
+  width?: Maybe<Scalars['Int']['output']>;
+};
+
+export type TableDataInput = {
+  columns?: InputMaybe<Array<Scalars['String']['input']>>;
+  dataSource: Scalars['String']['input'];
+  dateRange?: InputMaybe<DateRangeInput>;
+  filters?: InputMaybe<TableFilters>;
+  includeMetadata?: InputMaybe<Scalars['Boolean']['input']>;
+  pagination: TablePagination;
+  searchTerm?: InputMaybe<Scalars['String']['input']>;
+  sorting?: InputMaybe<TableSorting>;
+};
+
+export type TableFilters = {
+  arrayFilters?: InputMaybe<Array<ArrayFilter>>;
+  booleanFilters?: InputMaybe<Array<BooleanFilter>>;
+  dateFilters?: InputMaybe<Array<DateFilter>>;
+  numberFilters?: InputMaybe<Array<NumberFilter>>;
+  stringFilters?: InputMaybe<Array<StringFilter>>;
+};
+
+export type TableMetadata = {
+  __typename?: 'TableMetadata';
+  cacheHit: Scalars['Boolean']['output'];
+  dataSource: Scalars['String']['output'];
+  filteredRecords: Scalars['Int']['output'];
+  generatedAt: Scalars['DateTime']['output'];
+  lastUpdated: Scalars['DateTime']['output'];
+  permissions: TablePermissions;
+  queryTime: Scalars['Float']['output'];
+  totalRecords: Scalars['Int']['output'];
+};
+
+export type TablePagination = {
+  cursor?: InputMaybe<Scalars['String']['input']>;
+  limit?: Scalars['Int']['input'];
+  loadMore?: InputMaybe<Scalars['Boolean']['input']>;
+  offset?: Scalars['Int']['input'];
+  style?: InputMaybe<PaginationStyle>;
+};
+
+export type TablePermissions = {
+  __typename?: 'TablePermissions';
+  canCreate: Scalars['Boolean']['output'];
+  canDelete: Scalars['Boolean']['output'];
+  canEdit: Scalars['Boolean']['output'];
+  canExport: Scalars['Boolean']['output'];
+  canFilter: Scalars['Boolean']['output'];
+  canSort: Scalars['Boolean']['output'];
+  canView: Scalars['Boolean']['output'];
+};
+
+export type TableSorting = {
+  secondarySort?: InputMaybe<TableSorting>;
+  sortBy: Scalars['String']['input'];
+  sortOrder: SortDirection;
 };
 
 export type ThreatAnalysis = {

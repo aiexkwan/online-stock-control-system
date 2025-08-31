@@ -6,7 +6,28 @@ export function createClient() {
   if (typeof window === 'undefined') {
     // 服務器端渲染時返回簡化版本
     console.warn('[createClient] SSR detected, skipping client creation');
-    throw new Error('Supabase client should only be used on client side');
+    // Return a minimal mock client for SSR compatibility
+    return {
+      auth: {
+        getUser: () => Promise.resolve({ data: { user: null }, error: null }),
+        getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+      },
+      from: () => ({
+        select: () => Promise.resolve({ data: [], error: null }),
+        insert: () => Promise.resolve({ data: [], error: null }),
+        update: () => Promise.resolve({ data: [], error: null }),
+        delete: () => Promise.resolve({ data: [], error: null }),
+        upsert: () => Promise.resolve({ data: [], error: null }),
+      }),
+      rpc: () => Promise.resolve({ data: null, error: null }),
+      storage: {
+        from: () => ({
+          upload: () => Promise.resolve({ data: null, error: null }),
+          download: () => Promise.resolve({ data: null, error: null }),
+        }),
+      },
+    } as any;
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
