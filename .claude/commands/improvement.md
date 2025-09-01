@@ -25,6 +25,10 @@
 
 ### 必須遵循
 
+0. 獲取系統全局觀
+   - 完整閱讀 [系統規範](../../CLAUDE.local.md)
+   - 完整閱讀 [系統技術棧](../../docs/TechStack)
+   - 使用腳本獲取過往資訊 [讀取記憶腳本](../../scripts/hooks/read_memory.py)
 1. 建立文檔資料夾 `docs\PlanningDocument\$Arguments_component`
 2. 所有建立的報告，均必須，及只能儲存在`docs\PlanningDocument\$Arguments_component`內
 3. 只需建立計劃書，無需執行任何代碼修改4.
@@ -130,6 +134,7 @@
 **[context-manager](../agents/context-manager.md)**
 
 - 執行[任務摘要](context_summary.md)指令
+- 利用[寫入記憶腳本](../../scripts/hooks/write_momory.py)寫入記憶，以作長久記憶使用
 
 ## 專項對話流程
 

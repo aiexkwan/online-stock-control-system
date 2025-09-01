@@ -29,7 +29,10 @@ description: 對指定的檔案或組件進行全面的循序深度分析，以�
 
 總指揮代理將按以下順序，調度各專家對 `$TARGET_PATH` 進行分析，並將每一步的結果記錄下來，供最終報告使用。
 
-0. 完整閱讀 @CLAUDE.md [系統規範](../../CLAUDE.local.md)及文檔中的連結文案，以獲取全局設定及系統資訊
+0. 獲取系統全局觀
+   - 完整閱讀 [系統規範](../../CLAUDE.local.md)
+   - 完整閱讀 [系統技術棧](../../docs/TechStack)
+   - 使用腳本獲取過往資訊 [讀取記憶腳本](../../scripts/hooks/read_memory.py)
 
 1. 建立報告文檔：`/Users/chun/Documents/PennineWMS/online-stock-control-system/docs/PlanningDocument/clearance_plan/[$ARGUMENTS]/[$ARGUMENTS].md`
 
@@ -62,6 +65,10 @@ description: 對指定的檔案或組件進行全面的循序深度分析，以�
    - **目標**: 匯總以上所有分析步驟的結果，根據預設模版，生成一份統一的、詳盡的分析報告。
 
 7. **文檔審核**：[文檔規範員](../agents/documentation-normalizer.md)對所生成文檔作最終審核
+
+8. [context-manager](../agents/context-manager.md)
+
+- 利用[寫入記憶腳本](../../scripts/hooks/write_momory.py)寫入記憶，以作長久記憶使用
 
 ## 清理對象識別標準
 

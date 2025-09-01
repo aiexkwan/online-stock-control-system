@@ -1,6 +1,6 @@
 # 開發工具 (Dev Tools)
 
-_最後更新日期: 2025-08-29 02:33:37_
+_最後更新日期: 2025-09-01 22:54:59_
 
 ## 核心工具
 
@@ -9,6 +9,8 @@ _最後更新日期: 2025-08-29 02:33:37_
 - **GraphQL**: @graphql-codegen/cli 5.0.7
 - **依賴分析**: Madge 8.0.0
 - **開發工具**: Cross-env 7.0.3, Nodemon 3.1.10, TSX 4.20.3
+- **TypeScript ESLint**: @typescript-eslint/parser 8.37.0, @typescript-eslint/eslint-plugin 8.37.0
+- **格式化工具**: eslint-config-prettier 9.1.0, prettier-plugin-tailwindcss 0.6.9
 - **測試框架**: Jest 29.7.0, Vitest 3.2.4, Playwright 1.54.1
 - **性能監控**: @lhci/cli 0.15.1 (Lighthouse CI)
 

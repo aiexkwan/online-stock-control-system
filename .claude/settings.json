@@ -196,5 +196,34 @@
     "deny": []
   },
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": ["supabase", "sequential-thinking", "context7", "archon"]
+  "enabledMcpjsonServers": ["supabase", "sequential-thinking", "context7", "archon"],
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "hooks": {
+    "user-prompt-submit-hook": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -c 'cd /Users/chun/Documents/PennineWMS/online-stock-control-system && set -a && source .env && set +a && python3 scripts/hooks/read_memory.py'"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/chun/.claude/count_tokens.js"
+          },
+          {
+            "type": "command",
+            "command": "bash -c 'cd /Users/chun/Documents/PennineWMS/online-stock-control-system && set -a && source .env && set +a && python3 scripts/hooks/write_momory.py'"
+          }
+        ]
+      }
+    ]
+  }
 }

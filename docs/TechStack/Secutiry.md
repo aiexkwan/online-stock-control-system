@@ -1,21 +1,21 @@
 # 安全性 (Security)
 
-_最後更新日期: 2025-08-29 14:40:00_
+_最後更新日期: 2025-09-01 22:54:59_
 
 ## 認證與授權
 
 - **認證機制**: Supabase Auth (JWT)
-- **授權機制**: 109個RLS策略 (已驗證), 中間件權限檢查
+- **授權機制**: 120個RLS策略 (已驗證), 中間件權限檢查
 - **會話管理**: cookies 0.9.1, jwt-decode 4.0.0
 - **用戶ID驗證**: 統一化 `getUserId` Hook，提供安全的用戶身份驗證介面
 
 ## 敏感資訊管理
 
 - **日誌消毒**: `enhanced-logger-sanitizer.ts` (190行)
-- **憑證管理**: `credentials-manager.ts` (242行)
+- **憑證管理**: `credentials-manager.ts` (309行)
 - **密碼加密**: bcryptjs 3.0.2
 - **令牌管理**: jsonwebtoken 9.0.2
-- **認證UI**: @supabase/auth-ui-react 0.4.7
+- **認證UI**: @supabase/auth-ui-react 0.4.7, @supabase/auth-ui-shared 0.1.8
 
 ## 安全頭配置
 
@@ -25,6 +25,9 @@ _最後更新日期: 2025-08-29 14:40:00_
   - Content-Security-Policy (CSP)
   - X-Content-Type-Options: nosniff
   - Referrer-Policy: strict-origin-when-cross-origin
+  - X-XSS-Protection: 1; mode=block
+  - X-DNS-Prefetch-Control: on
+  - Permissions-Policy: camera=(), microphone=(), geolocation=()
 
 ## 數據加密保護
 

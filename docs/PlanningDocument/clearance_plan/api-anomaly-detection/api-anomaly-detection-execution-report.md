@@ -40,6 +40,7 @@
    ```
 
 2. **最終引用確認**
+
    ```bash
    grep -r "anomaly-detection" app/ --exclude-dir=api
    ```

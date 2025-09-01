@@ -1,10 +1,10 @@
 # UI/UX 與設計系統
 
-_最後更新日期: 2025-08-29 02:33:37_
+_最後更新日期: 2025-09-01 22:54:59_
 
 ## 設計系統
 
-- **組件庫**: [`components/ui/`](../../components/ui/) 61個組件, 基於 [Radix UI](https://www.radix-ui.com/) (15個組件)
+- **組件庫**: [`components/ui/`](../../components/ui/) 52個組件, 基於 [Radix UI](https://www.radix-ui.com/) (16個組件)
 - **樣式配置**: [`tailwind.config.js`](../../tailwind.config.js) 自定義主題配置
 
 ### 設計理念與實踐指南
@@ -20,7 +20,7 @@ _最後更新日期: 2025-08-29 02:33:37_
 ## 前端架構補充
 
 - **卡片系統**: [`lib/card-system/`](../../lib/card-system/) 10個文件，包括核心 Glassmorphic 組件
-- **管理卡片**: 系統共 20個管理卡片，39個總卡片組件
+- **管理卡片**: 系統共 18個管理卡片，24個總卡片組件
 - **視覺特效**: [Framer Motion](https://www.framer.com/motion/) 11.18.2
 - **圖標系統**: [Lucide React](https://lucide.dev/) 0.467.0, [Heroicons](https://heroicons.com/) 2.2.0
 

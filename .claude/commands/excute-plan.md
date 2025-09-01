@@ -27,7 +27,10 @@ description: 讀取 Markdown 格式的開發計劃文檔，並由總指揮代理
 
 ## 執行流程
 
-0. 完整閱讀 @CLAUDE.md [系統規範](../../CLAUDE.local.md)及文檔中的連結文案，以獲取全局設定及系統資訊
+0. 獲取系統全局觀
+   - 完整閱讀 [系統規範](../../CLAUDE.local.md)
+   - 完整閱讀 [系統技術棧](../../docs/TechStack)
+   - 使用腳本獲取過往資訊 [讀取記憶腳本](../../scripts/hooks/read_memory.py)
 
 1. 建立計劃執行紀錄文檔
 

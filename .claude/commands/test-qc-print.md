@@ -84,7 +84,10 @@ graph TD
 
 ## 執行指令
 
-0. 完整閱讀 @CLAUDE.md [系統規範](../../CLAUDE.local.md)及文檔中的連結文案，以獲取全局設定及系統資訊
+0. 獲取系統全局觀
+   - 完整閱讀 [系統規範](../../CLAUDE.local.md)
+   - 完整閱讀 [系統技術棧](../../docs/TechStack)
+   - 使用腳本獲取過往資訊 [讀取記憶腳本](../../scripts/hooks/read_memory.py)
 1. **前置作戰準備 (Pre-flight Check)**
    - [ ] **確認環境變數**: 檢查 `.env.local` 檔案是否存在，並包含 `TEST_SYS_LOGIN` 和 `TEST_SYS_PASSWORD`。
    - [ ] **確認依賴安裝**: 確保 `node_modules` 已存在，所有 Playwright 相關依賴已安裝。
@@ -144,6 +147,9 @@ graph TD
 
 13. **調用 [database-admin](../agents/database-admin.md) 執行清理腳本**
     - 從 `qc_labels` 表格中刪除本次測試運行創建的所有紀錄，以保持數據庫清潔。
+
+14. [context-manager](../agents/context-manager.md)
+    - 利用[寫入記憶腳本](../../scripts/hooks/write_momory.py)寫入記憶，以作長久記憶使用
 
 ## 分階段品質標準
 

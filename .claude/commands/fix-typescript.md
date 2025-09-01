@@ -66,3 +66,7 @@ description: 自動化並行修復 TypeScript 類型錯誤，通過多輪代理�
           - 修復前與修復後的錯誤數量對比。
           - 已完成修復的檔案列表。
           - 在 5 輪結束後仍未解決的問題（如有）。
+
+5.  [context-manager](../agents/context-manager.md)
+
+- 利用[寫入記憶腳本](../../scripts/hooks/write_momory.py)寫入記憶，以作長久記憶使用

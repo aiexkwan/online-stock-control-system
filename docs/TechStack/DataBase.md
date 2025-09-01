@@ -1,10 +1,11 @@
 # 資料庫技術棧 (Database Technology Stack)
 
-_最後更新日期: 2025-08-29 02:33:37_
+_最後更新日期: 2025-09-01 22:54:59_
 
 ## 核心配置
 
 - **供應商**: Supabase 2.49.8 (PostgreSQL)
+- **MCP 整合**: @supabase/mcp-server-supabase 0.4.5
 - **表格數量**: 21個表 (public schema)
 - **關係**: 31個外鍵關係
 

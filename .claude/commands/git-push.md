@@ -21,7 +21,10 @@ description: 由專業代理自動修復阻礙 Git 推送的錯誤和安全問�
 
 流程是一個包含自動修復機制的驗證循環。當驗證失敗時，系統會自動調用`代理目錄`內相應的代理進行修復，並重試該步驟。如果連續 5 次修復失敗，流程才會中止。
 
-0. 完整閱讀 @CLAUDE.md [系統規範](../../CLAUDE.local.md)及文檔中的連結文案，以獲取全局設定及系統資訊
+0. 獲取系統全局觀
+   - 完整閱讀 [系統規範](../../CLAUDE.local.md)
+   - 完整閱讀 [系統技術棧](../../docs/TechStack)
+   - 使用腳本獲取過往資訊 [讀取記憶腳本](../../scripts/hooks/read_memory.py)
 
 1. **檢查敏感資訊 (由 [security-auditor](../agents/security-auditor.md) 執行)**
    - **驗證**: 掃描暫存區檔案中是否有寫死的秘密。
@@ -44,6 +47,10 @@ description: 由專業代理自動修復阻礙 Git 推送的錯誤和安全問�
      - `git add .`
      - `git commit -m "$COMMIT_MESSAGE"`
      - `git push origin $BRANCH_TARGET $PUSH_OPTIONS`
+
+6. [context-manager](../agents/context-manager.md)
+
+- 利用[寫入記憶腳本](../../scripts/hooks/write_momory.py)寫入記憶，以作長久記憶使用
 
 ## 輸出
 

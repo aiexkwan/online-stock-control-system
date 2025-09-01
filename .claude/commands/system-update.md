@@ -44,7 +44,10 @@ description: 根據最新的系統狀況，更新 docs/TechStack/ 中的技術�
 
 ## 執行指令
 
-0. 完整閱讀 @CLAUDE.md [系統規範](../../CLAUDE.local.md)及文檔中的連結文案，以獲取全局設定及現時系統資訊
+0. 獲取系統全局觀
+   - 完整閱讀 [系統規範](../../CLAUDE.local.md)
+   - 完整閱讀 [系統技術棧](../../docs/TechStack)
+   - 使用腳本獲取過往資訊 [讀取記憶腳本](../../scripts/hooks/read_memory.py)
 1. 執行 `date +"%Y-%m-%d_%H-%M-%S"` 取得時間戳。
 2. 建立掃描記錄目錄：`docs/System-Updates/<timestamp>/`。
 3. **並行啟動各負責代理** (根據下方矩陣)。每個代理執行以下步驟：
@@ -55,6 +58,9 @@ description: 根據最新的系統狀況，更新 docs/TechStack/ 中的技術�
 5. **整合更新**: `@docs-architect` 讀取所有驗證後的報告，並將更新應用到對應的 `docs/TechStack/` 文檔中，同時更新 "最後更新日期"。
 6. **任務總結**: `@context-manager` 執行任務摘要。
 7. **文檔審核**：[文檔規範員](../agents/documentation-normalizer.md)對所生成文檔作最終審核
+8. [context-manager](../agents/context-manager.md)
+
+- 利用[寫入記憶腳本](../../scripts/hooks/write_momory.py)寫入記憶，以作長久記憶使用
 
 ## 更新範圍矩陣
 
