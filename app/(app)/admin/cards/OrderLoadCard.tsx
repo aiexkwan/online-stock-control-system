@@ -1,551 +1,153 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import {
-  UserIcon,
-  ClipboardDocumentListIcon,
-  TruckIcon,
-  ChartBarIcon,
-  // SpeakerWaveIcon, // Removed - not used
-  DevicePhoneMobileIcon,
-  ComputerDesktopIcon,
-} from '@heroicons/react/24/outline';
-// import { _toast } from 'sonner'; // Removed - not used
+import React, { useState } from 'react';
+import { TruckIcon } from '@heroicons/react/24/outline';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { UnifiedSearch } from '@/components/ui/unified-search';
-import { cardTextStyles } from '@/lib/card-system/theme';
 import { DataCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
 import { cn } from '@/lib/utils';
-
-// Import integrated components
-import BatchLoadPanel from '@/app/(app)/order-loading/components/BatchLoadPanel';
-import { LoadingProgressChart } from '@/app/(app)/order-loading/components/LoadingProgressChart';
-import MobileOrderLoading from '@/app/(app)/order-loading/components/MobileOrderLoading';
-// Sound settings functionality has been removed from useOrderLoad
-// import { SoundSettingsToggle } from '@/app/(app)/order-loading/components/SoundSettingsToggle';
-import { useOrderLoad } from '../hooks/useOrderLoad';
+import { loadPalletToOrder, LoadPalletResult } from '@/app/actions/orderLoadingActions';
 
 export interface OrderLoadCardProps {
   className?: string;
 }
 
-// Mobile device detection hook
-const useMobileDetection = () => {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkIsMobile = () => {
-      const userAgent = navigator.userAgent;
-      const mobileRegex = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i;
-      const screenWidth = window.innerWidth;
-
-      setIsMobile(mobileRegex.test(userAgent) || screenWidth < 768);
-    };
-
-    checkIsMobile();
-    window.addEventListener('resize', checkIsMobile);
-
-    return () => window.removeEventListener('resize', checkIsMobile);
-  }, []);
-
-  return isMobile;
-};
-
 export const OrderLoadCard: React.FC<OrderLoadCardProps> = ({ className }) => {
-  const isMobile = useMobileDetection();
+  // 極簡狀態管理 - 只保留3個核心狀態
+  const [scanInput, setScanInput] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [result, setResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  const {
-    // State
-    idNumber,
-    isIdValid,
-    isCheckingId,
-    availableOrders,
-    orderSummaries,
-    selectedOrderRef,
-    orderData,
-    isLoadingOrders,
-    searchValue,
-    isSearching,
-    recentLoads,
-    orderSearchQuery,
-    showUndoDialog,
-    undoItem,
+  // 單一處理函數
+  const handleOperation = async () => {
+    // 輸入驗證
+    if (!scanInput.trim()) {
+      setResult({ type: 'error', message: '請輸入托盤號碼' });
+      return;
+    }
 
-    // Functions
-    setIdNumber,
-    setSearchValue,
-    setOrderSearchQuery,
-    setShowUndoDialog,
-    handleIdChange,
-    handleIdBlur,
-    handleOrderSelect,
-    handleSearchSelect,
-    handleUndoClick,
-    handleConfirmedUndo,
-    refreshAllData,
+    setIsProcessing(true);
+    setResult(null);
 
-    // Refs
-    idInputRef,
-    searchInputRef,
+    try {
+      // 固定使用 ORDER001 作為預設訂單
+      // 實際應用中可以從props或context獲取
+      const orderRef = 'ORDER001';
 
-    // Sound settings removed
-  } = useOrderLoad();
+      // 調用loadPalletToOrder action
+      const response: LoadPalletResult = await loadPalletToOrder(orderRef, scanInput);
 
-  // Change user (reset to ID input)
-  const handleChangeUser = () => {
-    setIdNumber('');
-    localStorage.removeItem('orderLoadingUserId');
-    if (idInputRef.current) {
-      idInputRef.current.focus();
+      if (response.success) {
+        setResult({
+          type: 'success',
+          message: `成功載入托盤 ${response.data?.palletNumber || scanInput}`,
+        });
+        // 清空輸入
+        setScanInput('');
+      } else {
+        setResult({
+          type: 'error',
+          message: response.message || '載入失敗',
+        });
+      }
+    } catch (error) {
+      setResult({
+        type: 'error',
+        message: '系統錯誤，請稍後再試',
+      });
+    } finally {
+      setIsProcessing(false);
+      // 3秒後自動清除結果
+      setTimeout(() => setResult(null), 3000);
     }
   };
 
-  // Mobile view
-  if (isMobile) {
-    return (
-      <div className={`h-full ${className || ''}`}>
-        <DataCard
-          className='h-full overflow-hidden'
-          borderGlow='hover'
-          glassmorphicVariant='default'
-          padding='none'
-        >
-          <div className='flex h-full flex-col'>
-            {/* Header */}
-            <div className='border-b border-slate-700/50 p-4'>
-              <div className='flex items-center justify-between'>
-                <div>
-                  <h2 className={`${cardTextStyles.title} flex items-center`}>
-                    <DevicePhoneMobileIcon className='mr-2 h-5 w-5 text-blue-400' />
-                    Order Loading
-                  </h2>
-                  <p className={cardTextStyles.labelSmall}>Mobile optimized interface</p>
-                </div>
-                {/* Sound settings removed - functionality integrated into useOrderLoad */}
-                <div className='flex items-center space-x-2'>{/* <SoundSettingsToggle /> */}</div>
-              </div>
-            </div>
-
-            {/* Mobile Content */}
-            <div className='flex-1 overflow-y-auto p-4'>
-              <MobileOrderLoading
-                idNumber={idNumber}
-                isIdValid={isIdValid}
-                isCheckingId={isCheckingId}
-                onIdChange={handleIdChange}
-                onIdBlur={handleIdBlur}
-                availableOrders={availableOrders}
-                orderSummaries={orderSummaries}
-                selectedOrderRef={selectedOrderRef}
-                orderSearchQuery={orderSearchQuery}
-                onOrderSearchChange={setOrderSearchQuery}
-                onOrderSelect={handleOrderSelect}
-                onChangeUser={handleChangeUser}
-                orderData={orderData as unknown as Record<string, unknown>[]}
-                isLoadingOrders={isLoadingOrders}
-                searchValue={searchValue}
-                isSearching={isSearching}
-                onSearchChange={setSearchValue}
-                onSearchSelect={(result: any) => {
-                  // 類型適配：MobileOrderLoading 和 useOrderLoad 有不同的 SearchResult 定義
-                  // 使用 any 來避免類型衝突，因為實際上兩個接口是兼容的
-                  handleSearchSelect(result);
-                }}
-                recentLoads={recentLoads as Record<string, unknown>[]}
-                onUndoClick={handleUndoClick}
-                idInputRef={idInputRef}
-                searchInputRef={searchInputRef}
-              />
-            </div>
-          </div>
-        </DataCard>
-      </div>
-    );
-  }
-
-  // Desktop view
   return (
-    <div className={`h-full ${className || ''}`}>
+    <div className={cn('h-full', className)}>
       <DataCard
         className='h-full overflow-hidden'
         borderGlow='hover'
         glassmorphicVariant='default'
-        padding='none'
+        padding='large'
       >
-        <div className='flex h-full flex-col'>
-          {/* Header */}
-          <div className='border-b border-slate-700/50 p-4'>
-            <div className='flex items-center justify-between'>
-              <div>
-                <h2 className='flex items-center text-lg font-semibold text-white'>
-                  <ComputerDesktopIcon className='mr-2 h-5 w-5 text-purple-400' />
-                  Order Loading System
-                </h2>
-                <p className='text-sm text-slate-400'>Manage order loading operations</p>
-              </div>
-              {/* Sound settings removed - functionality integrated into useOrderLoad */}
-              <div className='flex items-center space-x-2'>{/* <SoundSettingsToggle /> */}</div>
-            </div>
+        {/* Header */}
+        <div className='mb-6'>
+          <h2 className='flex items-center text-lg font-semibold text-white'>
+            <TruckIcon className='mr-3 h-6 w-6 text-blue-400' />
+            Order Loading
+          </h2>
+          <p className='mt-1 text-sm text-slate-400'>掃描托盤號碼進行訂單載入</p>
+        </div>
+
+        {/* 掃描輸入區 */}
+        <div className='mb-6 space-y-4'>
+          <div className='w-full'>
+            <UnifiedSearch
+              searchType='pallet'
+              value={scanInput}
+              onChange={setScanInput}
+              onSelect={result => {
+                if (result && typeof result === 'object' && 'pallet_num' in result) {
+                  setScanInput(result.pallet_num as string);
+                }
+              }}
+              isLoading={false}
+              placeholder='掃描或輸入托盤號碼...'
+              products={[]}
+            />
           </div>
 
-          {/* Main Content */}
-          <div className='flex-1 overflow-hidden'>
-            {!isIdValid ? (
-              // Step 1: ID Input
-              <div className='flex h-full items-center justify-center p-8'>
-                <Card className='w-full max-w-md border-slate-700/50 bg-slate-800/50'>
-                  <CardHeader>
-                    <CardTitle className='flex items-center text-slate-200'>
-                      <UserIcon className='mr-2 h-6 w-6 text-blue-400' />
-                      Employee Login
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className='space-y-4'>
-                    <div>
-                      <Input
-                        ref={idInputRef}
-                        type='text'
-                        inputMode='numeric'
-                        pattern='[0-9]*'
-                        value={idNumber}
-                        onChange={handleIdChange}
-                        onBlur={handleIdBlur}
-                        placeholder='Enter 4-digit ID...'
-                        maxLength={4}
-                        disabled={isCheckingId}
-                        className='text-center font-mono text-lg'
-                      />
-                    </div>
-
-                    {isCheckingId && (
-                      <div className='flex items-center justify-center py-2'>
-                        <div className='h-5 w-5 animate-spin rounded-full border-2 border-white/50 border-t-transparent'></div>
-                        <span className='ml-2 text-slate-400'>Verifying ID...</span>
-                      </div>
-                    )}
-
-                    <p className='text-center text-sm text-slate-400'>
-                      Please enter your 4-digit employee ID
-                    </p>
-                  </CardContent>
-                </Card>
-              </div>
-            ) : availableOrders.length === 0 ? (
-              // No orders available
-              <div className='flex h-full items-center justify-center p-8'>
-                <div className='text-center'>
-                  <TruckIcon className='mx-auto mb-4 h-16 w-16 text-slate-600' />
-                  <h3 className='mb-2 text-xl font-semibold text-white'>No Orders Available</h3>
-                  <p className='text-slate-400'>No pending orders for loading at this time.</p>
-                </div>
-              </div>
-            ) : !selectedOrderRef ? (
-              // Step 2: Order Selection
-              <div className='flex h-full flex-col p-6'>
-                <div className='mb-6'>
-                  <h3 className='flex items-center text-xl font-semibold text-white'>
-                    <ClipboardDocumentListIcon className='mr-2 h-6 w-6 text-green-400' />
-                    Select Order to Load
-                  </h3>
-                  <p className='mt-1 text-sm text-slate-400'>
-                    Choose an order to begin loading operations
-                  </p>
-                </div>
-
-                {/* Order Search */}
-                <div className='mb-4'>
-                  <Input
-                    type='text'
-                    placeholder='Search orders...'
-                    value={orderSearchQuery}
-                    onChange={e => setOrderSearchQuery(e.target.value)}
-                    className='max-w-md'
-                  />
-                </div>
-
-                {/* Orders Grid */}
-                <div className='grid flex-1 grid-cols-1 gap-4 overflow-y-auto md:grid-cols-2 lg:grid-cols-3'>
-                  {availableOrders
-                    .filter(orderRef =>
-                      orderRef.toLowerCase().includes(orderSearchQuery.toLowerCase())
-                    )
-                    .map(orderRef => {
-                      const summary = orderSummaries.get(orderRef);
-                      const isComplete = summary && summary.percentage >= 100;
-
-                      return (
-                        <Card
-                          key={orderRef}
-                          className={cn(
-                            'cursor-pointer border-slate-700/50 bg-slate-800/50 transition-all hover:scale-105',
-                            isComplete && 'border-white/50 bg-white/10'
-                          )}
-                          onClick={() => handleOrderSelect(orderRef)}
-                        >
-                          <CardContent className='p-4'>
-                            <div className='mb-3 flex items-center justify-between'>
-                              <h4 className='font-semibold text-cyan-300'>Order #{orderRef}</h4>
-                              {isComplete && (
-                                <span className='rounded-full bg-green-500/20 px-2 py-1 text-xs text-green-400'>
-                                  ✓ Complete
-                                </span>
-                              )}
-                            </div>
-
-                            {summary && (
-                              <div className='space-y-2'>
-                                <div className='text-sm text-slate-400'>
-                                  {summary.completedItems}/{summary.itemCount} items •
-                                  {summary.loadedQty}/{summary.totalQty} units
-                                </div>
-                                <div className='h-2 w-full rounded-full bg-slate-600/30'>
-                                  <div
-                                    className={cn(
-                                      'h-full rounded-full transition-all duration-500',
-                                      isComplete
-                                        ? 'bg-gradient-to-r from-green-500 to-green-400'
-                                        : 'bg-gradient-to-r from-blue-500 to-blue-400'
-                                    )}
-                                    style={{ width: `${summary.percentage}%` }}
-                                  />
-                                </div>
-                                <div className='text-right text-sm font-medium'>
-                                  {summary.percentage.toFixed(1)}%
-                                </div>
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                </div>
+          <Button
+            onClick={handleOperation}
+            disabled={isProcessing || !scanInput.trim()}
+            className={cn(
+              'w-full py-3 font-medium transition-all',
+              isProcessing
+                ? 'cursor-not-allowed bg-slate-600 text-slate-400'
+                : 'bg-blue-600 text-white hover:bg-blue-500'
+            )}
+          >
+            {isProcessing ? (
+              <div className='flex items-center justify-center'>
+                <div className='mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white' />
+                處理中...
               </div>
             ) : (
-              // Step 3: Loading Interface
-              <div className='flex h-full'>
-                {/* Left Panel - Scanning & Progress */}
-                <div className='flex flex-1 flex-col space-y-6 p-6'>
-                  {/* Order Info */}
-                  <Card className='border-slate-700/50 bg-slate-800/50'>
-                    <CardHeader>
-                      <div className='flex items-center justify-between'>
-                        <CardTitle className='text-cyan-300'>Order #{selectedOrderRef}</CardTitle>
-                        <Button
-                          variant='outline'
-                          size='sm'
-                          onClick={handleChangeUser}
-                          className='border-slate-600 text-slate-300'
-                        >
-                          Change User
-                        </Button>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      {orderSummaries.has(selectedOrderRef) && (
-                        <div className='grid grid-cols-3 gap-4'>
-                          <div className='text-center'>
-                            <div className='text-2xl font-bold text-cyan-300'>
-                              {orderSummaries.get(selectedOrderRef)!.percentage.toFixed(0)}%
-                            </div>
-                            <div className='text-sm text-slate-400'>Progress</div>
-                          </div>
-                          <div className='text-center'>
-                            <div className='text-2xl font-bold text-yellow-300'>
-                              {orderSummaries.get(selectedOrderRef)!.loadedQty}
-                            </div>
-                            <div className='text-sm text-slate-400'>Units Loaded</div>
-                          </div>
-                          <div className='text-center'>
-                            <div className='text-2xl font-bold text-green-300'>
-                              {orderSummaries.get(selectedOrderRef)!.completedItems}/
-                              {orderSummaries.get(selectedOrderRef)!.itemCount}
-                            </div>
-                            <div className='text-sm text-slate-400'>Items Complete</div>
-                          </div>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-
-                  {/* Scanning Interface */}
-                  <Card className='border-slate-700/50 bg-slate-800/50'>
-                    <CardHeader>
-                      <CardTitle className='flex items-center text-slate-200'>
-                        <TruckIcon className='mr-2 h-6 w-6 text-purple-400' />
-                        Scan to Load
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <UnifiedSearch
-                        searchType='pallet'
-                        value={searchValue}
-                        onChange={setSearchValue}
-                        onSelect={handleSearchSelect}
-                        isLoading={isSearching}
-                        placeholder='Scan or enter pallet number...'
-                        ref={searchInputRef}
-                        products={[]}
-                      />
-                    </CardContent>
-                  </Card>
-
-                  {/* Progress Chart */}
-                  {orderData.length > 0 && (
-                    <Card className='border-slate-700/50 bg-slate-800/50'>
-                      <CardHeader>
-                        <CardTitle className='flex items-center text-slate-200'>
-                          <ChartBarIcon className='mr-2 h-6 w-6 text-green-400' />
-                          Loading Progress
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <LoadingProgressChart orderData={orderData} recentLoads={recentLoads} />
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Batch Loading Panel */}
-                  {selectedOrderRef && (
-                    <BatchLoadPanel orderRef={selectedOrderRef} onBatchComplete={refreshAllData} />
-                  )}
-                </div>
-
-                {/* Right Panel - Order Details & History */}
-                <div className='w-80 space-y-4 overflow-y-auto border-l border-slate-700/50 p-6'>
-                  {/* Order Items */}
-                  <Card className='border-slate-700/50 bg-slate-800/50'>
-                    <CardHeader>
-                      <CardTitle className='text-sm text-slate-200'>Order Items</CardTitle>
-                    </CardHeader>
-                    <CardContent className='space-y-3'>
-                      {orderData.map((order, index) => {
-                        const totalQty = parseInt(order.product_qty || '0');
-                        const loadedQty = parseInt(order.loaded_qty || '0');
-                        const percentage = totalQty > 0 ? (loadedQty / totalQty) * 100 : 0;
-                        const isComplete = loadedQty >= totalQty;
-
-                        return (
-                          <div
-                            key={index}
-                            className={cn(
-                              'space-y-2 rounded-lg border p-3',
-                              isComplete
-                                ? 'border-white/30 bg-white/10'
-                                : 'border-slate-600/30 bg-slate-700/30'
-                            )}
-                          >
-                            <div className='flex items-center justify-between'>
-                              <span className='font-mono text-sm text-cyan-300'>
-                                {order.product_code}
-                              </span>
-                              <span
-                                className={cn(
-                                  'text-xs font-medium',
-                                  isComplete ? 'text-green-400' : 'text-yellow-400'
-                                )}
-                              >
-                                {isComplete ? '✓' : `${percentage.toFixed(0)}%`}
-                              </span>
-                            </div>
-                            <p className='truncate text-xs text-slate-300'>{order.product_desc}</p>
-                            <div className='text-xs text-slate-400'>
-                              {loadedQty} / {totalQty} loaded
-                            </div>
-                            <div className='h-1 w-full rounded-full bg-slate-600/30'>
-                              <div
-                                className={cn(
-                                  'h-full rounded-full transition-all duration-500',
-                                  isComplete ? 'bg-green-500' : 'bg-blue-500'
-                                )}
-                                style={{ width: `${percentage}%` }}
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </CardContent>
-                  </Card>
-
-                  {/* Recent Loads */}
-                  {recentLoads.length > 0 && (
-                    <Card className='border-slate-700/50 bg-slate-800/50'>
-                      <CardHeader>
-                        <CardTitle className='text-sm text-slate-200'>Recent Loads</CardTitle>
-                      </CardHeader>
-                      <CardContent className='space-y-2'>
-                        {recentLoads.slice(0, 8).map((load, index) => {
-                          const uuid = load.uuid || `load-${index}`;
-                          const palletNum = load.pallet_num || 'Unknown';
-                          const quantity = load.quantity || 0;
-
-                          return (
-                            <div
-                              key={uuid}
-                              className='flex items-center justify-between rounded bg-slate-700/30 p-2 text-xs'
-                            >
-                              <div>
-                                <span className='font-mono text-cyan-300'>{palletNum}</span>
-                                <span className='mx-1 text-slate-400'>•</span>
-                                <span className='text-green-300'>Qty: {quantity}</span>
-                              </div>
-                              <Button
-                                variant='ghost'
-                                size='sm'
-                                onClick={() =>
-                                  handleUndoClick({
-                                    pallet_num: palletNum,
-                                    product_code: load.product_code,
-                                    quantity: quantity,
-                                    action_time: load.action_time,
-                                  })
-                                }
-                                className='h-6 w-6 p-0 text-red-400 hover:text-red-300'
-                              >
-                                ×
-                              </Button>
-                            </div>
-                          );
-                        })}
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-              </div>
+              '載入托盤'
             )}
+          </Button>
+        </div>
+
+        {/* 結果顯示區 */}
+        {result && (
+          <div
+            className={cn(
+              'animate-in fade-in-50 rounded-lg border p-4 text-center duration-300',
+              result.type === 'success'
+                ? 'border-green-500/30 bg-green-500/10 text-green-400'
+                : 'border-red-500/30 bg-red-500/10 text-red-400'
+            )}
+          >
+            <div className='mb-2 flex items-center justify-center'>
+              {result.type === 'success' ? (
+                <div className='flex h-6 w-6 items-center justify-center rounded-full bg-green-500'>
+                  <span className='text-sm font-bold text-white'>✓</span>
+                </div>
+              ) : (
+                <div className='flex h-6 w-6 items-center justify-center rounded-full bg-red-500'>
+                  <span className='text-sm font-bold text-white'>✗</span>
+                </div>
+              )}
+            </div>
+            <p className='text-sm font-medium'>{result.message}</p>
           </div>
+        )}
+
+        {/* 說明文字 */}
+        <div className='mt-auto pt-6 text-center text-xs text-slate-500'>
+          請使用掃描器或手動輸入托盤號碼進行載入操作
         </div>
       </DataCard>
-
-      {/* Undo Confirmation Dialog */}
-      {showUndoDialog && undoItem && (
-        <div className='fixed inset-0 z-50 flex items-center justify-center bg-black/50'>
-          <Card className='w-full max-w-md border-none bg-white/5 backdrop-blur-sm'>
-            <CardHeader>
-              <CardTitle className='text-slate-200'>Confirm Undo</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className='mb-4 text-slate-400'>
-                Are you sure you want to undo the loading of pallet{' '}
-                <span className='font-mono text-cyan-300'>{undoItem.pallet_num}</span>?
-              </p>
-              <div className='flex justify-end space-x-2'>
-                <Button
-                  variant='outline'
-                  onClick={() => setShowUndoDialog(false)}
-                  className='border-slate-600'
-                >
-                  Cancel
-                </Button>
-                <Button variant='destructive' onClick={handleConfirmedUndo}>
-                  Undo Load
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </div>
   );
 };

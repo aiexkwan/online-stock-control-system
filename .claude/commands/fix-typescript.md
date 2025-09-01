@@ -24,9 +24,9 @@ description: 自動化並行修復 TypeScript 類型錯誤，通過多輪代理�
 0.  完整閱讀 @CLAUDE.md [系統規範](../../CLAUDE.local.md)及文檔中的連結文案，以獲取全局設定及系統資訊。
 
 1.  **階段一：初始化與檢查**
-    - 執行 `date +"%d-%b-%Y"` 獲取當日時間戳 (例如：`29-Aug-2025`)。
+    - 執行 `date +"%d-%b-%Y"` 獲取當日時間戳 (格式`29-Aug-2025`)。
     - 定義日誌檔案路徑：
-      - 錯誤列表及修復記錄: `docs/Typescript_History/typescript_error_{timestamp}.md`
+      - 錯誤列表: `docs/Typescript_History/typescript_error_{timestamp}.json`
       - 修復記錄: `docs/Typescript_History/typescript_fix_log_{timestamp}.md`
     - 檢查當日的錯誤列表與修復記錄是否已存在。如果存在，則直接進入階段三。
 
@@ -38,7 +38,7 @@ description: 自動化並行修復 TypeScript 類型錯誤，通過多輪代理�
       3.  根據提取的檔案路徑，在 `<修復記錄路徑>` 建立一個 Markdown 格式的任務清單，每個檔案為一個待辦事項。
 
           ```markdown
-          # TypeScript 修復記錄 - [YYYY-MM-DD]
+          # TypeScript 修復記錄 - [YYYY-MMM-DD]
 
           ## 待修復檔案
 

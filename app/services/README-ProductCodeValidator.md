@@ -305,13 +305,12 @@ npm run vitest -- __tests__/services/productCodeValidator.simple.test.ts
 # 運行完整測試套件 (需要數據庫連接)
 npm run vitest -- __tests__/services/productCodeValidator.test.ts
 
-# 運行示例
-node -r ts-node/register app/services/examples/productCodeValidatorExample.ts
+# 運行完整測試和綜合測試
+npm run vitest -- __tests__/services/productCodeValidator.comprehensive.test.ts
 ```
 
 ## 相關文件
 
 - `app/services/productCodeValidator.ts` - 主要實現
 - `app/api/product-code-validation/route.ts` - API 端點
-- `app/services/examples/productCodeValidatorExample.ts` - 使用示例
 - `__tests__/services/productCodeValidator.*.test.ts` - 測試文件

@@ -10,7 +10,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { UnifiedLoadingReportDialog } from '@/app/(app)/order-loading/components/UnifiedLoadingReportDialog';
+// Order Loading Report 功能已移除 (極簡化)
+// import { UnifiedLoadingReportDialog } from '@/app/(app)/order-loading/components/UnifiedLoadingReportDialog';
 // ACO Report now integrated directly into system page card
 // GRN Report now integrated directly into system page card
 // Transaction Report now integrated directly into system page card
@@ -105,10 +106,11 @@ export function GlobalReportDialogs(): JSX.Element {
 
   return (
     <>
-      <UnifiedLoadingReportDialog
+      {/* Order Loading Report 功能已移除 (極簡化) */}
+      {/* <UnifiedLoadingReportDialog
         isOpen={dialogStates.orderLoadingReport}
         onClose={() => closeDialog('orderLoadingReport')}
-      />
+      /> */}
 
       {/* ACO Order Report now integrated directly into system page card */}
       {/* Transaction Report now integrated directly into system page card */}

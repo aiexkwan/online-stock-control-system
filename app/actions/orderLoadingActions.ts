@@ -2,10 +2,8 @@
 
 import { createClient } from '@/app/utils/supabase/server';
 import { getUserIdFromEmail } from '@/lib/utils/getUserId';
-import {
-  checkOperationAnomaly,
-  logFailedScan,
-} from '@/app/(app)/order-loading/services/anomalyDetectionService';
+// 異常檢測功能已移除，採用極簡化方法
+// import { checkOperationAnomaly, logFailedScan } from '@/app/(app)/order-loading/services/anomalyDetectionService';
 
 export interface LoadPalletResult {
   success: boolean;
@@ -152,15 +150,8 @@ export async function loadPalletToOrder(
       }
     }
 
-    // Check for operation anomalies
-    const anomalyCheck = await checkOperationAnomaly(userId.toString(), orderRef);
-    if (anomalyCheck.hasAnomaly && anomalyCheck.severity === 'error') {
-      return {
-        success: false,
-        message: anomalyCheck.message || 'Operation blocked due to anomaly',
-        error: 'ANOMALY_DETECTED',
-      };
-    }
+    // 異常檢測功能已移除 (極簡化)
+    // const anomalyCheck = await checkOperationAnomaly(userId.toString(), orderRef);
 
     // Trim input
     const cleanInput = palletInput.trim();
@@ -177,7 +168,8 @@ export async function loadPalletToOrder(
 
     if (error) {
       console.error('[loadPalletToOrder] RPC error:', error);
-      await logFailedScan(userId.toString(), orderRef, cleanInput, error.message);
+      // 錯誤記錄功能已移除 (極簡化)
+      // await logFailedScan(userId.toString(), orderRef, cleanInput, error.message);
       return {
         success: false,
         message: 'System error',
@@ -185,8 +177,8 @@ export async function loadPalletToOrder(
       };
     }
 
-    // Check for non-blocking anomaly warning
-    const postLoadAnomaly = await checkOperationAnomaly(userId.toString(), orderRef);
+    // 異常檢測功能已移除 (極簡化)
+    // const postLoadAnomaly = await checkOperationAnomaly(userId.toString(), orderRef);
 
     // 確保返回數據的類型安全
     if (!data || typeof data !== 'object') {
@@ -203,10 +195,12 @@ export async function loadPalletToOrder(
         console.log(`[loadPalletToOrder] Successfully loaded:`, result);
       return {
         ...result,
-        warning: postLoadAnomaly.hasAnomaly ? postLoadAnomaly.message : undefined,
+        // 異常警告功能已移除 (極簡化)
+        // warning: postLoadAnomaly.hasAnomaly ? postLoadAnomaly.message : undefined,
       };
     } else {
-      await logFailedScan(userId.toString(), orderRef, cleanInput, result.message);
+      // 錯誤記錄功能已移除 (極簡化)
+      // await logFailedScan(userId.toString(), orderRef, cleanInput, result.message);
       return result;
     }
   } catch (error) {

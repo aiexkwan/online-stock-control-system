@@ -59,21 +59,21 @@ export default function MainLoginPage() {
     );
   }
 
-  // 如果有錯誤，提供備用登入
+  // 如果有錯誤，顯示重新載入提示
   if (hasError) {
     return (
       <div className='flex min-h-screen items-center justify-center bg-slate-900 px-4'>
         <div className='text-center text-white'>
           <h1 className='mb-4 text-2xl font-bold'>Loading Issue Detected</h1>
           <p className='mb-6 text-slate-300'>
-            There was an issue loading the login page components.
+            There was an issue loading the login page. Please try refreshing the page.
           </p>
-          <a
-            href='/main-login/simple'
+          <button
+            onClick={() => window.location.reload()}
             className='inline-block rounded-lg bg-blue-600 px-6 py-3 text-white transition-colors hover:bg-blue-700'
           >
-            Use Simple Login
-          </a>
+            Refresh Page
+          </button>
         </div>
       </div>
     );

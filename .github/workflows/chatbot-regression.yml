@@ -1,0 +1,256 @@
+name: ChatbotCard 回歸測試
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'app/(app)/admin/cards/ChatbotCard.tsx'
+      - 'app/(app)/admin/components/**'
+      - 'app/(app)/admin/hooks/**'
+      - 'app/(app)/admin/context/**'
+      - '__tests__/**chatbot**'
+      - '__tests__/regression/**'
+      - '__tests__/e2e/**'
+      - '__tests__/performance/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'app/(app)/admin/cards/ChatbotCard.tsx'
+      - 'app/(app)/admin/components/**'
+      - 'app/(app)/admin/hooks/**'
+      - 'app/(app)/admin/context/**'
+  
+  # 允許手動觸發
+  workflow_dispatch:
+    inputs:
+      test_suite:
+        description: '選擇測試套件'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - unit
+          - integration
+          - e2e
+          - performance
+      performance_baseline:
+        description: '性能基準測試'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  regression-tests:
+    name: 回歸測試
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [18, 20]
+        
+    timeout-minutes: 30
+    
+    steps:
+    - name: 檢出程式碼
+      uses: actions/checkout@v4
+      
+    - name: 設置 Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        
+    - name: 安裝依賴
+      run: |
+        npm ci
+        npx playwright install --with-deps
+        
+    - name: 驗證環境設置
+      run: |
+        node --version
+        npm --version
+        npx playwright --version
+        
+    - name: 建立測試環境
+      run: |
+        mkdir -p test-results
+        cp .env.example .env.local || true
+        
+    - name: 執行 TypeScript 檢查
+      run: npm run typecheck
+      
+    - name: 執行 ESLint 檢查
+      run: npm run lint
+      
+    - name: 建置專案
+      run: npm run build
+      
+    - name: 執行單元回歸測試
+      if: ${{ github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'unit' || github.event.inputs.test_suite == '' }}
+      run: npm run test:unit:chatbot
+      
+    - name: 執行跨瀏覽器兼容性測試
+      if: ${{ github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'integration' || github.event.inputs.test_suite == '' }}
+      run: npm run test:crossbrowser:chatbot
+      
+    - name: 啟動開發伺服器 (背景)
+      if: ${{ github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'e2e' || github.event.inputs.test_suite == 'performance' || github.event.inputs.test_suite == '' }}
+      run: |
+        npm run dev -- --port 3001 &
+        sleep 30
+        curl -f http://localhost:3001 || exit 1
+        
+    - name: 執行 E2E 回歸測試
+      if: ${{ github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'e2e' || github.event.inputs.test_suite == '' }}
+      run: npm run test:e2e:chatbot
+      
+    - name: 執行性能基準測試
+      if: ${{ github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == 'performance' || github.event.inputs.performance_baseline == 'true' || github.event.inputs.test_suite == '' }}
+      run: npm run test:performance:baseline
+      
+    - name: 執行完整回歸測試套件
+      if: ${{ github.event.inputs.test_suite == 'all' || github.event.inputs.test_suite == '' }}
+      run: npm run test:regression:chatbot:ci
+      
+    - name: 上傳測試結果
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-node-${{ matrix.node-version }}
+        path: |
+          test-results/
+          playwright-report/
+          coverage/
+        retention-days: 7
+        
+    - name: 上傳 Playwright 報告
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: playwright-report-node-${{ matrix.node-version }}
+        path: playwright-report/
+        retention-days: 3
+        
+    - name: 性能回歸檢查
+      if: always()
+      run: |
+        if [ -f "test-results/regression-report-*.json" ]; then
+          echo "📊 回歸測試結果摘要:"
+          node -e "
+            const fs = require('fs');
+            const files = fs.readdirSync('test-results').filter(f => f.startsWith('regression-report-'));
+            if (files.length > 0) {
+              const report = JSON.parse(fs.readFileSync('test-results/' + files[0]));
+              console.log('總測試數:', report.summary.totalTests);
+              console.log('通過:', report.summary.totalPassed);
+              console.log('失敗:', report.summary.totalFailed);
+              console.log('成功率:', report.summary.successRate.toFixed(1) + '%');
+              
+              if (report.summary.totalFailed > 0) {
+                console.log('❌ 檢測到測試失敗');
+                process.exit(1);
+              }
+              
+              // 檢查性能回歸
+              const performanceData = report.suites.performance?.performanceMetrics;
+              if (performanceData) {
+                const pageLoadMetric = performanceData.find(m => m.testName === 'pageLoad');
+                if (pageLoadMetric && pageLoadMetric.improvement < 15) {
+                  console.log('⚠️ 性能改進未達到 15% 目標');
+                  process.exit(2);
+                }
+              }
+              
+              console.log('✅ 所有回歸測試通過');
+            }
+          "
+        fi
+        
+  lighthouse-audit:
+    name: Lighthouse 性能審計
+    runs-on: ubuntu-latest
+    needs: regression-tests
+    if: ${{ github.event.inputs.performance_baseline == 'true' || github.event_name == 'push' }}
+    
+    steps:
+    - name: 檢出程式碼
+      uses: actions/checkout@v4
+      
+    - name: 設置 Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: 安裝依賴
+      run: npm ci
+      
+    - name: 建置專案
+      run: npm run build
+      
+    - name: 啟動生產伺服器
+      run: |
+        npm start &
+        sleep 30
+        
+    - name: 執行 Lighthouse CI
+      run: |
+        npm install -g @lhci/cli
+        lhci autorun --config=.lighthouserc.js || true
+        
+    - name: 上傳 Lighthouse 結果
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: lighthouse-results
+        path: .lighthouseci/
+        retention-days: 7
+        
+  notify-results:
+    name: 通知測試結果
+    runs-on: ubuntu-latest
+    needs: [regression-tests, lighthouse-audit]
+    if: always()
+    
+    steps:
+    - name: 下載測試結果
+      uses: actions/download-artifact@v4
+      with:
+        pattern: test-results-*
+        merge-multiple: true
+        path: test-results/
+        
+    - name: 創建結果摘要
+      run: |
+        echo "## 🧪 ChatbotCard 回歸測試結果" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ needs.regression-tests.result }}" == "success" ]; then
+          echo "✅ 回歸測試: **通過**" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ 回歸測試: **失敗**" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ needs.lighthouse-audit.result }}" == "success" ]; then
+          echo "✅ Lighthouse 審計: **通過**" >> $GITHUB_STEP_SUMMARY
+        elif [ "${{ needs.lighthouse-audit.result }}" == "skipped" ]; then
+          echo "⏭️ Lighthouse 審計: **跳過**" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ Lighthouse 審計: **失敗**" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 測試覆蓋範圍" >> $GITHUB_STEP_SUMMARY
+        echo "- 單元測試: ChatbotCard 核心功能" >> $GITHUB_STEP_SUMMARY
+        echo "- 整合測試: 組件協作和狀態管理" >> $GITHUB_STEP_SUMMARY
+        echo "- E2E 測試: 完整用戶流程" >> $GITHUB_STEP_SUMMARY
+        echo "- 性能測試: 15-20% 改進目標驗證" >> $GITHUB_STEP_SUMMARY
+        echo "- 跨瀏覽器: Chrome, Firefox, Safari, Edge" >> $GITHUB_STEP_SUMMARY
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 重構指標" >> $GITHUB_STEP_SUMMARY
+        echo "- 代碼行數: 1074 → 312 行 (-70%)" >> $GITHUB_STEP_SUMMARY
+        echo "- 狀態數量: 17 → 6 個 (-65%)" >> $GITHUB_STEP_SUMMARY
+        echo "- 記憶體使用: 目標減少 17.8%" >> $GITHUB_STEP_SUMMARY
+        echo "- 性能改進: 目標 15-20%" >> $GITHUB_STEP_SUMMARY

@@ -1,688 +1,239 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { motion } from 'framer-motion';
-import {
-  Brain,
-  Sparkles,
-  Send,
-  Loader2,
-  AlertCircle,
-  Database,
-  MessageCircle,
-  Package,
-  ClipboardList,
-  TrendingUp,
-  Search,
-  Calendar,
-  Truck,
-  AlertTriangle,
-  RefreshCw,
-  HelpCircle,
-  ChevronDown,
-  ChevronUp,
-} from 'lucide-react';
+import React, { useRef, useMemo, useEffect, useCallback } from 'react';
 import { SpecialCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
-import { cardTextStyles } from '@/lib/card-system/theme';
 import { cn } from '@/lib/utils';
 import { useAuthState } from '@/app/(auth)/main-login/context/AuthContext';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import type {
-  AIResponse,
-  AIListItem,
-  AITableRow,
-  ChatMessage,
-  ChatbotCardProps,
-} from '../types/ai-response';
+// 引入統一的狀態管理Hooks
+import { useChatState } from '../hooks/useChatState';
+import { useMessageHistory } from '../hooks/useMessageHistory';
+import { useSuggestionState } from '../hooks/useSuggestionState';
+import type { ChatbotCardProps } from '../types/ai-response';
+// 引入性能監控工具
+import { usePerformanceMonitor, useMemoryMonitor } from '../utils/performanceMonitor';
+// 引入記憶體管理工具
+import { useMemoryCleanup } from '../hooks/useMemoryCleanup';
 
-interface SuggestionCategory {
-  category: string;
-  icon: React.ReactNode;
-  queries: string[];
-}
+// 導入新的組件
+import { ChatHeader } from '../components/ChatHeader';
+import { ChatMessages } from '../components/ChatMessages';
+import { ChatInput } from '../components/ChatInput';
+import { QuerySuggestions } from '../components/QuerySuggestions';
+import MemoryDashboard from '../components/MemoryDashboard';
 
-interface Anomaly {
-  type: 'stuck_pallets' | 'inventory_mismatch' | 'overdue_orders';
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  title: string;
-  description: string;
-  count: number;
-  data: Record<string, unknown>[];
-  suggestedAction: string;
-  detectedAt: string;
-}
+// 導入依賴注入相關
+import {
+  ServiceProvider,
+  useSuggestionService,
+  useMessageFormatter,
+} from '../context/ServiceContext';
 
-interface EnhancedError {
-  message: string;
-  details?: string;
-  suggestions?: string[];
-  alternatives?: string[];
-  showSchema?: boolean;
-  showExamples?: boolean;
-  showHelp?: boolean;
-}
-
-// Render AI response based on type
-const renderAIResponse = (response: AIResponse): React.ReactNode => {
-  switch (response.type) {
-    case 'list':
-      const listData = response.data as AIListItem[];
-      return (
-        <div className='space-y-3'>
-          {response.summary && (
-            <p className={cn(cardTextStyles.body, 'mb-2')}>{response.summary}</p>
-          )}
-          <div className='space-y-2'>
-            {listData.map((item, index) => (
-              <div key={index} className='flex items-start gap-2'>
-                {item.rank && (
-                  <span className='min-w-[24px] font-semibold text-purple-400'>{item.rank}.</span>
-                )}
-                <div className='flex-1'>
-                  <span className={cn(cardTextStyles.body, 'font-semibold')}>{item.label}</span>
-                  {item.value && (
-                    <span className='ml-2 text-purple-300'>
-                      - {typeof item.value === 'number' ? item.value.toLocaleString() : item.value}
-                      {item.unit && ` ${item.unit}`}
-                    </span>
-                  )}
-                  {item.description && (
-                    <p className={cn(cardTextStyles.labelSmall, 'mt-1 text-slate-400')}>
-                      {item.description}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-          {response.conclusion && (
-            <p className={cn(cardTextStyles.body, 'mt-3 border-t border-slate-700/50 pt-2')}>
-              {response.conclusion}
-            </p>
-          )}
-        </div>
-      );
-
-    case 'table':
-      const tableData = response.data as AITableRow[];
-      const columns = response.columns || [];
-      return (
-        <div className='space-y-3'>
-          {response.summary && (
-            <p className={cn(cardTextStyles.body, 'mb-2')}>{response.summary}</p>
-          )}
-          <div className='overflow-x-auto'>
-            <table className='w-full text-xs'>
-              <thead>
-                <tr className='border-b border-slate-700/50'>
-                  {columns.map(col => (
-                    <th
-                      key={col.key}
-                      className={cn(
-                        'px-2 py-1 text-slate-400',
-                        col.align === 'right' ? 'text-right' : 'text-left'
-                      )}
-                    >
-                      {col.label}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {tableData.map((row, idx) => (
-                  <tr key={idx} className='border-b border-slate-700/30'>
-                    {columns.map(col => (
-                      <td
-                        key={col.key}
-                        className={cn(
-                          'px-2 py-1',
-                          col.align === 'right' ? 'text-right' : 'text-left'
-                        )}
-                      >
-                        {col.type === 'number' && typeof row[col.key] === 'number'
-                          ? (row[col.key] as number).toLocaleString()
-                          : String(row[col.key] ?? '')}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {response.conclusion && (
-            <p className={cn(cardTextStyles.body, 'mt-3')}>{response.conclusion}</p>
-          )}
-        </div>
-      );
-
-    case 'single':
-      return (
-        <div className='space-y-2'>
-          {response.summary && <p className={cn(cardTextStyles.body)}>{response.summary}</p>}
-          <div className='text-2xl font-bold text-purple-400'>{String(response.data)}</div>
-          {response.conclusion && (
-            <p className={cn(cardTextStyles.body, 'text-slate-400')}>{response.conclusion}</p>
-          )}
-        </div>
-      );
-
-    case 'empty':
-      return (
-        <div className='py-4 text-center'>
-          <AlertCircle className='mx-auto mb-2 h-8 w-8 text-slate-500' />
-          <p className={cn(cardTextStyles.body, 'text-slate-400')}>
-            {response.summary || 'No data found'}
-          </p>
-          {response.conclusion && (
-            <p className={cn(cardTextStyles.labelSmall, 'mt-2 text-slate-500')}>
-              {response.conclusion}
-            </p>
-          )}
-        </div>
-      );
-
-    case 'summary':
-    default:
-      return (
-        <div className='space-y-2'>
-          {response.summary && <p className={cn(cardTextStyles.body)}>{response.summary}</p>}
-          {response.data && (
-            <p className={cn(cardTextStyles.body)}>
-              {typeof response.data === 'string'
-                ? response.data
-                : typeof response.data === 'number'
-                  ? response.data.toString()
-                  : typeof response.data === 'object' && response.data !== null
-                    ? JSON.stringify(response.data)
-                    : String(response.data)}
-            </p>
-          )}
-          {response.conclusion && (
-            <p className={cn(cardTextStyles.body, 'mt-2 text-slate-400')}>{response.conclusion}</p>
-          )}
-        </div>
-      );
-  }
-};
-
-// Enhanced error display component
-const EnhancedErrorDisplay: React.FC<{ error: EnhancedError; onRetry: () => void }> = ({
-  error,
-  onRetry,
-}) => {
-  return (
-    <div className='space-y-3'>
-      <div className='flex items-start gap-3'>
-        <AlertCircle className='mt-0.5 h-5 w-5 flex-shrink-0 text-red-400' />
-        <div className='flex-1'>
-          <h4 className={cn(cardTextStyles.body, 'font-semibold text-red-400')}>{error.message}</h4>
-          {error.details && <p className='mt-1 text-sm text-slate-400'>{error.details}</p>}
-        </div>
-      </div>
-
-      {error.alternatives && error.alternatives.length > 0 && (
-        <div className='rounded-lg bg-white/5 p-3 backdrop-blur-sm'>
-          <p className='mb-2 text-sm text-slate-300'>Did you mean:</p>
-          <div className='flex flex-wrap gap-2'>
-            {error.alternatives.map((alt, i) => (
-              <code
-                key={i}
-                className='rounded bg-white/10 px-2 py-1 text-xs text-purple-300 backdrop-blur-sm'
-              >
-                {alt}
-              </code>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {error.suggestions && error.suggestions.length > 0 && (
-        <div className='space-y-2'>
-          <p className={cn(cardTextStyles.body, 'text-slate-300')}>Suggestions:</p>
-          <ul className='space-y-1'>
-            {error.suggestions.map((suggestion, i) => (
-              <li key={i} className='flex items-start gap-2 text-sm text-slate-400'>
-                <span className='mt-0.5 text-slate-500'>•</span>
-                <span>{suggestion}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <div className='flex flex-wrap gap-2 pt-2'>
-        <Button
-          onClick={onRetry}
-          size='sm'
-          variant='outline'
-          className={cn(cardTextStyles.labelSmall)}
-        >
-          <RefreshCw className='mr-1 h-3 w-3' />
-          Retry Query
-        </Button>
-        {error.showHelp && (
-          <Button
-            onClick={() => window.open('/help/ask-database', '_blank')}
-            size='sm'
-            variant='outline'
-            className={cn(cardTextStyles.labelSmall)}
-          >
-            <HelpCircle className='mr-1 h-3 w-3' />
-            View Help
-          </Button>
-        )}
-      </div>
-    </div>
-  );
-};
-
-// Format message content - handle both string and JSON
-const formatMessageContent = (
-  content: string | AIResponse | EnhancedError,
-  onRetry?: () => void
-): React.ReactNode => {
-  // If it's an enhanced error
-  if (typeof content === 'object' && 'message' in content && 'suggestions' in content) {
-    return (
-      <EnhancedErrorDisplay error={content as EnhancedError} onRetry={onRetry || (() => {})} />
-    );
-  }
-
-  // If it's already an AIResponse object, render it
-  if (typeof content === 'object' && 'type' in content) {
-    return renderAIResponse(content as AIResponse);
-  }
-
-  // Try to parse as JSON
-  if (typeof content === 'string') {
-    try {
-      const parsed = JSON.parse(content) as AIResponse;
-      if (parsed && typeof parsed === 'object' && 'type' in parsed) {
-        return renderAIResponse(parsed);
-      }
-    } catch {
-      // Not JSON, render as plain text
-    }
-  }
-
-  // Fallback to simple text display
-  return <div className={cn(cardTextStyles.body, 'leading-relaxed')}>{String(content)}</div>;
-};
-
-// Chat Message Component
-const ChatMessageComponent: React.FC<{ message: ChatMessage; onRetry?: () => void }> = ({
-  message,
-  onRetry,
-}) => {
-  const isUser = message.type === 'user';
-  const isError = message.type === 'error';
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3 }}
-      className={cn('flex w-full gap-3', isUser ? 'justify-end' : 'justify-start')}
-    >
-      {!isUser && (
-        <div className='flex h-8 w-8 items-center justify-center rounded-full bg-purple-500/20'>
-          {isError ? (
-            <AlertCircle className='h-4 w-4 text-red-400' />
-          ) : (
-            <Database className='h-4 w-4 text-purple-400' />
-          )}
-        </div>
-      )}
-
-      <div
-        className={cn(
-          'max-w-[70%] rounded-lg px-4 py-2',
-          isUser
-            ? 'bg-purple-500/20 text-white'
-            : isError
-              ? 'bg-red-500/10 text-red-400'
-              : 'bg-slate-800/50 text-slate-200'
-        )}
-      >
-        <div className={cn(cardTextStyles.body)}>
-          {formatMessageContent(message.content, onRetry)}
-        </div>
-      </div>
-
-      {isUser && (
-        <div className='flex h-8 w-8 items-center justify-center rounded-full bg-purple-500/20'>
-          <MessageCircle className='h-4 w-4 text-purple-400' />
-        </div>
-      )}
-    </motion.div>
-  );
-};
-
-// Main ChatbotCard Component
-export default function ChatbotCard({ className }: ChatbotCardProps) {
+// Internal ChatbotCard Component with dependency injection
+function ChatbotCardInternal({ className }: ChatbotCardProps) {
   const { user } = useAuthState();
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'welcome',
-      role: 'assistant',
-      type: 'ai',
-      content:
-        'Hello! I can help you query the database. Ask me anything about your inventory, orders, or stock levels.',
-      timestamp: new Date().toISOString(),
-    },
-  ]);
-  const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [useStreaming, setUseStreaming] = useState(true); // Enable streaming by default
-  const [showSuggestions, setShowSuggestions] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [recentQueries, setRecentQueries] = useState<string[]>([]);
-  const [anomalies, setAnomalies] = useState<Anomaly[] | null>(null);
-  const [showAnomalies, setShowAnomalies] = useState(false);
-  const [isDetectingAnomalies, setIsDetectingAnomalies] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const [_sessionId] = useState(() => `session_${Date.now()}`);
 
-  // Check for anomaly detection access
-  const hasAnomalyDetectionAccess = user?.email === 'akwan@pennineindustries.com';
+  // 性能監控
+  const { startRenderMeasure, endRenderMeasure } = usePerformanceMonitor('ChatbotCardInternal');
+  useMemoryMonitor('ChatbotCardInternal');
 
-  // Query suggestion categories
-  const allSuggestions: SuggestionCategory[] = [
-    {
-      category: 'Real-time Inventory',
-      icon: <Package className='h-4 w-4' />,
-      queries: [
-        'Show all pallets in Await location',
-        'What is the total stock for product code MH001?',
-        'How many pallets arrived today?',
-        'Which warehouse has the most available space?',
-        'Show products with stock below 100 units',
-        'List all pallets that have been in Await for more than 7 days',
-      ],
-    },
-    {
-      category: 'Order Status',
-      icon: <ClipboardList className='h-4 w-4' />,
-      queries: [
-        'Show all pending orders',
-        'How many items need to be shipped today?',
-        'What is the status of order REF001?',
-        'Show all unprocessed ACO orders',
-        'List orders that are overdue',
-        'Which orders are partially loaded?',
-      ],
-    },
-    {
-      category: 'Efficiency Analysis',
-      icon: <TrendingUp className='h-4 w-4' />,
-      queries: [
-        'How many pallets were produced today?',
-        'Show monthly shipping statistics',
-        'What is the average transfer time?',
-        'Show work level by department today',
-        'Compare this week vs last week production',
-        'Show most active products today',
-      ],
-    },
-    {
-      category: 'Anomaly Detection',
-      icon: <AlertCircle className='h-4 w-4' />,
-      queries: [
-        'Show pallets that have not moved for 30 days',
-        'Find duplicate pallet numbers',
-        'Show products with inventory discrepancies',
-        'List any errors recorded today',
-        'Show pallets with missing information',
-        'Find orders without customer details',
-      ],
-    },
-  ];
+  // 記憶體清理管理
+  const memoryCleanup = useMemoryCleanup({
+    componentName: 'ChatbotCardInternal',
+    enableMonitoring: true,
+    enableDebug: process.env.NODE_ENV === 'development',
+  });
 
-  // Filter suggestions based on permissions
-  const suggestions = hasAnomalyDetectionAccess
-    ? allSuggestions
-    : allSuggestions.filter(cat => cat.category !== 'Anomaly Detection');
+  // 開始渲染測量
+  startRenderMeasure();
 
-  // Context-aware suggestions
+  // 使用統一的聊天狀態管理
+  const chat = useChatState({
+    sessionId: `session_${Date.now()}`,
+    enableStreaming: true,
+    enableCache: true,
+    enableOptimization: true,
+    autoSync: true,
+    onError: error => {
+      console.error('Chat error:', error);
+      // 註冊錯誤清理
+      memoryCleanup.registerCleanup(() => {
+        // 清理錯誤狀態相關資源
+      }, 'error-cleanup');
+    },
+    onMessageAdded: message => {
+      console.log('Message added:', message.id);
+    },
+    onStreamingUpdate: (messageId, content) => {
+      console.log('Streaming update:', messageId);
+    },
+  });
+
+  // 使用訊息歷史管理
+  const messageHistory = useMessageHistory({
+    sessionId: chat.sessionId,
+    enableSearch: true,
+    enableStats: true,
+    maxHistorySize: 1000,
+  });
+
+  // 使用建議狀態管理
+  const suggestions = useSuggestionState({
+    sessionId: chat.sessionId,
+    enableAnalytics: true,
+    onSuggestionUsed: suggestion => {
+      console.log('Suggestion used:', suggestion.content);
+    },
+    onSuggestionGenerated: suggestions => {
+      console.log('Generated suggestions:', suggestions.length);
+    },
+  });
+
+  // 使用依賴注入的服務（保持兼容性）
+  const suggestionService = useSuggestionService();
+  const messageFormatter = useMessageFormatter();
+
+  // 優化：生成上下文感知建議（使用統一的建議系統）
   const contextualSuggestions = useMemo(() => {
-    const lastMessage = messages.filter(m => m.type === 'user').pop();
-    if (!lastMessage) return [];
+    // 只有當用戶消息實際變化時才重新計算
+    const lastMessage = chat.messages.filter(m => m.type === 'user').pop();
+    const lastMessageContent = lastMessage?.content || '';
+    const categoryChanged = chat.selectedCategory;
 
-    const content = lastMessage.content.toString().toLowerCase();
-    const suggestions: string[] = [];
-
-    if (content.includes('stock') || content.includes('inventory')) {
-      suggestions.push(
-        'Show stock movement history for this product',
-        'Compare current stock with last month',
-        'Show location distribution for this product'
-      );
+    // 避免頻繁的建議生成
+    if (!lastMessage && chat.messages.length === 0) {
+      return [];
     }
 
-    if (content.includes('order')) {
-      suggestions.push(
-        'Show all items in this order',
-        'Check loading progress for this order',
-        'Show similar orders from the same customer'
-      );
-    }
-
-    if (content.includes('pallet')) {
-      suggestions.push(
-        'Show movement history for this pallet',
-        'Find pallets with the same product',
-        'Check QC status for this pallet'
-      );
-    }
-
-    return suggestions;
-  }, [messages]);
-
-  // Auto scroll to bottom
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  // Run anomaly detection
-  const runAnomalyDetection = async () => {
-    setIsDetectingAnomalies(true);
-    try {
-      const response = await fetch('/api/anomaly-detection', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to detect anomalies');
-      }
-
-      const data = await response.json();
-      const results = data.anomalies || [];
-
-      setAnomalies(results);
-      setShowAnomalies(true);
-
-      if (results.length > 0) {
-        const aiMessage: ChatMessage = {
-          id: `ai_anomaly_${Date.now()}`,
-          role: 'assistant',
-          type: 'ai',
-          content: `Found ${results.length} anomalies requiring attention. Click on each to see details.`,
-          timestamp: new Date().toISOString(),
-        };
-        setMessages(prev => [...prev, aiMessage]);
-      }
-    } catch (error) {
-      console.error('[AnomalyDetection] Error:', error);
-    } finally {
-      setIsDetectingAnomalies(false);
-    }
-  };
-
-  const handleSendMessage = async (question?: string) => {
-    const messageToSend = question || input.trim();
-    if (!messageToSend || isLoading) return;
-
-    setIsLoading(true);
-    setInput('');
-    setShowSuggestions(false);
-
-    // Track recent queries
-    setRecentQueries(prev => {
-      const updated = [messageToSend, ...prev.filter(q => q !== messageToSend)];
-      return updated.slice(0, 10); // Keep last 10 queries
+    // 生成建議並轉換格式以保持兼容性
+    suggestions.generateSuggestions({
+      lastMessage,
+      messageHistory: chat.messages,
+      currentCategory: chat.selectedCategory,
     });
 
-    // Add user message
-    const userMessage: ChatMessage = {
-      id: `user_${Date.now()}`,
-      role: 'user',
-      type: 'user',
-      content: messageToSend,
-      timestamp: new Date().toISOString(),
-    };
+    // 轉換為字串數組以保持與QuerySuggestions組件的兼容性
+    return suggestions.contextualSuggestions.map(suggestion => suggestion.content);
+  }, [chat.messages, chat.selectedCategory, suggestions]);
 
-    setMessages(prev => [...prev, userMessage]);
+  // 同步訊息到歷史管理
+  useEffect(() => {
+    if (chat.messages.length > 0) {
+      const latestMessage = chat.messages[chat.messages.length - 1];
+      messageHistory.addMessage(latestMessage);
+    }
+  }, [chat.messages, messageHistory]);
 
-    // Use unified API endpoint with mode parameter
-    try {
-      const requestBody = {
-        question: messageToSend,
-        _sessionId,
-        stream: useStreaming,
-        features: {
-          enableCache: true,
-          enableOptimization: true,
-          enableAnalysis: false, // Can be toggled based on user preference
-        },
-      };
+  /**
+   * 優化：處理消息發送 - 使用統一狀態管理系統並優化性能
+   */
+  const handleSendMessage = useCallback(
+    async (question?: string) => {
+      const messageToSend = question || chat.input.trim();
+      if (!messageToSend || chat.isLoading) return;
 
-      const headers: HeadersInit = {
-        'Content-Type': 'application/json',
-      };
-
-      // Add streaming header if streaming mode is enabled
-      if (useStreaming) {
-        headers['Accept'] = 'text/event-stream';
-      }
-
-      const response = await fetch('/api/ask-database', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!response.ok && !useStreaming) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      if (useStreaming) {
-        // Handle streaming response
-        const reader = response.body?.getReader();
-        const decoder = new TextDecoder();
-        let accumulatedAnswer = '';
-
-        if (reader) {
-          // Add placeholder message for streaming
-          const streamingMessageId = `ai_streaming_${Date.now()}`;
-          setMessages(prev => [
-            ...prev,
-            {
-              id: streamingMessageId,
-              role: 'assistant',
-              type: 'ai',
-              content: '...',
-              timestamp: new Date().toISOString(),
-            },
-          ]);
-
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            const chunk = decoder.decode(value);
-            const lines = chunk.split('\n');
-
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                const data = line.slice(6);
-                if (data === '[DONE]') break;
-
-                try {
-                  const parsed = JSON.parse(data);
-
-                  if (parsed.type === 'answer_chunk') {
-                    accumulatedAnswer += parsed.content;
-                    // Update the streaming message
-                    setMessages(prev =>
-                      prev.map(msg =>
-                        msg.id === streamingMessageId ? { ...msg, content: accumulatedAnswer } : msg
-                      )
-                    );
-                  } else if (parsed.type === 'complete') {
-                    // Replace with final parsed answer
-                    const finalAnswer = parsed.answer;
-                    setMessages(prev =>
-                      prev.map(msg =>
-                        msg.id === streamingMessageId ? { ...msg, content: finalAnswer } : msg
-                      )
-                    );
-                  } else if (parsed.type === 'cache_hit') {
-                    console.log(`Cache hit: ${parsed.level}`);
-                  } else if (parsed.type === 'error') {
-                    throw new Error(parsed.message);
-                  }
-                } catch (e) {
-                  console.error('Parse error:', e);
-                }
+      try {
+        // 使用統一的聊天狀態發送消息
+        await chat.sendMessage(messageToSend, {
+          streaming: chat.useStreaming,
+          onSuccess: (responseContent, messageId) => {
+            // 記錄建議使用（如果消息來自建議）
+            if (question) {
+              const usedSuggestion = suggestions.suggestions.find(s => s.content === question);
+              if (usedSuggestion) {
+                suggestions.recordSuggestionUsage(usedSuggestion.id);
               }
             }
-          }
-        }
-      } else {
-        // Handle standard JSON response
-        const result = await response.json();
 
-        // Build AI response
-        const aiMessage: ChatMessage = {
-          id: `ai_${Date.now()}`,
-          role: 'assistant',
-          type: 'ai',
-          content: result.answer || 'Query executed successfully',
-          timestamp: new Date().toISOString(),
-        };
-
-        setMessages(prev => [...prev, aiMessage]);
+            // 從用戶行為學習
+            const userMessage = chat.messages.find(
+              m => m.type === 'user' && m.content === messageToSend
+            );
+            if (userMessage) {
+              suggestions.learnFromUserBehavior(userMessage);
+            }
+          },
+          onError: error => {
+            console.error('Message sending failed:', error);
+          },
+        });
+      } catch (error) {
+        console.error('Message sending failed:', error);
       }
-    } catch (error) {
-      const errorMessage: ChatMessage = {
-        id: `error_${Date.now()}`,
-        role: 'system',
-        type: 'error',
-        content: error instanceof Error ? error.message : 'An unexpected error occurred',
-        timestamp: new Date().toISOString(),
-      };
 
-      setMessages(prev => [...prev, errorMessage]);
+      // 重新聚焦輸入框
+      inputRef.current?.focus();
+    },
+    [chat, suggestions]
+  );
+
+  // 優化：重試回調函數
+  const handleRetry = useCallback(() => {
+    if (chat.lastUserMessage && typeof chat.lastUserMessage.content === 'string') {
+      handleSendMessage(chat.lastUserMessage.content);
     }
+  }, [chat.lastUserMessage, handleSendMessage]);
 
-    setIsLoading(false);
-    inputRef.current?.focus();
-  };
+  // 優化：類別選擇回調函數
+  const handleCategorySelect = useCallback(
+    (category: string | null) => {
+      chat.setSelectedCategory(category);
+    },
+    [chat]
+  );
 
-  const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
+  // 優化：建議顯示切換回調函數
+  const handleToggleSuggestions = useCallback(() => {
+    chat.setShowSuggestions(!chat.showSuggestions);
+  }, [chat]);
+
+  // 優化：串流切換回調函數
+  const handleStreamingToggle = useCallback(() => {
+    chat.toggleStreaming();
+  }, [chat]);
+
+  // 優化：輸入變更回調函數
+  const handleInputChange = useCallback(
+    (value: string) => {
+      chat.setInput(value);
+    },
+    [chat]
+  );
+
+  // 註冊關鍵組件生命週期清理
+  useEffect(() => {
+    // 註冊聊天狀態清理
+    memoryCleanup.registerCleanup(() => {
+      chat.cleanup();
+    }, 'chat-state-cleanup');
+
+    // 註冊消息歷史清理
+    memoryCleanup.registerCleanup(() => {
+      // messageHistory 相關清理
+    }, 'message-history-cleanup');
+
+    // 註冊建議系統清理
+    memoryCleanup.registerCleanup(() => {
+      // suggestions 相關清理
+    }, 'suggestions-cleanup');
+
+    return () => {
+      // 組件卸載時的額外清理
+      chat.cleanup();
+    };
+  }, [chat, memoryCleanup]);
+
+  // 完成渲染測量並記錄性能指標
+  useEffect(() => {
+    endRenderMeasure({
+      className,
+      messagesCount: chat.messages.length,
+      isLoading: chat.isLoading,
+      showSuggestions: chat.showSuggestions,
+      selectedCategory: chat.selectedCategory,
+      suggestionsCount: contextualSuggestions.length,
+    });
+  });
 
   return (
     <SpecialCard
@@ -692,382 +243,59 @@ export default function ChatbotCard({ className }: ChatbotCardProps) {
       padding='base'
     >
       {/* Header */}
-      <div className='mb-4 flex items-center justify-between'>
-        <div className='flex items-center gap-3'>
-          <div className='relative'>
-            <Database className='h-6 w-6 text-purple-400' />
-            <Sparkles className='absolute -right-1 -top-1 h-3 w-3 text-yellow-400' />
-          </div>
-          <div>
-            <h3 className={cn(cardTextStyles.title, 'text-white')}>Chat with Database</h3>
-            <p className={cn(cardTextStyles.labelSmall, 'text-slate-400')}>
-              Ask questions about your data
-            </p>
-          </div>
-        </div>
-        <div className='flex items-center gap-2'>
-          <button
-            onClick={() => setUseStreaming(!useStreaming)}
-            className={cn(
-              cardTextStyles.labelSmall,
-              'text-slate-400 transition-colors hover:text-purple-400'
-            )}
-            title={useStreaming ? 'Streaming enabled' : 'Streaming disabled'}
-          >
-            {useStreaming ? '⚡ Fast' : '🐢 Normal'}
-          </button>
-          <Brain className='h-5 w-5 animate-pulse text-purple-400' />
-        </div>
-      </div>
+      <ChatHeader useStreaming={chat.useStreaming} onStreamingToggle={handleStreamingToggle} />
 
       {/* Messages Container */}
-      <div className='flex-1 overflow-hidden rounded-lg bg-white/5 p-4 backdrop-blur-sm'>
-        <div className='h-full space-y-4 overflow-y-auto pr-2'>
-          {messages.map(message => (
-            <ChatMessageComponent
-              key={message.id}
-              message={message}
-              onRetry={() => {
-                // Retry the last user message
-                const lastUserMessage = messages.filter(m => m.type === 'user').pop();
-                if (lastUserMessage && typeof lastUserMessage.content === 'string') {
-                  handleSendMessage(lastUserMessage.content);
-                }
-              }}
-            />
-          ))}
-          {isLoading && (
-            <div className='flex items-center gap-2 text-sm text-slate-400'>
-              <Loader2 className='h-4 w-4 animate-spin' />
-              <span>Thinking...</span>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-      </div>
+      <ChatMessages messages={chat.messages} isLoading={chat.isLoading} onRetry={handleRetry} />
 
-      {/* Enhanced Query Suggestions */}
-      {showSuggestions && messages.length === 1 && (
-        <div className='mt-4 max-h-96 space-y-4 overflow-y-auto'>
-          {/* Recent Queries */}
-          {recentQueries.length > 0 && (
-            <div className='rounded-lg border-none bg-white/5 p-4 backdrop-blur-sm'>
-              <h3 className='mb-3 flex items-center gap-2 text-sm font-medium text-slate-300'>
-                <Calendar className='h-4 w-4' />
-                Recent Queries
-              </h3>
-              <div className='space-y-1'>
-                {recentQueries.slice(0, 3).map((query, index) => (
-                  <Button
-                    key={index}
-                    variant='ghost'
-                    size='sm'
-                    onClick={() => handleSendMessage(query)}
-                    className='w-full justify-start rounded border-none bg-white/10 text-left text-white transition-all hover:bg-white/20'
-                  >
-                    <Search className='mr-2 h-3 w-3 opacity-50' />
-                    {query}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Contextual Suggestions */}
-          {contextualSuggestions.length > 0 && (
-            <div className='rounded-lg border-none bg-white/5 p-4 backdrop-blur-sm'>
-              <h3 className='mb-3 flex items-center gap-2 text-sm font-medium text-blue-300'>
-                <Database className='h-4 w-4' />
-                Related Queries
-              </h3>
-              <div className='space-y-1'>
-                {contextualSuggestions.map((query, index) => (
-                  <Button
-                    key={index}
-                    variant='ghost'
-                    size='sm'
-                    onClick={() => handleSendMessage(query)}
-                    className='w-full justify-start rounded border-none bg-white/10 text-left text-white transition-all hover:bg-white/15'
-                  >
-                    {query}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Category Suggestions */}
-          <div className='grid grid-cols-1 gap-3 md:grid-cols-2'>
-            {suggestions.map(cat => (
-              <Card
-                key={cat.category}
-                className='cursor-pointer border-none bg-white/5 backdrop-blur-sm transition-all hover:bg-white/10'
-                onClick={() =>
-                  setSelectedCategory(selectedCategory === cat.category ? null : cat.category)
-                }
-              >
-                <div className='p-3'>
-                  <h3 className='mb-2 flex items-center gap-2 font-medium text-white'>
-                    {cat.icon}
-                    {cat.category}
-                    {selectedCategory === cat.category ? (
-                      <ChevronUp className='ml-auto h-4 w-4' />
-                    ) : (
-                      <ChevronDown className='ml-auto h-4 w-4' />
-                    )}
-                  </h3>
-
-                  {selectedCategory === cat.category && (
-                    <div className='mt-3 space-y-1'>
-                      {cat.queries.map((query, index) => (
-                        <Button
-                          key={index}
-                          variant='ghost'
-                          size='sm'
-                          onClick={e => {
-                            e.stopPropagation();
-                            handleSendMessage(query);
-                          }}
-                          className='w-full justify-start rounded border-none bg-white/10 px-3 py-2 text-left text-sm text-white transition-all hover:bg-white/20'
-                        >
-                          {query}
-                        </Button>
-                      ))}
-                    </div>
-                  )}
-
-                  {selectedCategory !== cat.category && (
-                    <p className={cn(cardTextStyles.labelSmall, 'text-slate-400')}>
-                      Click to view {cat.queries.length} suggestions
-                    </p>
-                  )}
-                </div>
-              </Card>
-            ))}
-          </div>
-
-          {/* Quick Actions */}
-          <div className='flex flex-wrap gap-2 pt-2'>
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={() => handleSendMessage("Show today's summary")}
-              className='border-none bg-white/10 text-xs text-white hover:bg-white/20'
-            >
-              <Calendar className='mr-1 h-3 w-3' />
-              Today&apos;s Summary
-            </Button>
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={() => handleSendMessage('Show current Await pallets')}
-              className='border-none bg-white/10 text-xs text-white hover:bg-white/20'
-            >
-              <Package className='mr-1 h-3 w-3' />
-              Await Status
-            </Button>
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={() => handleSendMessage('Show pending shipments')}
-              className='border-none bg-white/10 text-xs text-white hover:bg-white/20'
-            >
-              <Truck className='mr-1 h-3 w-3' />
-              Pending Shipments
-            </Button>
-
-            {/* Anomaly Detection Button - only for authorized users */}
-            {hasAnomalyDetectionAccess && (
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={runAnomalyDetection}
-                disabled={isDetectingAnomalies}
-                className='border-none bg-orange-600/10 text-orange-400 hover:bg-orange-600/20'
-              >
-                {isDetectingAnomalies ? (
-                  <>
-                    <Loader2 className='mr-2 h-3 w-3 animate-spin' />
-                    Detecting Anomalies...
-                  </>
-                ) : (
-                  <>
-                    <AlertTriangle className='mr-2 h-3 w-3' />
-                    Run Anomaly Detection
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
-
-          {/* Anomaly Results Display */}
-          {showAnomalies && anomalies && anomalies.length > 0 && (
-            <div className='rounded-lg border-none bg-orange-600/10 p-4 backdrop-blur-sm'>
-              <div className='mb-3 flex items-center justify-between'>
-                <h3 className='flex items-center gap-2 text-sm font-medium text-orange-300'>
-                  <AlertTriangle className='h-4 w-4' />
-                  Anomalies Detected ({anomalies.length})
-                </h3>
-                <Button
-                  variant='ghost'
-                  size='sm'
-                  onClick={() => setShowAnomalies(false)}
-                  className={cn(cardTextStyles.labelSmall, 'text-slate-400 hover:text-white')}
-                >
-                  Hide
-                </Button>
-              </div>
-              <div className='space-y-2'>
-                {anomalies.map((anomaly, index) => (
-                  <div
-                    key={index}
-                    className={cn(
-                      'cursor-pointer rounded-lg border-none p-3 backdrop-blur-sm transition-all',
-                      anomaly.severity === 'critical' && 'bg-red-500/10',
-                      anomaly.severity === 'high' && 'bg-orange-500/10',
-                      anomaly.severity === 'medium' && 'bg-yellow-500/10',
-                      anomaly.severity === 'low' && 'bg-blue-500/10'
-                    )}
-                    onClick={() => {
-                      let query = '';
-                      switch (anomaly.type) {
-                        case 'stuck_pallets':
-                          query = 'Show all pallets that have not moved for over 30 days';
-                          break;
-                        case 'inventory_mismatch':
-                          query =
-                            'Show products where inventory count does not match system records';
-                          break;
-                        case 'overdue_orders':
-                          query = 'Show all orders that are overdue by more than 7 days';
-                          break;
-                      }
-                      if (query) handleSendMessage(query);
-                    }}
-                  >
-                    <div className='flex items-start justify-between'>
-                      <div>
-                        <h4 className={cn(cardTextStyles.body, 'font-semibold text-white')}>
-                          {anomaly.title}
-                        </h4>
-                        <p className={cn(cardTextStyles.labelSmall, 'text-slate-400')}>
-                          {anomaly.description}
-                        </p>
-                        <p className='mt-1 text-xs text-slate-500'>
-                          Count: {anomaly.count} | {anomaly.suggestedAction}
-                        </p>
-                      </div>
-                      <span
-                        className={cn(
-                          'rounded px-2 py-1 text-xs font-medium',
-                          anomaly.severity === 'critical' && 'bg-red-600 text-white',
-                          anomaly.severity === 'high' && 'bg-orange-600 text-white',
-                          anomaly.severity === 'medium' && 'bg-yellow-600 text-black',
-                          anomaly.severity === 'low' && 'bg-blue-600 text-white'
-                        )}
-                      >
-                        {anomaly.severity}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Toggle Suggestions for existing conversations */}
-      {messages.length > 1 && (
-        <div className='mt-2 flex justify-center'>
-          <Button
-            variant='ghost'
-            size='sm'
-            onClick={() => setShowSuggestions(!showSuggestions)}
-            className={cn(cardTextStyles.labelSmall, 'text-slate-400 hover:text-purple-400')}
-          >
-            {showSuggestions ? (
-              <>
-                <ChevronUp className='mr-1 h-3 w-3' />
-                Hide Suggestions
-              </>
-            ) : (
-              <>
-                <ChevronDown className='mr-1 h-3 w-3' />
-                Show Suggestions
-              </>
-            )}
-          </Button>
-        </div>
-      )}
-
-      {/* Enhanced Query Suggestions for existing conversations */}
-      {showSuggestions && messages.length > 1 && (
-        <div className='mt-2 max-h-48 space-y-2 overflow-y-auto'>
-          <div className='flex flex-wrap gap-2'>
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={() => handleSendMessage("Show today's summary")}
-              className='border-none bg-white/10 text-xs text-white hover:bg-white/20'
-            >
-              <Calendar className='mr-1 h-3 w-3' />
-              Today&apos;s Summary
-            </Button>
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={() => handleSendMessage('Show current Await pallets')}
-              className='border-none bg-white/10 text-xs text-white hover:bg-white/20'
-            >
-              <Package className='mr-1 h-3 w-3' />
-              Await Status
-            </Button>
-            {hasAnomalyDetectionAccess && (
-              <Button
-                variant='outline'
-                size='sm'
-                onClick={runAnomalyDetection}
-                disabled={isDetectingAnomalies}
-                className='border-none bg-orange-600/10 text-orange-400 hover:bg-orange-600/20'
-              >
-                {isDetectingAnomalies ? (
-                  <>
-                    <Loader2 className='mr-2 h-3 w-3 animate-spin' />
-                    Detecting...
-                  </>
-                ) : (
-                  <>
-                    <AlertTriangle className='mr-2 h-3 w-3' />
-                    Anomaly Detection
-                  </>
-                )}
-              </Button>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Query Suggestions */}
+      <QuerySuggestions
+        showSuggestions={chat.showSuggestions}
+        messageCount={chat.messages.length}
+        recentQueries={chat.recentQueries}
+        contextualSuggestions={contextualSuggestions}
+        selectedCategory={chat.selectedCategory}
+        onCategorySelect={handleCategorySelect}
+        onToggleSuggestions={handleToggleSuggestions}
+        onSendMessage={handleSendMessage}
+      />
 
       {/* Input Area */}
-      <div className='mt-4 flex gap-2'>
-        <input
-          ref={inputRef}
-          type='text'
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={handleKeyPress}
-          placeholder='Ask a question about your data...'
-          disabled={isLoading}
-          className='flex-1 rounded-lg bg-white/10 px-4 py-2 text-sm text-white placeholder-slate-400 outline-none backdrop-blur-sm transition-colors focus:bg-white/20 disabled:opacity-50'
-        />
-        <button
-          onClick={() => handleSendMessage()}
-          disabled={!input.trim() || isLoading}
-          className='rounded-lg bg-purple-500/20 p-2 text-purple-400 transition-colors hover:bg-purple-500/30 disabled:opacity-50'
-        >
-          {isLoading ? <Loader2 className='h-5 w-5 animate-spin' /> : <Send className='h-5 w-5' />}
-        </button>
-      </div>
+      <ChatInput
+        value={chat.input}
+        onChange={handleInputChange}
+        onSend={handleSendMessage}
+        disabled={chat.isLoading}
+        isLoading={chat.isLoading}
+        autoFocus={false}
+      />
     </SpecialCard>
+  );
+}
+
+// Main ChatbotCard Component with Service Provider wrapper
+export default function ChatbotCard(props: ChatbotCardProps) {
+  return (
+    <>
+      <ServiceProvider
+        config={{
+          environment: process.env.NODE_ENV === 'development' ? 'development' : 'production',
+          enableMocking: process.env.NODE_ENV === 'test',
+          logLevel: process.env.NODE_ENV === 'development' ? 'debug' : 'info',
+        }}
+        enableDevTools={process.env.NODE_ENV === 'development'}
+        onError={error => {
+          console.error('Service error in ChatbotCard:', error);
+        }}
+        onServiceRecovery={serviceName => {
+          console.log(`Service ${serviceName} recovered in ChatbotCard`);
+        }}
+      >
+        <ChatbotCardInternal {...props} />
+      </ServiceProvider>
+
+      {/* 開發環境記憶體監控儀表板 */}
+      <MemoryDashboard visible={process.env.NODE_ENV === 'development'} position='bottom-right' />
+    </>
   );
 }

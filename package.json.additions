@@ -1,0 +1,10 @@
+{
+  "scripts": {
+    "test:regression:chatbot": "node scripts/regression/run-chatbot-regression.js",
+    "test:regression:chatbot:ci": "CI=true node scripts/regression/run-chatbot-regression.js",
+    "test:performance:baseline": "npx playwright test __tests__/performance/chatbot-refactor/Performance.benchmark.test.ts",
+    "test:e2e:chatbot": "npx playwright test __tests__/e2e/chatbot-refactor/ChatbotCard.e2e.spec.ts",
+    "test:unit:chatbot": "npm run vitest -- __tests__/regression/chatbot-refactor/ChatbotCard.regression.test.tsx --run",
+    "test:crossbrowser:chatbot": "npm run vitest -- __tests__/regression/chatbot-refactor/CrossBrowser.regression.test.tsx --run"
+  }
+}

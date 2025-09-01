@@ -16,7 +16,8 @@ import { getCardTheme, cardTextStyles, cardStatusColors } from '@/lib/card-syste
 import { cn } from '@/lib/utils';
 
 // App components
-import { SoundSettingsToggle } from '@/app/(app)/order-loading/components/SoundSettingsToggle';
+// 聲音設定功能已移除 (極簡化)
+// import { SoundSettingsToggle } from '@/app/(app)/order-loading/components/SoundSettingsToggle';
 import { useSoundFeedback, useSoundSettings } from '@/app/hooks/useSoundFeedback';
 import type { SearchResult } from '../hooks/useStockTransfer';
 
@@ -772,7 +773,8 @@ const StockTransferCardInternal: React.FC<StockTransferCardProps> = ({ className
                   </span>
                 )}
               </div>
-              <SoundSettingsToggle />
+              {/* 聲音設定功能已移除 (極簡化) */}
+              {/* <SoundSettingsToggle /> */}
             </div>
             <p className='text-sm text-slate-300'>Transfer stock between locations</p>
           </div>

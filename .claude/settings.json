@@ -125,7 +125,7 @@
       "Bash(npx dotenv-cli -e .env.codegen -- graphql-codegen:*)",
       "Bash(npx dotenv -e .env.codegen -- graphql-codegen:*)",
       "Bash(npx:*)",
-      "Bash(SUPABASE_URL=$SUPABASE_URL SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY npx @supabase/mcp-server-supabase)",
+      "Bash(npx @supabase/mcp-server-supabase)",
       "Bash(for widget in \"ProductUpdateWidgetV2\" \"UploadOrdersWidgetV2\" \"AnalysisPagedWidgetV2\" \"Folder3D\" \"GoogleDriveUploadToast\")",
       "Bash(do echo:*)",
       "Bash(if [ -f \"app/admin/components/dashboard/widgets/$widget.tsx\" ])",
@@ -196,57 +196,5 @@
     "deny": []
   },
   "enableAllProjectMcpServers": true,
-  "enabledMcpjsonServers": ["supabase", "sequential-thinking", "context7", "archon"],
-  "hooks": {
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 /Users/chun/Documents/PennineWMS/online-stock-control-system/scripts/hooks/save_context_hook.py"
-          }
-        ]
-      }
-    ],
-    "SessionEnd": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 /Users/chun/Documents/PennineWMS/online-stock-control-system/scripts/hooks/save_context_hook.py"
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 /Users/chun/Documents/PennineWMS/online-stock-control-system/scripts/hooks/user_prompt_hook.py"
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 /Users/chun/Documents/PennineWMS/online-stock-control-system/scripts/hooks/save_context_hook.py"
-          }
-        ]
-      }
-    ],
-    "PreCompact": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 /Users/chun/Documents/PennineWMS/online-stock-control-system/scripts/hooks/save_context_hook.py"
-          }
-        ]
-      }
-    ]
-  }
+  "enabledMcpjsonServers": ["supabase", "sequential-thinking", "context7", "archon"]
 }

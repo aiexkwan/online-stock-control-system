@@ -39,7 +39,8 @@ import { ReportRegistry } from '@/app/components/reports/core/ReportRegistry';
 import { RegisteredReport } from '@/app/components/reports/core/ReportConfig';
 
 // Report Dialogs
-import { UnifiedLoadingReportDialog } from '@/app/(app)/order-loading/components/UnifiedLoadingReportDialog';
+// Order Loading Report 功能已移除 (極簡化)
+// import { UnifiedLoadingReportDialog } from '@/app/(app)/order-loading/components/UnifiedLoadingReportDialog';
 // import { UnifiedStockTakeReportDialog } from '@/app/stock-take/components/UnifiedStockTakeReportDialog'; // Component not found
 // ACO Report now integrated directly into system page card
 // import { UnifiedGrnReportDialog } from '@/app/components/reports/UnifiedGrnReportDialog'; // Component not found
@@ -310,10 +311,11 @@ export function ReportsDashboardDialog({ isOpen, onClose }: ReportsDashboardDial
       </Dialog>
 
       {/* Individual Report Dialogs */}
-      <UnifiedLoadingReportDialog
+      {/* Order Loading Report 功能已移除 (極簡化) */}
+      {/* <UnifiedLoadingReportDialog
         isOpen={dialogStates['order-loading-report'] || false}
         onClose={() => closeReportDialog('order-loading-report')}
-      />
+      /> */}
 
       {/* Stock Take Report Dialog - Component not found
       <UnifiedStockTakeReportDialog

@@ -4,10 +4,28 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { toast } from 'sonner';
 import { createClient } from '@/app/utils/supabase/client';
 import { loadPalletToOrder, undoLoadPallet } from '@/app/actions/orderLoadingActions';
-import {
-  useOrderDataCache,
-  useOrderSummariesCache,
-} from '@/app/(app)/order-loading/hooks/useOrderCache';
+// Order Cache 功能已移除，採用極簡化方法
+// import { useOrderDataCache, useOrderSummariesCache } from '@/app/(app)/order-loading/hooks/useOrderCache';
+
+// 簡單的記憶體快取替代
+type SimpleCache<T> = {
+  get: (key: string) => T | undefined;
+  set: (key: string, value: T) => void;
+  remove: (key: string) => void;
+};
+
+function createSimpleCache<T>(): SimpleCache<T> {
+  const cache = new Map<string, T>();
+  return {
+    get: (key: string) => cache.get(key),
+    set: (key: string, value: T) => {
+      cache.set(key, value);
+    },
+    remove: (key: string) => {
+      cache.delete(key);
+    },
+  };
+}
 import { useSoundFeedback, useSoundSettings } from '@/app/hooks/useSoundFeedback';
 import { safeString } from '@/types/database/helpers';
 import { DatabaseRecord } from '@/types/database/tables';
@@ -137,9 +155,9 @@ export function useOrderLoad(): UseOrderLoadReturn {
     return null;
   });
 
-  // Cache hooks
-  const orderDataCache = useOrderDataCache();
-  const orderSummariesCache = useOrderSummariesCache();
+  // 簡化的快取系統
+  const orderDataCache = useState(() => createSimpleCache<OrderData[]>())[0];
+  const orderSummariesCache = useState(() => createSimpleCache<Map<string, OrderSummary>>())[0];
 
   // Sound feedback hooks
   const soundSettings = useSoundSettings();

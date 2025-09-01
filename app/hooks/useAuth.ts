@@ -60,7 +60,6 @@ const PUBLIC_ROUTES = Object.freeze([
   '/main-login',
   '/main-login/register',
   '/main-login/reset',
-  '/main-login/simple',
   '/main-login/change',
 ] as const);
 
