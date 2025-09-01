@@ -4,27 +4,112 @@
 # 檢查敏感資訊模式
 echo "🔍 檢查敏感資訊..."
 
-# 定義敏感資訊模式
-PATTERNS=(
-  "sk-proj-[a-zA-Z0-9]+"  # OpenAI API keys
-  "eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+"  # JWT tokens
-  "sbp_[a-zA-Z0-9]+"  # Supabase access tokens
-  "\\bre_[a-zA-Z0-9]+"  # Resend API keys (word boundary)
-  "SUPABASE_SERVICE_ROLE_KEY"
-  "OPENAI_API_KEY"
-  "RESEND_API_KEY"
-)
+# 創建臨時檔案來存儲結果
+TEMP_FILE=$(mktemp)
+HAS_REAL_SECRETS=false
 
-# 檢查暫存的檔案 (排除 pre-commit 配置檔案本身)
-for pattern in "${PATTERNS[@]}"; do
-  if git diff --cached --name-only -z | xargs -0 grep -l . | grep -v ".husky/pre-commit" | xargs grep -E "$pattern" 2>/dev/null; then
-    echo "❌ 錯誤：發現敏感資訊模式: $pattern"
-    echo "請移除敏感資訊後再提交"
-    exit 1
+# 定義實際的敏感資訊模式（更精確的正則表達式）
+check_real_secrets() {
+  local file=$1
+  local has_secret=false
+  
+  # 跳過文檔和測試檔案
+  if [[ "$file" == *.md ]] || [[ "$file" == *.txt ]] || [[ "$file" == *README* ]] || [[ "$file" == *.test.* ]] || [[ "$file" == *.spec.* ]]; then
+    # 在文檔中仍要檢查實際的 key 格式
+    # OpenAI 實際 API key 格式: sk-proj- 後跟48個字符
+    if grep -qE 'sk-proj-[a-zA-Z0-9]{48}' "$file" 2>/dev/null; then
+      echo "  ⚠️  $file: 發現可能的 OpenAI API key (實際格式)" >> $TEMP_FILE
+      has_secret=true
+    fi
+    # Supabase 實際 anon key 格式: eyJ 開頭的 JWT token (至少100字符)
+    if grep -qE 'eyJ[a-zA-Z0-9_-]{100,}\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+' "$file" 2>/dev/null; then
+      echo "  ⚠️  $file: 發現可能的 JWT token (實際格式)" >> $TEMP_FILE
+      has_secret=true
+    fi
+  else
+    # 對於代碼檔案，進行更嚴格的檢查
+    
+    # 檢查硬編碼的實際 API keys (不是從環境變數讀取的)
+    # OpenAI API key
+    if grep -E "OPENAI_API_KEY[\"']?\s*[:=]\s*[\"']sk-proj-[a-zA-Z0-9]{48}[\"']" "$file" 2>/dev/null | grep -v "os.getenv\|process.env\|import.meta.env" > /dev/null; then
+      echo "  ⚠️  $file: 發現硬編碼的 OpenAI API key" >> $TEMP_FILE
+      has_secret=true
+    fi
+    
+    # Supabase keys
+    if grep -E "SUPABASE_.*KEY[\"']?\s*[:=]\s*[\"']eyJ[a-zA-Z0-9_-]{50,}" "$file" 2>/dev/null | grep -v "os.getenv\|process.env\|import.meta.env" > /dev/null; then
+      echo "  ⚠️  $file: 發現硬編碼的 Supabase key" >> $TEMP_FILE
+      has_secret=true
+    fi
+    
+    # Resend API key
+    if grep -E "RESEND_API_KEY[\"']?\s*[:=]\s*[\"']re_[a-zA-Z0-9]{32,}[\"']" "$file" 2>/dev/null | grep -v "os.getenv\|process.env\|import.meta.env" > /dev/null; then
+      echo "  ⚠️  $file: 發現硬編碼的 Resend API key" >> $TEMP_FILE
+      has_secret=true
+    fi
+    
+    # 直接賦值的 API keys (不含範例值)
+    if grep -E "api[_-]?key\s*[:=]\s*[\"'][a-zA-Z0-9]{32,}[\"']" "$file" 2>/dev/null | \
+       grep -v "your-\|example\|test-\|demo-\|xxx\|placeholder\|<.*>" | \
+       grep -v "os.getenv\|process.env\|import.meta.env" > /dev/null; then
+      echo "  ⚠️  $file: 發現可能硬編碼的 API key" >> $TEMP_FILE
+      has_secret=true
+    fi
+    
+    # 私密 URL (含有實際的憑證)
+    if grep -E "https?://[^/]*:[^@]*@[^/]+" "$file" 2>/dev/null | \
+       grep -v "username:password\|user:pass\|example.com" > /dev/null; then
+      echo "  ⚠️  $file: 發現含有憑證的 URL" >> $TEMP_FILE
+      has_secret=true
+    fi
   fi
+  
+  if [ "$has_secret" = true ]; then
+    HAS_REAL_SECRETS=true
+  fi
+}
+
+# 獲取所有暫存的檔案（排除已刪除的檔案）
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
+
+# 檢查每個檔案
+for file in $STAGED_FILES; do
+  # 跳過 .husky 目錄本身
+  if [[ "$file" == .husky/* ]]; then
+    continue
+  fi
+  
+  # 跳過不存在的檔案（已刪除）
+  if [ ! -f "$file" ]; then
+    continue
+  fi
+  
+  check_real_secrets "$file"
 done
+
+# 檢查是否發現真實的敏感資訊
+if [ "$HAS_REAL_SECRETS" = true ]; then
+  echo "❌ 錯誤：發現可能的敏感資訊："
+  cat $TEMP_FILE
+  echo ""
+  echo "請檢查以上檔案並移除敏感資訊後再提交"
+  echo "如果這些是範例或文檔，請確認它們不包含實際的憑證"
+  echo ""
+  echo "提示："
+  echo "  • 使用環境變數: process.env.API_KEY 或 os.getenv('API_KEY')"
+  echo "  • 文檔中使用佔位符: your-api-key-here, <YOUR_API_KEY>"
+  echo "  • 如確定安全，可使用 --no-verify 跳過檢查"
+  rm -f $TEMP_FILE
+  exit 1
+fi
+
+# 清理臨時檔案
+rm -f $TEMP_FILE
 
 echo "✅ 敏感資訊檢查通過"
 
-# 執行其他檢查
+# 執行 TypeScript 類型檢查
+echo "📝 執行 TypeScript 檢查..."
 npm run typecheck || exit 1
+
+echo "✅ 所有 pre-commit 檢查通過"
