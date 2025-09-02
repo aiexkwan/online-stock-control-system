@@ -1,0 +1,834 @@
+{
+  "timestamp": "2025-09-02T01:46:59.543Z",
+  "config": {
+    "dryRun": false,
+    "rootDir": "/Users/chun/Documents/PennineWMS/online-stock-control-system"
+  },
+  "statistics": {
+    "filesScanned": 1083,
+    "filesWithChanges": 51,
+    "totalChanges": 76,
+    "backupCreated": true,
+    "errors": [
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/docs/PlanningDocument/clearance_plan/useUserIdVerification.ts",
+        "error": "EISDIR: illegal operation on a directory, read"
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/docs/PlanningDocument/clearance_plan/useAuthEvents.ts",
+        "error": "EISDIR: illegal operation on a directory, read"
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/docs/PlanningDocument/clearance_plan/PalletRatio.tsx",
+        "error": "EISDIR: illegal operation on a directory, read"
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/docs/PlanningDocument/clearance_plan/PalletDonutChart.tsx",
+        "error": "EISDIR: illegal operation on a directory, read"
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/docs/PlanningDocument/clearance_plan/PageProviders.tsx",
+        "error": "EISDIR: illegal operation on a directory, read"
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/docs/PlanningDocument/clearance_plan/ErrorBoundary.tsx",
+        "error": "EISDIR: illegal operation on a directory, read"
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/docs/PlanningDocument/clearance_plan/ConditionalProviders.tsx",
+        "error": "EISDIR: illegal operation on a directory, read"
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/docs/PlanningDocument/clearance_plan/AcoOrderStatus.tsx",
+        "error": "EISDIR: illegal operation on a directory, read"
+      }
+    ],
+    "warnings": [],
+    "changes": [
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/lib/graphql/resolvers/order.resolver.ts",
+        "line": 6,
+        "from": "../../../app/components/reports/dataSources/OrderLoadingDataSource",
+        "to": "@/components/business/reports/dataSources/OrderLoadingDataSource",
+        "statement": {
+          "old": "import { orderLoadingDataSources } from '../../../app/components/reports/dataSources/OrderLoadingDataSource'",
+          "new": "import { orderLoadingDataSources } from '@/components/business/reports/dataSources/OrderLoadingDataSource'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/actions/supplierActions.ts",
+        "line": 12,
+        "from": "@/app/components/qc-label-form/services/ErrorHandler",
+        "to": "@/components/business/forms/qc-label/services/ErrorHandler",
+        "statement": {
+          "old": "import { errorHandler } from '@/app/components/qc-label-form/services/ErrorHandler'",
+          "new": "import { errorHandler } from '@/components/business/forms/qc-label/services/ErrorHandler'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/__tests__/integration/pdf-generation-upload.integration.test.ts",
+        "line": 21,
+        "from": "@/components/print-label-pdf/PrintLabelPdf",
+        "to": "@/components/business/printing/PrintLabelPdf",
+        "statement": {
+          "old": "import { PrintLabelPdf } from '@/components/print-label-pdf/PrintLabelPdf'",
+          "new": "import { PrintLabelPdf } from '@/components/business/printing/PrintLabelPdf'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/Backup/2025-09-02-00-58-32/lib/services/unified-pdf-service.ts",
+        "line": 11,
+        "from": "@/components/print-label-pdf/PrintLabelPdf",
+        "to": "@/components/business/printing/PrintLabelPdf",
+        "statement": {
+          "old": "import { PrintLabelPdf, PrintLabelPdfProps } from '@/components/print-label-pdf/PrintLabelPdf'",
+          "new": "import { PrintLabelPdf, PrintLabelPdfProps } from '@/components/business/printing/PrintLabelPdf'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/lib/pdfUtils.tsx",
+        "line": 3,
+        "from": "../components/print-label-pdf/PrintLabelPdf",
+        "to": "@/components/business/shared/print-label-pdf/PrintLabelPdf",
+        "statement": {
+          "old": "import { PrintLabelPdf, PrintLabelPdfProps } from '../components/print-label-pdf/PrintLabelPdf'",
+          "new": "import { PrintLabelPdf, PrintLabelPdfProps } from '@/components/business/shared/print-label-pdf/PrintLabelPdf'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/lib/grn/components/GrnDetailCard.tsx",
+        "line": 5,
+        "from": "@/app/components/qc-label-form/ProductCodeInput",
+        "to": "@/components/business/forms/qc-label/ProductCodeInput",
+        "statement": {
+          "old": "import { ProductCodeInput } from '@/app/components/qc-label-form/ProductCodeInput'",
+          "new": "import { ProductCodeInput } from '@/components/business/forms/qc-label/ProductCodeInput'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/lib/grn/components/GrnDetailCard.tsx",
+        "line": 4,
+        "from": "@/components/layout/universal",
+        "to": "@/components/templates/universal",
+        "statement": {
+          "old": "import { UniversalGrid } from '@/components/layout/universal'",
+          "new": "import { UniversalGrid } from '@/components/templates/universal'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/lib/error-handling/components/ErrorNotificationManager.tsx",
+        "line": 13,
+        "from": "../../../components/ui/button",
+        "to": "@/components/business/shared/ui/button",
+        "statement": {
+          "old": "import { Button } from '../../../components/ui/button'",
+          "new": "import { Button } from '@/components/business/shared/ui/button'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/lib/error-handling/components/ErrorFallback.tsx",
+        "line": 14,
+        "from": "../../../components/ui/alert",
+        "to": "@/components/business/shared/ui/alert",
+        "statement": {
+          "old": "import { Alert, AlertDescription } from '../../../components/ui/alert'",
+          "new": "import { Alert, AlertDescription } from '@/components/business/shared/ui/alert'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/lib/error-handling/components/ErrorFallback.tsx",
+        "line": 13,
+        "from": "../../../components/ui/card",
+        "to": "@/components/business/shared/ui/card",
+        "statement": {
+          "old": "import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card'",
+          "new": "import { Card, CardContent, CardHeader, CardTitle } from '@/components/business/shared/ui/card'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/lib/error-handling/components/ErrorFallback.tsx",
+        "line": 12,
+        "from": "../../../components/ui/button",
+        "to": "@/components/business/shared/ui/button",
+        "statement": {
+          "old": "import { Button } from '../../../components/ui/button'",
+          "new": "import { Button } from '@/components/business/shared/ui/button'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/components/ui/universal-stock-movement-layout.tsx",
+        "line": 8,
+        "from": "@/components/layout/universal",
+        "to": "@/components/templates/universal",
+        "statement": {
+          "old": "import { UniversalContainer } from '@/components/layout/universal'",
+          "new": "import { UniversalContainer } from '@/components/templates/universal'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/components/business/shared/EnhancedProgressBar.tsx",
+        "line": 10,
+        "from": "@/app/components/qc-label-form/hooks/useMediaQuery",
+        "to": "@/components/business/forms/qc-label/hooks/useMediaQuery",
+        "statement": {
+          "old": "import { useMediaQuery } from '@/app/components/qc-label-form/hooks/useMediaQuery'",
+          "new": "import { useMediaQuery } from '@/components/business/forms/qc-label/hooks/useMediaQuery'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/components/shared/validation/ValidationInput.tsx",
+        "line": 4,
+        "from": "../../../../components/ui/input",
+        "to": "@/components/business/shared/ui/input",
+        "statement": {
+          "old": "import { Input } from '../../../../components/ui/input'",
+          "new": "import { Input } from '@/components/business/shared/ui/input'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/components/reports/UnifiedExportAllDataDialog.tsx",
+        "line": 11,
+        "from": "@/app/components/reports/core/UnifiedReportDialog",
+        "to": "@/components/business/reports/core/UnifiedReportDialog",
+        "statement": {
+          "old": "import { UnifiedReportDialog } from '@/app/components/reports/core/UnifiedReportDialog'",
+          "new": "import { UnifiedReportDialog } from '@/components/business/reports/core/UnifiedReportDialog'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/components/reports/ReportsDashboardDialog.tsx",
+        "line": 48,
+        "from": "@/app/components/reports/UnifiedExportAllDataDialog",
+        "to": "@/components/business/reports/UnifiedExportAllDataDialog",
+        "statement": {
+          "old": "import { UnifiedExportAllDataDialog } from '@/app/components/reports/UnifiedExportAllDataDialog'",
+          "new": "import { UnifiedExportAllDataDialog } from '@/components/business/reports/UnifiedExportAllDataDialog'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/components/reports/ReportsDashboardDialog.tsx",
+        "line": 46,
+        "from": "@/app/components/reports/UnifiedGrnReportDialog",
+        "to": "@/components/business/reports/UnifiedGrnReportDialog",
+        "statement": {
+          "old": "import { UnifiedGrnReportDialog } from '@/app/components/reports/UnifiedGrnReportDialog'",
+          "new": "import { UnifiedGrnReportDialog } from '@/components/business/reports/UnifiedGrnReportDialog'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/components/reports/ReportsDashboardDialog.tsx",
+        "line": 39,
+        "from": "@/app/components/reports/core/ReportConfig",
+        "to": "@/components/business/reports/core/ReportConfig",
+        "statement": {
+          "old": "import { RegisteredReport } from '@/app/components/reports/core/ReportConfig'",
+          "new": "import { RegisteredReport } from '@/components/business/reports/core/ReportConfig'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/components/reports/ReportsDashboardDialog.tsx",
+        "line": 38,
+        "from": "@/app/components/reports/core/ReportRegistry",
+        "to": "@/components/business/reports/core/ReportRegistry",
+        "statement": {
+          "old": "import { ReportRegistry } from '@/app/components/reports/core/ReportRegistry'",
+          "new": "import { ReportRegistry } from '@/components/business/reports/core/ReportRegistry'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/components/reports/GlobalReportDialogs.tsx",
+        "line": 18,
+        "from": "@/app/components/reports/UnifiedExportAllDataDialog",
+        "to": "@/components/business/reports/UnifiedExportAllDataDialog",
+        "statement": {
+          "old": "import { UnifiedExportAllDataDialog } from '@/app/components/reports/UnifiedExportAllDataDialog'",
+          "new": "import { UnifiedExportAllDataDialog } from '@/components/business/reports/UnifiedExportAllDataDialog'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/components/reports/core/UnifiedReportDialog.tsx",
+        "line": 17,
+        "from": "../../../../components/ui/button",
+        "to": "@/components/business/shared/ui/button",
+        "statement": {
+          "old": "import { Button } from '../../../../components/ui/button'",
+          "new": "import { Button } from '@/components/business/shared/ui/button'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/components/reports/core/UnifiedReportDialog.tsx",
+        "line": 9,
+        "from": "../../../../components/ui/dialog",
+        "to": "@/components/business/shared/ui/dialog",
+        "statement": {
+          "old": "import {\n  Dialog,\n  DialogContent,\n  DialogHeader,\n  DialogTitle,\n  DialogDescription,\n  DialogFooter,\n} from '../../../../components/ui/dialog'",
+          "new": "import {\n  Dialog,\n  DialogContent,\n  DialogHeader,\n  DialogTitle,\n  DialogDescription,\n  DialogFooter,\n} from '@/components/business/shared/ui/dialog'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/components/providers/MinimalProviders.tsx",
+        "line": 5,
+        "from": "@/app/components/visual-system/core/VisualSystemProvider",
+        "to": "@/components/utilities/visual-system/core/VisualSystemProvider",
+        "statement": {
+          "old": "import { VisualSystemProvider } from '@/app/components/visual-system/core/VisualSystemProvider'",
+          "new": "import { VisualSystemProvider } from '@/components/utilities/visual-system/core/VisualSystemProvider'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/components/providers/MinimalProviders.tsx",
+        "line": 4,
+        "from": "@/app/components/visual-system/core/UnifiedBackground",
+        "to": "@/components/utilities/visual-system/core/UnifiedBackground",
+        "statement": {
+          "old": "import { UnifiedBackground } from '@/app/components/visual-system/core/UnifiedBackground'",
+          "new": "import { UnifiedBackground } from '@/components/utilities/visual-system/core/UnifiedBackground'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/components/providers/FullProviders.tsx",
+        "line": 5,
+        "from": "@/app/components/visual-system/core/ClientVisualSystemProvider",
+        "to": "@/components/utilities/visual-system/core/ClientVisualSystemProvider",
+        "statement": {
+          "old": "import { ClientVisualSystemProvider } from '@/app/components/visual-system/core/ClientVisualSystemProvider'",
+          "new": "import { ClientVisualSystemProvider } from '@/components/utilities/visual-system/core/ClientVisualSystemProvider'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/components/admin/UniversalTimeRangeSelector.tsx",
+        "line": 13,
+        "from": "../../../components/ui/calendar",
+        "to": "@/components/business/shared/ui/calendar",
+        "statement": {
+          "old": "import { Calendar } from '../../../components/ui/calendar'",
+          "new": "import { Calendar } from '@/components/business/shared/ui/calendar'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/(auth)/main-login/register/page.tsx",
+        "line": 22,
+        "from": "../components/EmailConfirmation",
+        "to": "@/components/business/shared/EmailConfirmation",
+        "statement": {
+          "old": "import('../components/EmailConfirmation')",
+          "new": "import('@/components/business/shared/EmailConfirmation')"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/(auth)/main-login/register/page.tsx",
+        "line": 10,
+        "from": "../components/RegisterForm",
+        "to": "@/components/business/shared/RegisterForm",
+        "statement": {
+          "old": "import('../components/RegisterForm')",
+          "new": "import('@/components/business/shared/RegisterForm')"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/(auth)/main-login/change/page.tsx",
+        "line": 7,
+        "from": "../components/ChangePasswordForm",
+        "to": "@/components/business/shared/ChangePasswordForm",
+        "statement": {
+          "old": "import ChangePasswordForm from '../components/ChangePasswordForm'",
+          "new": "import ChangePasswordForm from '@/components/business/shared/ChangePasswordForm'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/(app)/layout.tsx",
+        "line": 2,
+        "from": "@/app/components/providers/FullProviders",
+        "to": "@/components/providers/FullProviders",
+        "statement": {
+          "old": "import { FullProviders } from '@/app/components/providers/FullProviders'",
+          "new": "import { FullProviders } from '@/components/providers/FullProviders'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/(app)/admin/layout.tsx",
+        "line": 12,
+        "from": "@/app/components/visual-system/core/UnifiedBackground",
+        "to": "@/components/utilities/visual-system/core/UnifiedBackground",
+        "statement": {
+          "old": "import { UnifiedBackground } from '@/app/components/visual-system/core/UnifiedBackground'",
+          "new": "import { UnifiedBackground } from '@/components/utilities/visual-system/core/UnifiedBackground'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/(app)/admin/hooks/usePdfGeneration.tsx",
+        "line": 14,
+        "from": "../../../../components/print-label-pdf/PrintLabelPdf",
+        "to": "@/components/business/shared/print-label-pdf/PrintLabelPdf",
+        "statement": {
+          "old": "import { PrintLabelPdf } from '../../../../components/print-label-pdf/PrintLabelPdf'",
+          "new": "import { PrintLabelPdf } from '@/components/business/shared/print-label-pdf/PrintLabelPdf'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/(app)/admin/hooks/useAdminFormAdapter.tsx",
+        "line": 2,
+        "from": "../../../components/qc-label-form/types",
+        "to": "@/components/business/forms/qc-label/types",
+        "statement": {
+          "old": "import { FormData, ErrorInfo } from '../../../components/qc-label-form/types'",
+          "new": "import { FormData, ErrorInfo } from '@/components/business/forms/qc-label/types'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/(app)/admin/components/GridBasicProductFormGraphQL.tsx",
+        "line": 6,
+        "from": "@/app/components/qc-label-form/RemarkFormatter",
+        "to": "@/components/business/forms/qc-label/RemarkFormatter",
+        "statement": {
+          "old": "import RemarkFormatter from '@/app/components/qc-label-form/RemarkFormatter'",
+          "new": "import RemarkFormatter from '@/components/business/forms/qc-label/RemarkFormatter'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/(app)/admin/components/GridBasicProductFormGraphQL.tsx",
+        "line": 5,
+        "from": "@/app/components/qc-label-form/ProductCodeInputGraphQL",
+        "to": "@/components/business/forms/qc-label/ProductCodeInputGraphQL",
+        "statement": {
+          "old": "import ProductCodeInputGraphQL from '@/app/components/qc-label-form/ProductCodeInputGraphQL'",
+          "new": "import ProductCodeInputGraphQL from '@/components/business/forms/qc-label/ProductCodeInputGraphQL'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/(app)/admin/cards/VoidPalletCard.tsx",
+        "line": 45,
+        "from": "../components/shared",
+        "to": "@/components/business/shared/shared",
+        "statement": {
+          "old": "import {\n  SearchInput,\n  SearchInputRef,\n  StepIndicator,\n  Step,\n  StatusOverlay,\n} from '../components/shared'",
+          "new": "import {\n  SearchInput,\n  SearchInputRef,\n  StepIndicator,\n  Step,\n  StatusOverlay,\n} from '@/components/business/shared/shared'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/(app)/admin/cards/UploadCenterCard.tsx",
+        "line": 32,
+        "from": "../components/shared",
+        "to": "@/components/business/shared/shared",
+        "statement": {
+          "old": "import { StatusOverlay } from '../components/shared'",
+          "new": "import { StatusOverlay } from '@/components/business/shared/shared'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/(app)/admin/cards/StockTransferCard.tsx",
+        "line": 28,
+        "from": "../components/shared",
+        "to": "@/components/business/shared/shared",
+        "statement": {
+          "old": "import { SearchInput, SearchInputRef, FormInputGroup, FormOption } from '../components/shared'",
+          "new": "import { SearchInput, SearchInputRef, FormInputGroup, FormOption } from '@/components/business/shared/shared'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/(app)/admin/cards/StockHistoryCard.tsx",
+        "line": 31,
+        "from": "../components/shared",
+        "to": "@/components/business/shared/shared",
+        "statement": {
+          "old": "import { SearchInput } from '../components/shared'",
+          "new": "import { SearchInput } from '@/components/business/shared/shared'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/(app)/admin/cards/QCLabelCard.tsx",
+        "line": 18,
+        "from": "../components/UserIdVerificationDialog",
+        "to": "@/components/business/shared/UserIdVerificationDialog",
+        "statement": {
+          "old": "import('../components/UserIdVerificationDialog')",
+          "new": "import('@/components/business/shared/UserIdVerificationDialog')"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/(app)/admin/cards/QCLabelCard.tsx",
+        "line": 14,
+        "from": "../components/GridBasicProductFormGraphQL",
+        "to": "@/components/business/shared/GridBasicProductFormGraphQL",
+        "statement": {
+          "old": "import GridBasicProductFormGraphQL from '../components/GridBasicProductFormGraphQL'",
+          "new": "import GridBasicProductFormGraphQL from '@/components/business/shared/GridBasicProductFormGraphQL'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/(app)/admin/cards/QCLabelCard.tsx",
+        "line": 12,
+        "from": "../components/qc-label-constants",
+        "to": "@/components/business/shared/qc-label-constants",
+        "statement": {
+          "old": "import { MAX_PALLET_COUNT } from '../components/qc-label-constants'",
+          "new": "import { MAX_PALLET_COUNT } from '@/components/business/shared/qc-label-constants'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/(app)/admin/cards/GRNLabelCard.tsx",
+        "line": 9,
+        "from": "../components/UserIdVerificationDialog",
+        "to": "@/components/business/shared/UserIdVerificationDialog",
+        "statement": {
+          "old": "import('../components/UserIdVerificationDialog')",
+          "new": "import('@/components/business/shared/UserIdVerificationDialog')"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/(app)/admin/cards/ChatbotCard.tsx",
+        "line": 22,
+        "from": "../components/MemoryDashboard",
+        "to": "@/components/business/shared/MemoryDashboard",
+        "statement": {
+          "old": "import MemoryDashboard from '../components/MemoryDashboard'",
+          "new": "import MemoryDashboard from '@/components/business/shared/MemoryDashboard'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/(app)/admin/cards/ChatbotCard.tsx",
+        "line": 21,
+        "from": "../components/QuerySuggestions",
+        "to": "@/components/business/shared/QuerySuggestions",
+        "statement": {
+          "old": "import { QuerySuggestions } from '../components/QuerySuggestions'",
+          "new": "import { QuerySuggestions } from '@/components/business/shared/QuerySuggestions'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/(app)/admin/cards/ChatbotCard.tsx",
+        "line": 20,
+        "from": "../components/ChatInput",
+        "to": "@/components/business/shared/ChatInput",
+        "statement": {
+          "old": "import { ChatInput } from '../components/ChatInput'",
+          "new": "import { ChatInput } from '@/components/business/shared/ChatInput'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/(app)/admin/cards/ChatbotCard.tsx",
+        "line": 19,
+        "from": "../components/ChatMessages",
+        "to": "@/components/business/shared/ChatMessages",
+        "statement": {
+          "old": "import { ChatMessages } from '../components/ChatMessages'",
+          "new": "import { ChatMessages } from '@/components/business/shared/ChatMessages'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/app/(app)/admin/cards/ChatbotCard.tsx",
+        "line": 18,
+        "from": "../components/ChatHeader",
+        "to": "@/components/business/shared/ChatHeader",
+        "statement": {
+          "old": "import { ChatHeader } from '../components/ChatHeader'",
+          "new": "import { ChatHeader } from '@/components/business/shared/ChatHeader'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/__tests__/unit/Dialog.test.tsx",
+        "line": 21,
+        "from": "@/components/ui/core/Dialog",
+        "to": "@/components/molecules/dialogs/Dialog",
+        "statement": {
+          "old": "import {\n  Dialog,\n  DialogTrigger,\n  DialogContent,\n  DialogHeader,\n  DialogTitle,\n  DialogDescription,\n  DialogBody,\n  DialogFooter,\n  DialogClose,\n  DialogErrorBoundary,\n  useDialogContext,\n  type DialogProps,\n  type DialogContentProps\n} from '@/components/ui/core/Dialog'",
+          "new": "import {\n  Dialog,\n  DialogTrigger,\n  DialogContent,\n  DialogHeader,\n  DialogTitle,\n  DialogDescription,\n  DialogBody,\n  DialogFooter,\n  DialogClose,\n  DialogErrorBoundary,\n  useDialogContext,\n  type DialogProps,\n  type DialogContentProps\n} from '@/components/molecules/dialogs/Dialog'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/__tests__/unit/ConfirmDialog.test.tsx",
+        "line": 21,
+        "from": "@/components/ui/core/Dialog",
+        "to": "@/components/molecules/dialogs/Dialog",
+        "statement": {
+          "old": "import {\n  ConfirmDialog,\n  DeleteConfirmDialog,\n  SaveConfirmDialog,\n  LeaveConfirmDialog,\n  type ConfirmDialogProps,\n  type DeleteConfirmDialogProps,\n  type SaveConfirmDialogProps,\n  type LeaveConfirmDialogProps } from '@/components/ui/core/Dialog'",
+          "new": "import {\n  ConfirmDialog,\n  DeleteConfirmDialog,\n  SaveConfirmDialog,\n  LeaveConfirmDialog,\n  type ConfirmDialogProps,\n  type DeleteConfirmDialogProps,\n  type SaveConfirmDialogProps,\n  type LeaveConfirmDialogProps } from '@/components/molecules/dialogs/Dialog'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/__tests__/integration/DialogSecurity.test.tsx",
+        "line": 19,
+        "from": "@/components/ui/core/Dialog",
+        "to": "@/components/molecules/dialogs/Dialog",
+        "statement": {
+          "old": "import {\n  Dialog,\n  DialogContent,\n  DialogTitle,\n  SecureDialog,\n  SecureConfirmDialog,\n  DialogSecurityWrapper,\n  EnhancedSecureDialog } from '@/components/ui/core/Dialog'",
+          "new": "import {\n  Dialog,\n  DialogContent,\n  DialogTitle,\n  SecureDialog,\n  SecureConfirmDialog,\n  DialogSecurityWrapper,\n  EnhancedSecureDialog } from '@/components/molecules/dialogs/Dialog'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/__tests__/disabled/DialogPresets.test.tsx",
+        "line": 16,
+        "from": "@/components/ui/core/Dialog/DialogPresets",
+        "to": "@/components/molecules/dialogs/Dialog/DialogPresets",
+        "statement": {
+          "old": "import { \n  dialogPresets, \n  type DialogPreset \n} from '@/components/ui/core/Dialog/DialogPresets'",
+          "new": "import { \n  dialogPresets, \n  type DialogPreset \n} from '@/components/molecules/dialogs/Dialog/DialogPresets'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/Backup/order-loading-backup-20250901_083657/order-loading/page.tsx",
+        "line": 28,
+        "from": "@/components/ui/mobile",
+        "to": "@/components/molecules/mobile",
+        "statement": {
+          "old": "import { MobileButton, MobileInput, MobileCard } from '@/components/ui/mobile'",
+          "new": "import { MobileButton, MobileInput, MobileCard } from '@/components/molecules/mobile'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/Backup/order-loading-backup-20250901_083657/order-loading/components/UnifiedLoadingReportDialog.tsx",
+        "line": 57,
+        "from": "@/app/components/reports/core/ReportRegistry",
+        "to": "@/components/business/reports/core/ReportRegistry",
+        "statement": {
+          "old": "import('@/app/components/reports/core/ReportRegistry')",
+          "new": "import('@/components/business/reports/core/ReportRegistry')"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/Backup/order-loading-backup-20250901_083657/order-loading/components/UnifiedLoadingReportDialog.tsx",
+        "line": 12,
+        "from": "@/app/components/reports/core/ReportConfig",
+        "to": "@/components/business/reports/core/ReportConfig",
+        "statement": {
+          "old": "import {\n  ReportFormat,\n  FilterValues,\n  ReportConfig,\n} from '@/app/components/reports/core/ReportConfig'",
+          "new": "import {\n  ReportFormat,\n  FilterValues,\n  ReportConfig,\n} from '@/components/business/reports/core/ReportConfig'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/Backup/order-loading-backup-20250901_083657/order-loading/components/UnifiedLoadingReportDialog.tsx",
+        "line": 11,
+        "from": "@/app/components/reports/hooks/useReportGeneration",
+        "to": "@/components/business/reports/hooks/useReportGeneration",
+        "statement": {
+          "old": "import { useReportGeneration } from '@/app/components/reports/hooks/useReportGeneration'",
+          "new": "import { useReportGeneration } from '@/components/business/reports/hooks/useReportGeneration'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/Backup/order-loading-backup-20250901_083657/order-loading/components/UnifiedLoadingReportDialog.tsx",
+        "line": 10,
+        "from": "@/app/components/reports/core/ReportBuilder",
+        "to": "@/components/business/reports/core/ReportBuilder",
+        "statement": {
+          "old": "import { ReportBuilder } from '@/app/components/reports/core/ReportBuilder'",
+          "new": "import { ReportBuilder } from '@/components/business/reports/core/ReportBuilder'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/Backup/order-loading-backup-20250901_083657/order-loading/components/MobileOrderLoading.tsx",
+        "line": 33,
+        "from": "@/components/qr-scanner/simple-qr-scanner",
+        "to": "@/components/business/scanning/simple-qr-scanner",
+        "statement": {
+          "old": "import { SimpleQRScanner } from '@/components/qr-scanner/simple-qr-scanner'",
+          "new": "import { SimpleQRScanner } from '@/components/business/scanning/simple-qr-scanner'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/Backup/order-loading-backup-20250901_083657/order-loading/components/MobileOrderLoading.tsx",
+        "line": 30,
+        "from": "@/components/ui/mobile",
+        "to": "@/components/molecules/mobile",
+        "statement": {
+          "old": "import { MobileButton, MobileInput, MobileCard } from '@/components/ui/mobile'",
+          "new": "import { MobileButton, MobileInput, MobileCard } from '@/components/molecules/mobile'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/Backup/backup_print-grnlabel_20250827_144610/layout.tsx",
+        "line": 1,
+        "from": "@/components/layout/universal",
+        "to": "@/components/templates/universal",
+        "statement": {
+          "old": "import { UniversalContainer } from '@/components/layout/universal'",
+          "new": "import { UniversalContainer } from '@/components/templates/universal'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/Backup/backup_print-grnlabel_20250827_144610/hooks/useGrnLabelBusinessV3.tsx",
+        "line": 22,
+        "from": "@/components/print-label-pdf/PrintLabelPdf",
+        "to": "@/components/business/printing/PrintLabelPdf",
+        "statement": {
+          "old": "import { PrintLabelPdf } from '@/components/print-label-pdf/PrintLabelPdf'",
+          "new": "import { PrintLabelPdf } from '@/components/business/printing/PrintLabelPdf'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/Backup/backup_print-grnlabel_20250827_144610/components/GrnLabelForm.tsx",
+        "line": 9,
+        "from": "@/app/(app)/admin/components/ClockNumberConfirmDialog",
+        "to": "@/components/business/shared/ClockNumberConfirmDialog",
+        "statement": {
+          "old": "import ClockNumberConfirmDialog from '@/app/(app)/admin/components/ClockNumberConfirmDialog'",
+          "new": "import ClockNumberConfirmDialog from '@/components/business/shared/ClockNumberConfirmDialog'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/Backup/backup_print-grnlabel_20250827_144610/components/GrnLabelForm.tsx",
+        "line": 8,
+        "from": "@/app/(app)/admin/components/EnhancedProgressBar",
+        "to": "@/components/business/shared/EnhancedProgressBar",
+        "statement": {
+          "old": "import { EnhancedProgressBar } from '@/app/(app)/admin/components/EnhancedProgressBar'",
+          "new": "import { EnhancedProgressBar } from '@/components/business/shared/EnhancedProgressBar'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/Backup/backup_print-grnlabel_20250827_144610/components/GrnLabelForm.tsx",
+        "line": 7,
+        "from": "@/components/layout/universal",
+        "to": "@/components/templates/universal",
+        "statement": {
+          "old": "import { UniversalContainer, UniversalCard, UniversalGrid } from '@/components/layout/universal'",
+          "new": "import { UniversalContainer, UniversalCard, UniversalGrid } from '@/components/templates/universal'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/Backup/backup_print-grnlabel_20250827_144610/components/GrnDetailCard.tsx",
+        "line": 5,
+        "from": "@/app/components/qc-label-form/ProductCodeInput",
+        "to": "@/components/business/forms/qc-label/ProductCodeInput",
+        "statement": {
+          "old": "import { ProductCodeInput } from '@/app/components/qc-label-form/ProductCodeInput'",
+          "new": "import { ProductCodeInput } from '@/components/business/forms/qc-label/ProductCodeInput'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/Backup/backup_print-grnlabel_20250827_144610/components/GrnDetailCard.tsx",
+        "line": 4,
+        "from": "@/components/layout/universal",
+        "to": "@/components/templates/universal",
+        "statement": {
+          "old": "import { UniversalGrid } from '@/components/layout/universal'",
+          "new": "import { UniversalGrid } from '@/components/templates/universal'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/Backup/2025-09-02-00-58-32/components/ui/pdf-preview-dialog.tsx",
+        "line": 7,
+        "from": "@/components/ui/loading/LoadingSpinner",
+        "to": "@/components/molecules/loading/LoadingSpinner",
+        "statement": {
+          "old": "import { LoadingSpinner } from '@/components/ui/loading/LoadingSpinner'",
+          "new": "import { LoadingSpinner } from '@/components/molecules/loading/LoadingSpinner'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/Backup/2025-09-02-00-58-32/components/ui/pdf-preview-dialog-react-pdf.tsx",
+        "line": 18,
+        "from": "@/components/ui/loading/LoadingSpinner",
+        "to": "@/components/molecules/loading/LoadingSpinner",
+        "statement": {
+          "old": "import { LoadingSpinner } from '@/components/ui/loading/LoadingSpinner'",
+          "new": "import { LoadingSpinner } from '@/components/molecules/loading/LoadingSpinner'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/Backup/2025-09-02-00-58-32/app/components/qc-label-form/hooks/modules/useStreamingPdfGeneration.tsx",
+        "line": 11,
+        "from": "@/components/print-label-pdf/PrintLabelPdf",
+        "to": "@/components/business/printing/PrintLabelPdf",
+        "statement": {
+          "old": "import { PrintLabelPdf } from '@/components/print-label-pdf/PrintLabelPdf'",
+          "new": "import { PrintLabelPdf } from '@/components/business/printing/PrintLabelPdf'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/Backup/2025-09-02-00-58-32/app/components/print-label-pdf/PdfGenerator.tsx",
+        "line": 5,
+        "from": "@/components/print-label-pdf/PrintLabelPdf",
+        "to": "@/components/business/printing/PrintLabelPdf",
+        "statement": {
+          "old": "import { PrintLabelPdf, PrintLabelPdfProps } from '@/components/print-label-pdf/PrintLabelPdf'",
+          "new": "import { PrintLabelPdf, PrintLabelPdfProps } from '@/components/business/printing/PrintLabelPdf'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/Backup/2025-09-02-00-58-32/app/(app)/admin/stock-count/components/StockCountForm.tsx",
+        "line": 6,
+        "from": "@/components/qr-scanner/simple-qr-scanner",
+        "to": "@/components/business/scanning/simple-qr-scanner",
+        "statement": {
+          "old": "import { SimpleQRScanner } from '@/components/qr-scanner/simple-qr-scanner'",
+          "new": "import { SimpleQRScanner } from '@/components/business/scanning/simple-qr-scanner'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/Backup/2025-09-02-00-58-32/app/(app)/admin/cards/VoidPalletCard.tsx",
+        "line": 45,
+        "from": "../components/shared",
+        "to": "@/components/business/shared/shared",
+        "statement": {
+          "old": "import {\n  SearchInput,\n  SearchInputRef,\n  StepIndicator,\n  Step,\n  StatusOverlay,\n} from '../components/shared'",
+          "new": "import {\n  SearchInput,\n  SearchInputRef,\n  StepIndicator,\n  Step,\n  StatusOverlay,\n} from '@/components/business/shared/shared'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/Backup/2025-09-02-00-58-32/app/(app)/admin/cards/VoidPalletCard.tsx",
+        "line": 32,
+        "from": "@/components/qr-scanner/simple-qr-scanner",
+        "to": "@/components/business/scanning/simple-qr-scanner",
+        "statement": {
+          "old": "import { SimpleQRScanner } from '@/components/qr-scanner/simple-qr-scanner'",
+          "new": "import { SimpleQRScanner } from '@/components/business/scanning/simple-qr-scanner'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/Backup/2025-09-02-00-58-32/app/(app)/admin/cards/StockHistoryCard.tsx",
+        "line": 31,
+        "from": "../components/shared",
+        "to": "@/components/business/shared/shared",
+        "statement": {
+          "old": "import { SearchInput } from '../components/shared'",
+          "new": "import { SearchInput } from '@/components/business/shared/shared'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/Backup/2025-09-02-00-58-32/app/(app)/admin/cards/StockHistoryCard.tsx",
+        "line": 30,
+        "from": "@/components/qr-scanner/simple-qr-scanner",
+        "to": "@/components/business/scanning/simple-qr-scanner",
+        "statement": {
+          "old": "import { SimpleQRScanner } from '@/components/qr-scanner/simple-qr-scanner'",
+          "new": "import { SimpleQRScanner } from '@/components/business/scanning/simple-qr-scanner'"
+        }
+      },
+      {
+        "file": "/Users/chun/Documents/PennineWMS/online-stock-control-system/Backup/2025-09-02-00-58-32/app/(app)/admin/cards/components/StockCountForm.tsx",
+        "line": 6,
+        "from": "@/components/qr-scanner/simple-qr-scanner",
+        "to": "@/components/business/scanning/simple-qr-scanner",
+        "statement": {
+          "old": "import { SimpleQRScanner } from '@/components/qr-scanner/simple-qr-scanner'",
+          "new": "import { SimpleQRScanner } from '@/components/business/scanning/simple-qr-scanner'"
+        }
+      }
+    ]
+  },
+  "pathMappings": {
+    "@/app/components/qc-label-form/": "@/components/business/forms/qc-label/",
+    "@/app/components/analytics/": "@/components/business/analytics/",
+    "@/app/components/reports/": "@/components/business/reports/",
+    "@/app/components/admin/": "@/components/domain/admin/",
+    "@/app/components/shared/": "@/components/business/shared/",
+    "@/app/components/providers/": "@/components/providers/",
+    "@/app/components/visual-system/": "@/components/utilities/visual-system/",
+    "@/app/components/print-label-pdf/": "@/components/business/printing/",
+    "../components/qc-label-form/": "@/components/business/forms/qc-label/",
+    "../components/analytics/": "@/components/business/analytics/",
+    "../components/reports/": "@/components/business/reports/",
+    "../components/admin/": "@/components/domain/admin/",
+    "../components/shared/": "@/components/business/shared/",
+    "../components/": "@/components/business/shared/",
+    "@/app/(app)/admin/components/EnhancedProgressBar": "@/components/business/shared/EnhancedProgressBar",
+    "@/app/(app)/admin/components/ClockNumberConfirmDialog": "@/components/business/shared/ClockNumberConfirmDialog",
+    "@/components/ui/core/Dialog": "@/components/molecules/dialogs/Dialog",
+    "@/components/ui/loading": "@/components/molecules/loading",
+    "@/components/ui/mobile": "@/components/molecules/mobile",
+    "@/components/layout/universal": "@/components/templates/universal",
+    "@/components/print-label-pdf": "@/components/business/printing",
+    "@/components/qr-scanner": "@/components/business/scanning"
+  }
+}

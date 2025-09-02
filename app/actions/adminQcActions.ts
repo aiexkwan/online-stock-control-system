@@ -10,7 +10,7 @@ import {
   MAX_DUPLICATE_CHECK_ATTEMPTS,
   DUPLICATE_CHECK_DELAY_BASE,
   // ONE_HOUR_CACHE
-} from '@/app/(app)/admin/components/qc-label-constants';
+} from '@/components/domain/admin/constants';
 
 // Schema for validating the clock number string and converting to number
 const clockNumberSchema = z

@@ -6,7 +6,7 @@ import { Package } from 'lucide-react';
 import { getOptimizedClient } from '@/app/utils/supabase/optimized-client';
 import { getGrnDatabaseService } from '@/lib/database/grn-database-service';
 // Imports moved to unified @/lib/grn below
-const UserIdVerificationDialog = React.lazy(() => import('../components/UserIdVerificationDialog'));
+// const UserIdVerificationDialog = React.lazy(() => import('../components/UserIdVerificationDialog')); // COMMENTED OUT DUE TO CLEANUP
 import { SpecialCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
 import { cardTextStyles } from '@/lib/card-system/theme';
 import { useResourceCleanup } from '@/lib/hooks/useResourceCleanup';
@@ -50,7 +50,7 @@ import {
   mergeGrnConfig,
   convertLegacyProps,
 } from '@/lib/types/grn-props';
-import { EnhancedProgressBar } from '../components/EnhancedProgressBar';
+import { EnhancedProgressBar } from '@/components/business/shared/EnhancedProgressBar';
 import { useAdminGrnLabelBusiness } from '../hooks/useAdminGrnLabelBusiness';
 
 // Type definitions - keeping interface for backward compatibility
@@ -896,26 +896,42 @@ const GRNLabelCardComponent: React.FC<GRNLabelCardPropsUnion> = props => {
         </div>
       </SpecialCard>
 
-      {/* User ID Verification Dialog */}
+      {/* User ID Verification Dialog - DISABLED DUE TO CLEANUP */}
       {showUserIdDialog && (
-        <React.Suspense
-          fallback={
-            <div className='fixed inset-0 flex items-center justify-center bg-black/50'>
-              <div className='h-8 w-8 animate-spin rounded-full border-2 border-white border-t-transparent' />
-            </div>
-          }
-        >
-          <UserIdVerificationDialog
-            isOpen={showUserIdDialog}
-            onOpenChange={setShowUserIdDialog}
-            onVerified={handleUserIdVerified}
-            onCancel={handleUserIdVerificationCancel}
-            title='User ID Required'
-            description='Your account metadata does not contain a User ID. Please enter your User ID to continue.'
-            isLoading={state.ui.isProcessing}
-          />
-        </React.Suspense>
+        <div className='fixed inset-0 flex items-center justify-center bg-black/50'>
+          <div className='mx-4 max-w-md rounded-lg bg-slate-800 p-6'>
+            <h3 className='mb-2 text-lg font-semibold text-white'>User ID Required</h3>
+            <p className='mb-4 text-slate-300'>
+              User ID verification is temporarily disabled due to system cleanup.
+            </p>
+            <button
+              onClick={handleUserIdVerificationCancel}
+              className='rounded-lg bg-slate-600 px-4 py-2 text-white hover:bg-slate-700'
+            >
+              Close
+            </button>
+          </div>
+        </div>
       )}
+      {/* 
+      <React.Suspense
+        fallback={
+          <div className='fixed inset-0 flex items-center justify-center bg-black/50'>
+            <div className='h-8 w-8 animate-spin rounded-full border-2 border-white border-t-transparent' />
+          </div>
+        }
+      >
+        <UserIdVerificationDialog
+          isOpen={showUserIdDialog}
+          onOpenChange={setShowUserIdDialog}
+          onVerified={handleUserIdVerified}
+          onCancel={handleUserIdVerificationCancel}
+          title='User ID Required'
+          description='Your account metadata does not contain a User ID. Please enter your User ID to continue.'
+          isLoading={state.ui.isProcessing}
+        />
+      </React.Suspense>
+      */}
     </div>
   );
 };

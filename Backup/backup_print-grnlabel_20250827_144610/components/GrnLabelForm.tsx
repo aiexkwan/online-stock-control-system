@@ -4,9 +4,9 @@ import React, { useCallback, useEffect, useRef } from 'react';
 import { createClient } from '@/app/utils/supabase/client';
 import { toast } from 'sonner';
 import { grnErrorHandler } from '../services/ErrorHandler';
-import { UniversalContainer, UniversalCard, UniversalGrid } from '@/components/layout/universal';
-import { EnhancedProgressBar } from '@/app/(app)/admin/components/EnhancedProgressBar';
-import ClockNumberConfirmDialog from '@/app/(app)/admin/components/ClockNumberConfirmDialog';
+import { UniversalContainer, UniversalCard, UniversalGrid } from '@/components/templates/universal';
+import { EnhancedProgressBar } from '@/components/business/shared/EnhancedProgressBar';
+import ClockNumberConfirmDialog from '@/components/business/shared/ClockNumberConfirmDialog';
 
 // Import new modular components
 import { GrnDetailCard } from './GrnDetailCard';

@@ -30,7 +30,7 @@ function NewPasswordContent() {
     if (userIdFromUrl) {
       (process.env.NODE_ENV as string) !== 'production' &&
         (process.env.NODE_ENV as string) !== 'production' &&
-        console.log('NewPasswordPage: userId found in URL:', userIdFromUrl);
+        console.log('NewPasswordPage: userId found in URL.');
       setUserId(userIdFromUrl);
     } else {
       console.error('NewPasswordPage: userId not found in URL parameters.');
@@ -73,21 +73,21 @@ function NewPasswordContent() {
     try {
       (process.env.NODE_ENV as string) !== 'production' &&
         (process.env.NODE_ENV as string) !== 'production' &&
-        console.log(`Attempting to reset password for user: ${userId} via Server Action.`);
+        console.log(`Attempting to reset password via Server Action.`);
       // Call the imported Server Action directly
       const result = await resetPasswordAction(userId, newPassword);
 
       if (result.success) {
         (process.env.NODE_ENV as string) !== 'production' &&
           (process.env.NODE_ENV as string) !== 'production' &&
-          console.log(`Password reset successful for user: ${userId}`);
+          console.log(`Password reset successful.`);
         setSuccess(true);
         toast.success('Password reset successfully! Redirecting to login...'); // Success toast
         setTimeout(() => {
           router.push('/main-login');
         }, 3000);
       } else {
-        console.error(`Password reset failed for user: ${userId}. Reason: ${result.error}`);
+        console.error(`Password reset failed. Reason: ${result.error}`);
         const errorMessage = result.error || 'Failed to reset password. Please try again.';
         setError(errorMessage);
         toast.error(errorMessage);

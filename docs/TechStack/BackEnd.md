@@ -1,6 +1,6 @@
 # 後端技術棧 (Backend Technology Stack)
 
-_最後更新日期: 2025-09-01 22:54:59_
+_最後更新日期: 2025-09-02 11:46:01_
 
 ## 核心環境與框架
 
@@ -34,7 +34,7 @@ _最後更新日期: 2025-09-01 22:54:59_
 
 - **GraphQL Schema**: `lib/graphql/` 目錄下65個TypeScript檔案
 - **GraphQL 擴展**: pg_graphql v1.5.11 已啟用
-- **無伺服器函數**: `app/api/` 下11-12個主要REST端點 + 1個GraphQL端點
+- **無伺服器函數**: `app/api/` 下11個主要REST端點 + 1個GraphQL端點
 - **API版本管理**: v1與v2版本共存, 支持版本標示和自動轉發
 - **中間件**: `middleware.ts` 認證與路由保護
 - **安全層**: CORS 2.8.5, JWT (jsonwebtoken 9.0.2), bcryptjs 3.0.2

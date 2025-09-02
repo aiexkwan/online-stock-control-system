@@ -61,8 +61,8 @@ export async function POST(request: Request) {
     if (process.env.NODE_ENV !== 'production') {
       console.log('🔍 Checking RESEND_API_KEY availability...');
       console.log('RESEND_API_KEY exists:', !!RESEND_API_KEY);
-      console.log('RESEND_API_KEY length:', RESEND_API_KEY?.length || 0);
-      console.log('RESEND_API_KEY prefix:', RESEND_API_KEY?.substring(0, 10) || 'N/A');
+      // 安全提示：不記錄任何 API key 內容
+      console.log('RESEND_API_KEY configured:', !!RESEND_API_KEY ? 'Yes' : 'No');
     }
 
     if (!RESEND_API_KEY) {

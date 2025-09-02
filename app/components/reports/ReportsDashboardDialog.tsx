@@ -43,7 +43,7 @@ import { RegisteredReport } from '@/app/components/reports/core/ReportConfig';
 // import { UnifiedLoadingReportDialog } from '@/app/(app)/order-loading/components/UnifiedLoadingReportDialog';
 // import { UnifiedStockTakeReportDialog } from '@/app/stock-take/components/UnifiedStockTakeReportDialog'; // Component not found
 // ACO Report now integrated directly into system page card
-// import { UnifiedGrnReportDialog } from '@/app/components/reports/UnifiedGrnReportDialog'; // Component not found
+// import { UnifiedGrnReportDialog } from '@/components/business/reports/UnifiedGrnReportDialog'; // Component not found
 // Transaction Report now integrated directly into system page card
 import { UnifiedExportAllDataDialog } from '@/app/components/reports/UnifiedExportAllDataDialog';
 

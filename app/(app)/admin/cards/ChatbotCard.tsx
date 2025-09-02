@@ -14,12 +14,12 @@ import { usePerformanceMonitor, useMemoryMonitor } from '../utils/performanceMon
 // 引入記憶體管理工具
 import { useMemoryCleanup } from '../hooks/useMemoryCleanup';
 
-// 導入新的組件
-import { ChatHeader } from '../components/ChatHeader';
-import { ChatMessages } from '../components/ChatMessages';
-import { ChatInput } from '../components/ChatInput';
-import { QuerySuggestions } from '../components/QuerySuggestions';
-import MemoryDashboard from '../components/MemoryDashboard';
+// 導入新的組件 - COMMENTED OUT DUE TO CLEANUP
+// import { ChatHeader } from '../components/ChatHeader';
+// import { ChatMessages } from '../components/ChatMessages';
+// import { ChatInput } from '../components/ChatInput';
+// import { QuerySuggestions } from '../components/QuerySuggestions';
+// import MemoryDashboard from '../components/MemoryDashboard';
 
 // 導入依賴注入相關
 import {
@@ -242,13 +242,14 @@ function ChatbotCardInternal({ className }: ChatbotCardProps) {
       borderGlow='hover'
       padding='base'
     >
-      {/* Header */}
+      {/* COMPONENTS TEMPORARILY DISABLED DUE TO CLEANUP */}
+      <div className='p-4 text-center text-muted-foreground'>
+        ChatbotCard components are temporarily disabled due to system cleanup. Components will be
+        restored in a future update.
+      </div>
+      {/* 
       <ChatHeader useStreaming={chat.useStreaming} onStreamingToggle={handleStreamingToggle} />
-
-      {/* Messages Container */}
       <ChatMessages messages={chat.messages} isLoading={chat.isLoading} onRetry={handleRetry} />
-
-      {/* Query Suggestions */}
       <QuerySuggestions
         showSuggestions={chat.showSuggestions}
         messageCount={chat.messages.length}
@@ -259,8 +260,6 @@ function ChatbotCardInternal({ className }: ChatbotCardProps) {
         onToggleSuggestions={handleToggleSuggestions}
         onSendMessage={handleSendMessage}
       />
-
-      {/* Input Area */}
       <ChatInput
         value={chat.input}
         onChange={handleInputChange}
@@ -269,6 +268,7 @@ function ChatbotCardInternal({ className }: ChatbotCardProps) {
         isLoading={chat.isLoading}
         autoFocus={false}
       />
+      */}
     </SpecialCard>
   );
 }
@@ -294,8 +294,8 @@ export default function ChatbotCard(props: ChatbotCardProps) {
         <ChatbotCardInternal {...props} />
       </ServiceProvider>
 
-      {/* 開發環境記憶體監控儀表板 */}
-      <MemoryDashboard visible={process.env.NODE_ENV === 'development'} position='bottom-right' />
+      {/* 開發環境記憶體監控儀表板 - DISABLED DUE TO CLEANUP */}
+      {/* <MemoryDashboard visible={process.env.NODE_ENV === 'development'} position='bottom-right' /> */}
     </>
   );
 }

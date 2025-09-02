@@ -7,7 +7,7 @@ import dynamic from 'next/dynamic';
 import { LoginProvider } from '../context/LoginContext';
 
 // Dynamic imports for code splitting
-const RegisterForm = dynamic(() => import('../components/RegisterForm'), {
+const RegisterForm = dynamic(() => import('@/app/(auth)/main-login/components/RegisterForm'), {
   loading: () => (
     <div className='animate-pulse space-y-4'>
       <div className='h-12 rounded-lg bg-slate-700/50'></div>
@@ -19,16 +19,19 @@ const RegisterForm = dynamic(() => import('../components/RegisterForm'), {
   ssr: false,
 });
 
-const EmailConfirmation = dynamic(() => import('../components/EmailConfirmation'), {
-  loading: () => (
-    <div className='animate-pulse space-y-4 text-center'>
-      <div className='mx-auto h-16 w-16 rounded-full bg-slate-700/50'></div>
-      <div className='mx-auto h-6 w-48 rounded bg-slate-700/50'></div>
-      <div className='mx-auto h-4 w-32 rounded bg-slate-700/50'></div>
-    </div>
-  ),
-  ssr: false,
-});
+const EmailConfirmation = dynamic(
+  () => import('@/app/(auth)/main-login/components/EmailConfirmation'),
+  {
+    loading: () => (
+      <div className='animate-pulse space-y-4 text-center'>
+        <div className='mx-auto h-16 w-16 rounded-full bg-slate-700/50'></div>
+        <div className='mx-auto h-6 w-48 rounded bg-slate-700/50'></div>
+        <div className='mx-auto h-4 w-32 rounded bg-slate-700/50'></div>
+      </div>
+    ),
+    ssr: false,
+  }
+);
 
 export default function RegisterPage() {
   const router = useRouter();

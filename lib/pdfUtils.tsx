@@ -1,6 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js'; // For type hinting Supabase client
 import { renderReactPDFToBlob, loadPDF, createPDFDocument } from './services/unified-pdf-service';
-import { PrintLabelPdf, PrintLabelPdfProps } from '../components/print-label-pdf/PrintLabelPdf';
+import { PrintLabelPdf, PrintLabelPdfProps } from '@/components/print-label-pdf/PrintLabelPdf';
 
 // Define an interface for the expected structure of getPublicUrl response
 interface StoragePublicUrlResponse {

@@ -5,10 +5,24 @@ AI Agents 長期記憶寫入腳本
 """
 
 import os
+import sys
 import json
 import hashlib
 from datetime import datetime
 from typing import Dict, List, Optional
+from pathlib import Path
+
+# 載入 .env 文件
+try:
+    from dotenv import load_dotenv
+    # 獲取專案根目錄的 .env 文件路徑
+    project_root = Path(__file__).parent.parent.parent
+    env_path = project_root / '.env'
+    load_dotenv(env_path)
+except ImportError:
+    print("請安裝 python-dotenv: pip install python-dotenv")
+    sys.exit(1)
+
 import openai
 from supabase import create_client, Client
 import logging
@@ -186,7 +200,7 @@ class MemoryWriter:
 
 def main():
     """
-    使用範例
+    主函數 - 支援從 stdin 接收輸入或使用範例數據
     """
     # 從環境變數獲取配置
     supabase_url = os.getenv('SUPABASE_URL')
@@ -195,17 +209,53 @@ def main():
     
     if not all([supabase_url, supabase_key, openai_api_key]):
         logger.error("請設定所需的環境變數: SUPABASE_URL, SUPABASE_KEY, OPENAI_API_KEY")
-        return
+        sys.exit(1)
     
     # 創建記憶寫入器
     writer = MemoryWriter(supabase_url, supabase_key, openai_api_key)
     
-    # 範例task數據
-    sample_task = {
-        'task_type': 'code_refactoring',
-        'reason': '優化系統性能和代碼可讀性',
-        'objective': '重構用戶認證模組',
-        'process_steps': [
+    # 檢查是否有 stdin 輸入
+    import select
+    import sys
+    
+    # 檢查 stdin 是否有資料（兼容不同平台）
+    if sys.stdin.isatty():
+        # 沒有 stdin 輸入，使用範例數據
+        use_sample = True
+    else:
+        # 有 stdin 輸入
+        use_sample = False
+        try:
+            input_data = sys.stdin.read()
+            if input_data.strip():
+                # 解析 JSON 輸入
+                task_data = json.loads(input_data)
+                agent_id = task_data.get('agent_id', 'default_agent')
+                
+                # 保存記憶
+                result = writer.save_memory(task_data, agent_id)
+                if result:
+                    print(f"記憶儲存結果: 成功")
+                    sys.exit(0)
+                else:
+                    print(f"記憶儲存結果: 失敗")
+                    sys.exit(1)
+            else:
+                use_sample = True
+        except json.JSONDecodeError as e:
+            logger.error(f"JSON 解析錯誤: {e}")
+            sys.exit(1)
+        except Exception as e:
+            logger.error(f"處理輸入時發生錯誤: {e}")
+            sys.exit(1)
+    
+    if use_sample:
+        # 範例task數據
+        sample_task = {
+            'task_type': 'code_refactoring',
+            'reason': '優化系統性能和代碼可讀性',
+            'objective': '重構用戶認證模組',
+            'process_steps': [
             '分析現有代碼結構',
             '識別性能瓶頸',
             '設計新的架構',

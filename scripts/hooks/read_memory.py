@@ -5,9 +5,23 @@ AI Agents 長期記憶讀取腳本
 """
 
 import os
+import sys
 import json
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
+from pathlib import Path
+
+# 載入 .env 文件
+try:
+    from dotenv import load_dotenv
+    # 獲取專案根目錄的 .env 文件路徑
+    project_root = Path(__file__).parent.parent.parent
+    env_path = project_root / '.env'
+    load_dotenv(env_path)
+except ImportError:
+    print("請安裝 python-dotenv: pip install python-dotenv")
+    sys.exit(1)
+
 import openai
 from supabase import create_client, Client
 import logging

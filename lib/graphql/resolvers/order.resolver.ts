@@ -3,7 +3,7 @@ import { GraphQLError } from 'graphql';
 const toGraphQLErrorMessage = (error: any) => error?.message || 'Unknown error';
 import { createClient } from '../../../app/utils/supabase/server';
 import { getAcoReportData } from '../../../app/actions/DownloadCentre-Actions';
-import { orderLoadingDataSources } from '../../../app/components/reports/dataSources/OrderLoadingDataSource';
+import { orderLoadingDataSources } from '@/app/components/reports/dataSources/OrderLoadingDataSource';
 import { safeNumber, toRecordArray } from '../../../types/database/helpers';
 import type { GraphQLContext } from './index';
 

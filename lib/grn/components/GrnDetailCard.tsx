@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { UniversalGrid } from '@/components/layout/universal';
+import { UniversalGrid } from '@/components/templates/universal';
 import { ProductCodeInput } from '@/app/components/qc-label-form/ProductCodeInput';
 import {
   LABEL_MODES,

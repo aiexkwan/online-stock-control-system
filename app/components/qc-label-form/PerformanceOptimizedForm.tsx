@@ -18,7 +18,7 @@ import {
 } from './ResponsiveLayout';
 import { EnhancedFormField, EnhancedInput, EnhancedSelect } from './EnhancedFormField';
 import { AccordionItem, AccordionGroup } from './Accordion';
-import { EnhancedProgressBar } from './EnhancedProgressBar';
+import { EnhancedProgressBar } from '@/components/business/shared/EnhancedProgressBar';
 import { ProductCodeInput } from './ProductCodeInput';
 import { BasicProductForm } from './BasicProductForm';
 import { AcoOrderForm } from './AcoOrderForm';
@@ -28,7 +28,7 @@ import { useMediaQuery } from './hooks/useMediaQuery';
 
 import { useDebouncedCallback } from './hooks/useOptimizedCallback';
 import { useQcLabelBusiness } from './hooks/useQcLabelBusiness';
-import ClockNumberConfirmDialog from './ClockNumberConfirmDialog';
+import { ClockNumberConfirmDialog } from '@/components/business/shared/ClockNumberConfirmDialog';
 
 interface PerformanceOptimizedFormProps {
   onSubmit?: (data: FormData) => void;

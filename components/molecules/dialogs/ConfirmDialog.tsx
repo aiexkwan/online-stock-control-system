@@ -1,0 +1,250 @@
+/**
+ * ConfirmDialog - 確認對話框
+ * 用於需要用戶確認嘅操作
+ */
+
+'use client';
+
+import * as React from 'react';
+import { AlertCircle, AlertTriangle, Info } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+  DialogBody,
+  type DialogProps,
+} from './Dialog';
+import { dialogPresets } from './DialogPresets';
+
+export interface ConfirmDialogProps extends Omit<DialogProps, 'children'> {
+  title?: string;
+  message: string | React.ReactNode;
+  confirmText?: string;
+  cancelText?: string;
+  onConfirm?: () => void | Promise<void>;
+  onCancel?: () => void;
+  confirmButtonVariant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+  isDestructive?: boolean;
+  showIcon?: boolean;
+  icon?: React.ReactNode;
+  isLoading?: boolean;
+  loadingText?: string;
+  details?: React.ReactNode;
+  severity?: 'info' | 'success' | 'warning' | 'error';
+}
+
+/**
+ * 確認對話框
+ *
+ * @example
+ * <ConfirmDialog
+ *   open={open}
+ *   onOpenChange={setOpen}
+ *   title="確認刪除"
+ *   message="您確定要刪除這條記錄嗎？此操作無法撤銷。"
+ *   isDestructive
+ *   onConfirm={handleDelete}
+ * />
+ */
+export const ConfirmDialog = React.forwardRef<HTMLDivElement, ConfirmDialogProps>(
+  (
+    {
+      open,
+      onOpenChange,
+      title = '確認操作',
+      message,
+      confirmText = '確認',
+      cancelText = '取消',
+      onConfirm,
+      onCancel,
+      confirmButtonVariant,
+      severity,
+      isDestructive = false,
+      showIcon = true,
+      icon,
+      isLoading = false,
+      loadingText = '處理中...',
+      details,
+      ...props
+    },
+    ref
+  ) => {
+    const [isConfirming, setIsConfirming] = React.useState(false);
+
+    // 確定按鈕變體
+    const effectiveVariant = confirmButtonVariant || (isDestructive ? 'destructive' : 'default');
+    const effectiveSeverity = severity || (isDestructive ? 'error' : 'info');
+
+    // 默認圖標
+    const defaultIcons = {
+      info: <Info className='h-6 w-6' />,
+      success: <AlertCircle className='h-6 w-6' />,
+      warning: <AlertTriangle className='h-6 w-6' />,
+      error: <AlertTriangle className='h-6 w-6' />,
+    };
+
+    const displayIcon = icon || (showIcon && defaultIcons[effectiveSeverity]);
+
+    // 處理確認
+    const handleConfirm = async () => {
+      if (isLoading || isConfirming) return;
+
+      try {
+        setIsConfirming(true);
+        await onConfirm?.();
+        onOpenChange?.(false);
+      } catch (_error) {
+        console.error('Confirm action failed:', _error);
+      } finally {
+        setIsConfirming(false);
+      }
+    };
+
+    // 處理取消
+    const handleCancel = () => {
+      if (isLoading || isConfirming) return;
+      onCancel?.();
+      onOpenChange?.(false);
+    };
+
+    const isProcessing = isLoading || isConfirming;
+
+    return (
+      <Dialog
+        open={open}
+        onOpenChange={onOpenChange}
+        severity={effectiveSeverity}
+        {...dialogPresets.confirmation}
+        {...props}
+      >
+        <DialogContent ref={ref} showCloseButton={!isProcessing}>
+          <DialogHeader>
+            <DialogTitle icon={displayIcon}>{title}</DialogTitle>
+          </DialogHeader>
+
+          <DialogBody>
+            <DialogDescription className='text-base'>{message}</DialogDescription>
+
+            {details && <div className='mt-4 rounded-md bg-muted/50 p-4 text-sm'>{details}</div>}
+          </DialogBody>
+
+          <DialogFooter className='gap-2'>
+            <Button variant='outline' onClick={handleCancel} disabled={isProcessing}>
+              {cancelText}
+            </Button>
+            <Button
+              variant={effectiveVariant}
+              onClick={handleConfirm}
+              disabled={isProcessing}
+              className={cn('min-w-[100px]', isProcessing && 'opacity-70')}
+            >
+              {isProcessing ? loadingText : confirmText}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+);
+
+ConfirmDialog.displayName = 'ConfirmDialog';
+
+// 快捷組件 - 刪除確認
+export interface DeleteConfirmDialogProps
+  extends Omit<ConfirmDialogProps, 'isDestructive' | 'title' | 'confirmText'> {
+  itemName?: string;
+  title?: string;
+  confirmText?: string;
+}
+
+export const DeleteConfirmDialog = React.forwardRef<HTMLDivElement, DeleteConfirmDialogProps>(
+  (
+    {
+      itemName = '此項目',
+      title = '確認刪除',
+      message = `您確定要刪除${itemName}嗎？此操作無法撤銷。`,
+      confirmText = '刪除',
+      ...props
+    },
+    ref
+  ) => (
+    <ConfirmDialog
+      ref={ref}
+      title={title}
+      message={message}
+      confirmText={confirmText}
+      isDestructive
+      {...props}
+    />
+  )
+);
+
+DeleteConfirmDialog.displayName = 'DeleteConfirmDialog';
+
+// 快捷組件 - 保存確認
+export interface SaveConfirmDialogProps extends Omit<ConfirmDialogProps, 'title' | 'confirmText'> {
+  title?: string;
+  confirmText?: string;
+}
+
+export const SaveConfirmDialog = React.forwardRef<HTMLDivElement, SaveConfirmDialogProps>(
+  (
+    {
+      title = '保存更改',
+      message = '您有未保存的更改。是否要保存？',
+      confirmText = '保存',
+      ...props
+    },
+    ref
+  ) => (
+    <ConfirmDialog
+      ref={ref}
+      title={title}
+      message={message}
+      confirmText={confirmText}
+      severity='warning'
+      {...props}
+    />
+  )
+);
+
+SaveConfirmDialog.displayName = 'SaveConfirmDialog';
+
+// 快捷組件 - 離開確認
+export interface LeaveConfirmDialogProps
+  extends Omit<ConfirmDialogProps, 'title' | 'confirmText' | 'cancelText'> {
+  title?: string;
+  confirmText?: string;
+  cancelText?: string;
+}
+
+export const LeaveConfirmDialog = React.forwardRef<HTMLDivElement, LeaveConfirmDialogProps>(
+  (
+    {
+      title = '確認離開',
+      message = '您有未保存的更改。確定要離開嗎？',
+      confirmText = '離開',
+      cancelText = '留下',
+      ...props
+    },
+    ref
+  ) => (
+    <ConfirmDialog
+      ref={ref}
+      title={title}
+      message={message}
+      confirmText={confirmText}
+      cancelText={cancelText}
+      severity='warning'
+      isDestructive
+      {...props}
+    />
+  )
+);
+
+LeaveConfirmDialog.displayName = 'LeaveConfirmDialog';

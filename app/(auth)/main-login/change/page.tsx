@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { User } from '@supabase/supabase-js';
-import ChangePasswordForm from '../components/ChangePasswordForm';
+import ChangePasswordForm from '@/app/(auth)/main-login/components/ChangePasswordForm';
 import { unifiedAuth } from '../utils/unified-auth';
 
 // Force dynamic rendering to avoid prerendering issues with client-side auth

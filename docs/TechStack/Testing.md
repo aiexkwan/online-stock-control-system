@@ -1,6 +1,6 @@
 # 測試技術棧 (Testing Technology Stack)
 
-_最後更新日期: 2025-09-01 22:54:59_
+_最後更新日期: 2025-09-02 11:46:01_
 
 ## 測試策略
 
@@ -59,6 +59,7 @@ _最後更新日期: 2025-09-01 22:54:59_
 - **jest.config.enhanced.js**: Jest 增強配置
 - **vitest.integration.config.ts**: Vitest 整合測試專用配置
 - **vitest.setup.ts**, **jest.setup.js**: 測試環境設置
+- **vitest.integration.setup.ts**: Vitest 整合測試環境設置
 
 ## 測試指令
 
@@ -99,9 +100,12 @@ _最後更新日期: 2025-09-01 22:54:59_
 - **整合測試**: 25個 (`__tests__/integration/`)
 - **E2E測試**: 20個 (`__tests__/e2e/`)
 - **安全測試**: 12個 (`__tests__/security/`)
-- **性能測試**: 3個 (`__tests__/performance/`)
 - **穩定性測試**: 7個 (`__tests__/stability/`)
-- **其他**: 工廠模式、模擬、設置等 (31個)
+- **接受測試**: 6個 (`__tests__/acceptance/`)
+- **回歸測試**: 4個 (`__tests__/regression/`)
+- **跨瀏覽器測試**: 3個 (`__tests__/cross-browser/`)
+- **性能測試**: 3個 (`__tests__/performance/`)
+- **其他**: 應用、認證、GraphQL、工具等 (23個)
 
 ## 測試覆蓋率
 

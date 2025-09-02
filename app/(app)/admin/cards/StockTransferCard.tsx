@@ -25,8 +25,12 @@ import type { SearchResult } from '../hooks/useStockTransfer';
 import { LOCATION_DESTINATIONS, DESTINATION_CONFIG } from '../constants/stockTransfer';
 import { useStockTransfer } from '../hooks/useStockTransfer';
 import { LocationStandardizer } from '../utils/locationStandardizer';
-import { SearchInput, SearchInputRef, FormInputGroup, FormOption } from '../components/shared';
-import StockTransferErrorBoundary from './components/StockTransferErrorBoundary';
+import {
+  SearchInput,
+  SearchInputRef,
+  FormInputGroup,
+  FormOption,
+} from '@/components/compatibility';
 
 export interface StockTransferCardProps {
   className?: string;
@@ -208,7 +212,7 @@ const TransferDestinationSelector: React.FC<{
 
 const StockTransferCardInternal: React.FC<StockTransferCardProps> = ({ className }) => {
   // Refs
-  const searchInputRef = useRef<SearchInputRef>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const clockNumberRef = useRef<HTMLInputElement>(null);
 
   // Sound setup with cleanup tracking and safety checks
@@ -985,13 +989,9 @@ const StockTransferCardInternal: React.FC<StockTransferCardProps> = ({ className
   );
 };
 
-// Main component wrapped with error boundary
+// Main component - Error boundary removed for now
 export const StockTransferCard: React.FC<StockTransferCardProps> = ({ className }) => {
-  return (
-    <StockTransferErrorBoundary>
-      <StockTransferCardInternal className={className} />
-    </StockTransferErrorBoundary>
-  );
+  return <StockTransferCardInternal className={className} />;
 };
 
 export default StockTransferCard;

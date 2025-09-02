@@ -28,7 +28,7 @@ import {
 } from '@/app/actions/stockTransferActions';
 // Removed unused import: LOCATION_DESTINATIONS
 import { LocationStandardizer } from '../utils/locationStandardizer';
-import type { SearchInputRef } from '../components/shared';
+import type { SearchInputRef } from '@/components/compatibility';
 
 // Types
 export interface PalletInfo {

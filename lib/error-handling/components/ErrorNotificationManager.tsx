@@ -10,7 +10,7 @@
 import React, { useEffect, useMemo } from 'react';
 import { toast } from 'sonner';
 import { AlertTriangle, AlertCircle, Info, CheckCircle, X } from 'lucide-react';
-import { Button } from '../../../components/ui/button';
+import { Button } from '@/components/ui/button';
 // import { Alert, AlertDescription  } // Unused from '@/components/ui/alert';
 import { useError } from '../ErrorContext';
 import type { ErrorReport } from '../types';

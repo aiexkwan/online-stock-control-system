@@ -536,8 +536,10 @@ export async function analyzeOrderPDF(
         return process.env.NEXT_PUBLIC_APP_URL;
       }
 
-      // 本地開發
-      return 'http://localhost:3000';
+      // 本地開發 - 使用環境變數或動態配置
+      const port = process.env.PORT || '3000';
+      const host = process.env.HOST || 'localhost';
+      return `http://${host}:${port}`;
     };
 
     const baseUrl = getApiBaseUrl();

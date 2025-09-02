@@ -27,8 +27,8 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AnalysisCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
 import { cardTextStyles } from '@/lib/card-system/theme';
-import { SimpleQRScanner } from '@/components/qr-scanner/simple-qr-scanner';
-import { SearchInput } from '../components/shared';
+import { SimpleQRScanner } from '@/components/business/scanning/simple-qr-scanner';
+// import { SearchInput } from '../components/shared'; // COMMENTED OUT DUE TO CLEANUP
 import {
   useStockHistoryGraphQL,
   type StockHistoryRecord,
@@ -123,7 +123,29 @@ export function StockHistoryCard({ warehouse, limit = 40 }: StockHistoryCardProp
           {/* Stock Search Tab */}
           <TabsContent value='stock' className='space-y-4'>
             <div className='mt-4 p-4'>
-              {/* Product Code Input */}
+              {/* Product Code Input - SIMPLIFIED DUE TO CLEANUP */}
+              <div className='flex gap-2'>
+                <input
+                  type='text'
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  placeholder='Enter product code (e.g., ME6060150)...'
+                  className='flex-1 rounded-md border-none bg-white/10 px-3 py-2 text-white backdrop-blur-sm placeholder:text-gray-400 focus:ring-1 focus:ring-white/30'
+                  disabled={productHistory.loading}
+                />
+                <Button
+                  onClick={handleProductSearch}
+                  disabled={productHistory.loading}
+                  className='border-white/30 bg-white/10 text-white backdrop-blur-sm hover:bg-white/15'
+                >
+                  {productHistory.loading ? (
+                    <Loader2 className='h-4 w-4 animate-spin' />
+                  ) : (
+                    <Search className='h-4 w-4' />
+                  )}
+                </Button>
+              </div>
+              {/* 
               <SearchInput
                 value={searchTerm}
                 onChange={setSearchTerm}
@@ -136,6 +158,7 @@ export function StockHistoryCard({ warehouse, limit = 40 }: StockHistoryCardProp
                 inputClassName='bg-white/10 backdrop-blur-sm border-none text-white placeholder:text-gray-400 focus:ring-1 focus:ring-white/30'
                 buttonClassName='bg-white/10 hover:bg-white/15 backdrop-blur-sm border-white/30 text-white'
               />
+              */}
 
               {/* Product Info Display (simplified) */}
               {productHistory.data && (
@@ -295,21 +318,35 @@ export function StockHistoryCard({ warehouse, limit = 40 }: StockHistoryCardProp
           {/* Pallet Search Tab */}
           <TabsContent value='pallet' className='space-y-4'>
             <div className='mt-4 p-4'>
-              {/* Pallet Search Input */}
-              <SearchInput
-                value={palletSearchTerm}
-                onChange={setPalletSearchTerm}
-                onSearch={handlePalletSearch}
-                onQrScan={() => setIsScannerOpen(true)}
-                placeholder='Enter Pallet Number or scan QR Code...'
-                searchType='pallet'
-                autoDetect={true}
-                showQrButton={true}
-                showTypeIndicator={false}
-                isLoading={palletHistory.loading}
-                inputClassName='bg-white/10 backdrop-blur-sm border-none text-white placeholder:text-gray-400 focus:ring-1 focus:ring-white/30'
-                buttonClassName='bg-white/10 hover:bg-white/15 backdrop-blur-sm border-white/30 text-white'
-              />
+              {/* Pallet Search Input - SIMPLIFIED DUE TO CLEANUP */}
+              <div className='flex gap-2'>
+                <input
+                  type='text'
+                  value={palletSearchTerm}
+                  onChange={e => setPalletSearchTerm(e.target.value)}
+                  placeholder='Enter Pallet Number or scan QR Code...'
+                  className='flex-1 rounded-md border-none bg-white/10 px-3 py-2 text-white backdrop-blur-sm placeholder:text-gray-400 focus:ring-1 focus:ring-white/30'
+                  disabled={palletHistory.loading}
+                />
+                <Button
+                  onClick={handlePalletSearch}
+                  disabled={palletHistory.loading}
+                  className='border-white/30 bg-white/10 text-white backdrop-blur-sm hover:bg-white/15'
+                >
+                  {palletHistory.loading ? (
+                    <Loader2 className='h-4 w-4 animate-spin' />
+                  ) : (
+                    <Search className='h-4 w-4' />
+                  )}
+                </Button>
+                <Button
+                  onClick={() => setIsScannerOpen(true)}
+                  className='border-white/30 bg-white/10 text-white backdrop-blur-sm hover:bg-white/15'
+                  title='Scan QR Code'
+                >
+                  <QrCode className='h-4 w-4' />
+                </Button>
+              </div>
 
               {/* Pallet Info Panel (simplified) */}
               {palletHistory.data && (

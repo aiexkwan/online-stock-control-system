@@ -1,5 +1,5 @@
 // Adapter to convert between AdminFormData and FormData types
-import { FormData, ErrorInfo } from '../../../components/qc-label-form/types';
+import { FormData, ErrorInfo } from '@/app/components/qc-label-form/types';
 import { AdminFormData } from '../types/adminQcTypes';
 
 // Convert AdminFormData to FormData for compatibility with shared hooks

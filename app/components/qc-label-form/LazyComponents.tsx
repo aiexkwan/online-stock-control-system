@@ -55,7 +55,9 @@ const LazySlateDetailsForm = lazy(() =>
 );
 
 const LazyEnhancedProgressBar = lazy(() =>
-  import('./EnhancedProgressBar').then(module => ({ default: module.EnhancedProgressBar }))
+  import('@/components/business/shared/EnhancedProgressBar').then(module => ({
+    default: module.EnhancedProgressBar,
+  }))
 );
 
 const LazyErrorStats = lazy(() =>
@@ -125,7 +127,7 @@ export const preloadSlateForm = () => {
 };
 
 export const preloadProgressBar = () => {
-  import('./EnhancedProgressBar');
+  import('@/components/business/shared/EnhancedProgressBar');
 };
 
 export const preloadErrorStats = () => {

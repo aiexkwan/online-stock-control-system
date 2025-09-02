@@ -20,7 +20,7 @@ import { toast } from 'sonner';
 import { createClient } from '@/app/utils/supabase/client';
 import { getProductByCode } from '@/app/actions/productActions';
 import type { Database } from '@/lib/database.types';
-import type { SearchInputRef } from '../components/shared';
+import type { SearchInputRef } from '@/components/compatibility';
 import type {
   VoidMode,
   VoidStep,

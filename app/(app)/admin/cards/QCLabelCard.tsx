@@ -9,14 +9,19 @@ import { CardErrorBoundary } from '@/lib/error-handling';
 import { createClient } from '@/app/utils/supabase/client';
 // import { useAcoOrderReport, useOrderData } from '@/lib/hooks/useOrderData'; // Removed - not used
 import { useAuth } from '@/app/hooks/useAuth';
-import { MAX_PALLET_COUNT } from '../components/qc-label-constants';
+// import { MAX_PALLET_COUNT } from '../components/qc-label-constants'; // COMMENTED OUT DUE TO CLEANUP
 import { useAdminQcLabelBusiness } from '../hooks/useAdminQcLabelBusiness';
-import GridBasicProductFormGraphQL from '../components/GridBasicProductFormGraphQL';
+// import GridBasicProductFormGraphQL from '../components/GridBasicProductFormGraphQL'; // COMMENTED OUT DUE TO CLEANUP
+
+// Temporary constants to replace removed dependencies
+const MAX_PALLET_COUNT = 50;
 import type { ProductInfo, AdminFormData as FormData } from '../types/adminQcTypes';
 
 // 重型組件的懶加載
-const UserIdVerificationDialog = React.lazy(() => import('../components/UserIdVerificationDialog'));
-const EnhancedProgressBar = React.lazy(() => import('../components/EnhancedProgressBar'));
+// const UserIdVerificationDialog = React.lazy(() => import('../components/UserIdVerificationDialog')); // COMMENTED OUT DUE TO CLEANUP
+const EnhancedProgressBar = React.lazy(
+  () => import('@/components/business/shared/EnhancedProgressBar')
+);
 
 export interface QCLabelCardProps {
   className?: string;
@@ -445,8 +450,13 @@ export const QCLabelCard: React.FC<QCLabelCardProps> = ({ className }) => {
 
           <div className='min-h-0 flex-1 overflow-auto p-4'>
             <div className='space-y-6'>
-              {/* Main Form - GraphQL Version */}
+              {/* Main Form - DISABLED DUE TO CLEANUP */}
               <CardErrorBoundary cardName='QCLabel'>
+                <div className='p-6 text-center text-muted-foreground'>
+                  QC Label form is temporarily disabled due to system cleanup. The form will be
+                  restored in a future update.
+                </div>
+                {/* 
                 <GridBasicProductFormGraphQL
                   productCode={formData.productCode}
                   onProductCodeChange={handleProductCodeChange}
@@ -471,6 +481,7 @@ export const QCLabelCard: React.FC<QCLabelCardProps> = ({ className }) => {
                   }}
                   disabled={formData.isLoading}
                 />
+                */}
               </CardErrorBoundary>
 
               {/* ACO/Slate Details */}
@@ -613,26 +624,42 @@ export const QCLabelCard: React.FC<QCLabelCardProps> = ({ className }) => {
         </div>
       )}
 
-      {/* UserIdVerificationDialog - 處理所有用戶ID驗證邏輯 */}
+      {/* UserIdVerificationDialog - DISABLED DUE TO CLEANUP */}
       {showUserIdDialog && (
-        <React.Suspense
-          fallback={
-            <div className='fixed inset-0 flex items-center justify-center bg-black/50'>
-              <div className='h-8 w-8 animate-spin rounded-full border-2 border-white border-t-transparent' />
-            </div>
-          }
-        >
-          <UserIdVerificationDialog
-            isOpen={showUserIdDialog}
-            onOpenChange={setShowUserIdDialog}
-            onVerified={handleUserIdVerified}
-            onCancel={handleUserIdVerificationCancel}
-            title='User ID Required'
-            description='Your account metadata does not contain a User ID. Please enter your User ID to continue.'
-            isLoading={formData.isLoading}
-          />
-        </React.Suspense>
+        <div className='fixed inset-0 flex items-center justify-center bg-black/50'>
+          <div className='mx-4 max-w-md rounded-lg bg-slate-800 p-6'>
+            <h3 className='mb-2 text-lg font-semibold text-white'>User ID Required</h3>
+            <p className='mb-4 text-slate-300'>
+              User ID verification is temporarily disabled due to system cleanup.
+            </p>
+            <button
+              onClick={handleUserIdVerificationCancel}
+              className='rounded-lg bg-slate-600 px-4 py-2 text-white hover:bg-slate-700'
+            >
+              Close
+            </button>
+          </div>
+        </div>
       )}
+      {/* 
+      <React.Suspense
+        fallback={
+          <div className='fixed inset-0 flex items-center justify-center bg-black/50'>
+            <div className='h-8 w-8 animate-spin rounded-full border-2 border-white border-t-transparent' />
+          </div>
+        }
+      >
+        <UserIdVerificationDialog
+          isOpen={showUserIdDialog}
+          onOpenChange={setShowUserIdDialog}
+          onVerified={handleUserIdVerified}
+          onCancel={handleUserIdVerificationCancel}
+          title='User ID Required'
+          description='Your account metadata does not contain a User ID. Please enter your User ID to continue.'
+          isLoading={formData.isLoading}
+        />
+      </React.Suspense>
+      */}
 
       {/* Error/Warning Overlay */}
       {showErrorOverlay && (

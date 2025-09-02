@@ -7,7 +7,8 @@ export { SlateDetailsForm } from './SlateDetailsForm';
 export { PrintProgressBar } from './PrintProgressBar';
 export { FormField } from './FormField';
 export { ValidationSummary } from './ValidationSummary';
-export { default as ClockNumberConfirmDialog } from './ClockNumberConfirmDialog';
+export { ClockNumberConfirmDialog as default } from '@/components/business/shared/ClockNumberConfirmDialog';
+export { ClockNumberConfirmDialog } from '@/components/business/shared/ClockNumberConfirmDialog';
 
 // Error Handling Components
 export { ErrorBoundary } from './ErrorBoundary';
@@ -23,7 +24,7 @@ export {
 } from './ResponsiveLayout';
 export { EnhancedFormField } from './EnhancedFormField';
 export { Accordion, AccordionItem, AccordionGroup } from './Accordion';
-export { EnhancedProgressBar } from './EnhancedProgressBar';
+export { EnhancedProgressBar } from '@/components/business/shared/EnhancedProgressBar';
 
 // Performance Optimized Components
 export { PerformanceOptimizedForm } from './PerformanceOptimizedForm';

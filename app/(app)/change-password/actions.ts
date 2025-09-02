@@ -72,23 +72,20 @@ export async function updateUserPasswordInDbAction(
   }
   (process.env.NODE_ENV as string) !== 'production' &&
     (process.env.NODE_ENV as string) !== 'production' &&
-    console.log('[updateUserPasswordInDbAction] User session found. User ID:', user.id);
+    console.log('[updateUserPasswordInDbAction] User session found.');
 
   const clockNumber = user.user_metadata?.clock_number as string | undefined;
 
   if (!clockNumber) {
     // 雖然我們不直接使用 clockNumber 調用 updatePasswordWithSupabaseAuth，但日誌和可能的未來邏輯可能需要它
-    console.error(
-      '[updateUserPasswordInDbAction] Clock number not found in user metadata for user ID:',
-      user.id
-    );
+    console.error('[updateUserPasswordInDbAction] Clock number not found in user metadata.');
     // 考慮是否仍然需要返回錯誤，或者僅記錄警告，因為 updatePasswordWithSupabaseAuth 將使用 supabase 客戶端內部的用戶
     // return { _error: 'User identification failed (clock number missing). Cannot change password.' };
   }
   if (clockNumber) {
     (process.env.NODE_ENV as string) !== 'production' &&
       (process.env.NODE_ENV as string) !== 'production' &&
-      console.log(`[updateUserPasswordInDbAction] Clock number from metadata: ${clockNumber}`);
+      console.log(`[updateUserPasswordInDbAction] Clock number found in metadata.`);
   }
 
   // 可選：如果表單也提交了 clockNumber，可以進行驗證

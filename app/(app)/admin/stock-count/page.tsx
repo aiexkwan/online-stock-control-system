@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { PageErrorBoundary } from '@/lib/error-handling';
 import { StarfieldBackground } from '@/app/components/StarfieldBackground';
-import StockCountForm from './components/StockCountForm';
-import ScanResult from './components/ScanResult';
+import StockCountForm from '@/components/features/stock-count/StockCountForm';
+import ScanResult from '@/components/features/stock-count/ScanResult';
 
 // Force dynamic rendering to prevent SSR issues
 export const dynamic = 'force-dynamic';

@@ -29,7 +29,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { SimpleQRScanner } from '@/components/qr-scanner/simple-qr-scanner';
+import { SimpleQRScanner } from '@/components/business/scanning/simple-qr-scanner';
 // Removed design-system import - using direct Tailwind classes
 import { OperationCard } from '@/lib/card-system/EnhancedGlassmorphicCard';
 import {
@@ -48,7 +48,7 @@ import {
   StepIndicator,
   Step,
   StatusOverlay,
-} from '../components/shared';
+} from '@/components/compatibility';
 import type { VoidPalletCardProps } from '../types/data-management';
 import { VOID_REASONS } from '../constants/voidPallet';
 import { useVoidPallet } from '../hooks/useVoidPallet';
@@ -67,7 +67,7 @@ export const VoidPalletCard: React.FC<VoidPalletCardProps> = ({
   onVoidComplete,
 }) => {
   // Refs
-  const searchInputRef = useRef<SearchInputRef>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   // Use the void pallet hook
   const { state, actions } = useVoidPallet({

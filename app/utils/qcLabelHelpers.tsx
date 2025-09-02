@@ -14,7 +14,7 @@ import {
   ORDINAL_SUFFIX_SPECIAL_CASE_13,
   ORDINAL_SUFFIX_REMAINDER_3,
   DEFAULT_ACO_PALLET_START_COUNT,
-} from '@/app/(app)/admin/components/qc-label-constants';
+} from '@/components/domain/admin/constants';
 
 /**
  * 生成序數字符串 (1st, 2nd, 3rd, 4th, etc.)

@@ -19,7 +19,7 @@ import {
 } from '@/lib/pdfUtils';
 // Transaction types removed - no longer needed
 // Import moved to dynamic import where needed
-import { PrintLabelPdf } from '@/components/print-label-pdf/PrintLabelPdf';
+import { PrintLabelPdf } from '@/components/business/printing/PrintLabelPdf';
 import {
   PALLET_WEIGHTS,
   PACKAGE_WEIGHTS,

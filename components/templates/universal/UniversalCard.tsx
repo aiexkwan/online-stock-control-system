@@ -1,0 +1,210 @@
+/**
+ * UniversalCard - 統一卡片組件
+ * 支援所有現有卡片樣式，完全向後兼容
+ */
+
+'use client';
+
+import React, { forwardRef } from 'react';
+import { cn } from '@/lib/utils';
+import { CardConfig, SpacingSize, LegacyResponsiveCardProps } from './types';
+import { THEMES, SPACING_CLASSES } from './constants';
+
+interface UniversalCardProps {
+  children: React.ReactNode;
+  variant?: CardConfig['variant'];
+  theme?: CardConfig['theme'];
+  elevation?: CardConfig['elevation'];
+  border?: boolean;
+  glass?: boolean;
+  glow?: boolean;
+  animation?: boolean;
+  title?: string;
+  subtitle?: string;
+  headerAction?: React.ReactNode;
+  padding?: SpacingSize;
+  className?: string;
+  onClick?: () => void;
+  // 向後兼容性 props
+  legacy?: boolean;
+}
+
+// 完全兼容現有 ResponsiveCard
+interface ResponsiveCardCompatProps extends LegacyResponsiveCardProps {
+  __legacy?: true;
+}
+
+export const UniversalCard = forwardRef<HTMLDivElement, UniversalCardProps>(
+  (
+    {
+      children,
+      variant = 'default',
+      theme = 'neutral',
+      elevation = 'medium',
+      border = true,
+      glass = true,
+      glow = false,
+      animation = true,
+      title,
+      subtitle,
+      headerAction,
+      padding = 'md',
+      className = '',
+      onClick,
+      legacy: _legacy = false,
+    },
+    ref
+  ) => {
+    const themeConfig = THEMES[theme];
+
+    // 海拔陰影類名
+    const elevationClasses = {
+      none: '',
+      low: 'shadow-sm',
+      medium: 'shadow-xl shadow-black/20',
+      high: 'shadow-2xl shadow-black/30',
+    };
+
+    // 變體特定樣式
+    const variantClasses = {
+      default: '',
+      widget: 'h-full',
+      form: 'max-w-2xl mx-auto',
+      data: 'overflow-hidden',
+      action: 'cursor-pointer hover:scale-[1.02]',
+      feature: 'relative overflow-hidden',
+    };
+
+    // 玻璃態效果 (完全兼容現有 ResponsiveCard)
+    const glassEffect = glass ? themeConfig.colors.surface : 'bg-slate-800';
+
+    // 邊框樣式
+    const borderStyle = border ? themeConfig.colors.border : '';
+
+    // 發光效果
+    const glowEffect =
+      glow && themeConfig.effects.glow
+        ? 'hover:shadow-blue-800/20 transition-all duration-300'
+        : '';
+
+    // 動畫效果
+    const animationEffect =
+      animation && themeConfig.effects.animation
+        ? 'transition-all duration-300 hover:border-blue-500/30'
+        : '';
+
+    const cardClasses = cn(
+      // 基礎佈局
+      'relative group rounded-2xl overflow-hidden',
+
+      // 玻璃態背景
+      glassEffect,
+
+      // 邊框
+      'border',
+      borderStyle,
+
+      // 陰影
+      elevationClasses[elevation],
+
+      // 發光效果
+      glowEffect,
+
+      // 動畫效果
+      animationEffect,
+
+      // 變體樣式
+      variantClasses[variant],
+
+      // Padding
+      `p-${SPACING_CLASSES[padding]}`,
+
+      // 點擊效果
+      onClick && 'cursor-pointer',
+
+      // 自定義類名
+      className
+    );
+
+    return (
+      <div ref={ref} className={cardClasses} onClick={onClick}>
+        {/* 卡片內部光效 (兼容現有 ResponsiveCard) */}
+        {themeConfig.effects.glow && (
+          <div className='absolute inset-0 bg-gradient-to-r from-blue-500/5 via-transparent to-cyan-500/5 opacity-0 transition-opacity duration-500 group-hover:opacity-100' />
+        )}
+
+        {/* 頂部邊框光效 (兼容現有 ResponsiveCard) */}
+        {themeConfig.effects.glow && (
+          <div className='absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-400/50 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100' />
+        )}
+
+        <div className='relative z-10'>
+          {/* 卡片標題區域 (完全兼容現有格式) */}
+          {(title || subtitle || headerAction) && (
+            <div className='mb-6'>
+              {(title || headerAction) && (
+                <div className='mb-2 flex items-center justify-between'>
+                  {title && (
+                    <h2 className='bg-gradient-to-r from-white via-blue-100 to-cyan-100 bg-clip-text text-xl font-semibold text-transparent sm:text-2xl'>
+                      {title}
+                    </h2>
+                  )}
+                  {headerAction && <div className='flex-shrink-0'>{headerAction}</div>}
+                </div>
+              )}
+              {subtitle && <p className='text-sm text-slate-400'>{subtitle}</p>}
+            </div>
+          )}
+
+          {/* 卡片內容 */}
+          {children}
+        </div>
+      </div>
+    );
+  }
+);
+
+// 完全兼容現有 ResponsiveCard 的包裝器
+export const ResponsiveCard = forwardRef<HTMLDivElement, ResponsiveCardCompatProps>(
+  (
+    { children, title, subtitle, className = '', padding = 'md', shadow = true, headerAction },
+    ref
+  ) => {
+    // 轉換舊格式的 padding 到新的 SpacingSize
+    const convertPaddingToSpacing = (pad: 'sm' | 'md' | 'lg'): SpacingSize => {
+      const paddingMap: Record<string, SpacingSize> = {
+        sm: 'md',
+        md: 'lg',
+        lg: 'xl',
+      };
+      return paddingMap[pad] || 'md';
+    };
+
+    return (
+      <UniversalCard
+        ref={ref}
+        variant='default'
+        theme='qc'
+        elevation={shadow ? 'high' : 'none'}
+        border={true}
+        glass={true}
+        glow={true}
+        animation={true}
+        title={title}
+        subtitle={subtitle}
+        headerAction={headerAction}
+        padding={convertPaddingToSpacing(padding)}
+        className={className}
+        legacy={true}
+      >
+        {children}
+      </UniversalCard>
+    );
+  }
+);
+
+// 設置 displayName 以便調試
+UniversalCard.displayName = 'UniversalCard';
+ResponsiveCard.displayName = 'ResponsiveCard';
+
+export default UniversalCard;

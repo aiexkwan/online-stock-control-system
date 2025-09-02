@@ -9,7 +9,7 @@ import {
   MAX_DUPLICATE_CHECK_ATTEMPTS,
   DUPLICATE_CHECK_DELAY_BASE,
   ONE_HOUR_CACHE,
-} from '@/app/(app)/admin/components/qc-label-constants';
+} from '@/components/domain/admin/constants';
 
 if (!process.env.SUPABASE_URL) {
   // console.error('[qcActions] 錯誤: SUPABASE_URL 未設置'); // 保留錯誤日誌供生產環境調試

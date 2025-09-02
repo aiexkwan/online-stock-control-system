@@ -29,7 +29,7 @@ import { PDFPreviewOverlay } from '@/components/ui/pdf-preview-overlay';
 import { DataExtractionOverlay } from '@/components/ui/data-extraction-overlay';
 import type { _DocUploadRecord, UploadCenterCardProps } from '../types/data-management';
 import { formatFileSize as formatFileSizeUtil } from '../utils/formatters';
-import { StatusOverlay } from '../components/shared';
+import { StatusOverlay } from '@/components/compatibility';
 import { useUploadManager } from '../hooks/useUploadManager';
 
 // Local interface for upload configuration (extends the one from data-management)

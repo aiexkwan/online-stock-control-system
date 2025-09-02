@@ -11,7 +11,7 @@ import { format } from 'date-fns';
 import { getErrorMessage } from '../../../../lib/types/error-handling';
 import { renderReactPDFToBlob } from '../../../../lib/services/unified-pdf-service';
 // Removed unused import: loadPDF
-import { PrintLabelPdf } from '../../../../components/print-label-pdf/PrintLabelPdf';
+import { PrintLabelPdf } from '@/components/print-label-pdf/PrintLabelPdf';
 import { prepareQcLabelData, mergeAndPrintPdfs, type QcInputData } from '../../../../lib/pdfUtils';
 import { uploadPdfToStorage, updatePalletPdfUrl } from '../../../actions/qcActions';
 import { getOrdinalSuffix, getAcoPalletCount } from '../../../utils/qcLabelHelpers';

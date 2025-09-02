@@ -9,9 +9,9 @@
 
 import React, { useMemo, memo, useCallback } from 'react';
 import { AlertTriangle, RefreshCw, Home, AlertCircle, Info, CheckCircle } from 'lucide-react';
-import { Button } from '../../../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
-import { Alert, AlertDescription } from '../../../components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { ErrorFallbackProps, ErrorSeverity } from '../types';
 
 // Base Error Fallback Component

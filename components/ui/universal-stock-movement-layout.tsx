@@ -5,7 +5,7 @@
 
 import React from 'react';
 import { AlertCircle, Info, CheckCircle, XCircle } from 'lucide-react';
-import { UniversalContainer } from '@/components/layout/universal';
+import { UniversalContainer } from '@/components/templates/universal';
 import { Card, CardContent, CardHeader, CardTitle } from './card';
 import { Button } from './button';
 

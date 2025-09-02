@@ -31,14 +31,14 @@ export async function resetPasswordAction(
   try {
     (process.env.NODE_ENV as string) !== 'production' &&
       (process.env.NODE_ENV as string) !== 'production' &&
-      console.log(`[Server Action] Attempting to reset password for userId: ${userId}`);
+      console.log(`[Server Action] Attempting to reset password.`);
 
     // 1. Hash the new password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(newPassword, salt);
     (process.env.NODE_ENV as string) !== 'production' &&
       (process.env.NODE_ENV as string) !== 'production' &&
-      console.log(`[Server Action] New password hashed for userId: ${userId}`);
+      console.log(`[Server Action] New password hashed successfully.`);
 
     // 2. Update the user's password in the data_id table
     // IMPORTANT: Using server client here for elevated privileges.
@@ -56,7 +56,7 @@ export async function resetPasswordAction(
       .select(); // select() can help confirm if a row was matched and updated
 
     if (updateError) {
-      console.error(`[Server Action] Supabase update error for userId ${userId}:`, updateError);
+      console.error(`[Server Action] Supabase update error:`, updateError);
       return { success: false, error: `Database error: ${updateError.message}` };
     }
 
@@ -64,17 +64,13 @@ export async function resetPasswordAction(
     if (!data || data.length === 0) {
       (process.env.NODE_ENV as string) !== 'production' &&
         (process.env.NODE_ENV as string) !== 'production' &&
-        console.warn(
-          `[Server Action] No user found with id: ${userId} during password reset attempt.`
-        );
+        console.warn(`[Server Action] No user found during password reset attempt.`);
       return { success: false, error: 'User not found. Password not updated.' };
     }
 
     (process.env.NODE_ENV as string) !== 'production' &&
       (process.env.NODE_ENV as string) !== 'production' &&
-      console.log(
-        `[Server Action] Password for userId: ${userId} updated successfully in data_id table.`
-      );
+      console.log(`[Server Action] Password updated successfully in data_id table.`);
 
     // 3. Optionally, log this action to record_history (if appropriate for password resets)
     // This might require passing the initiator if it's not the user themselves (e.g. admin reset)
@@ -88,10 +84,10 @@ export async function resetPasswordAction(
       });
       (process.env.NODE_ENV as string) !== 'production' &&
         (process.env.NODE_ENV as string) !== 'production' &&
-        console.log(`[Server Action] Password reset logged to history for userId: ${userId}`);
+        console.log(`[Server Action] Password reset logged to history.`);
     } catch (historyError) {
       console.error(
-        `[Server Action] Failed to log password reset to record_history for userId ${userId}:`,
+        `[Server Action] Failed to log password reset to record_history:`,
         historyError
       );
       // Do not fail the whole operation if logging fails, but log the error.
